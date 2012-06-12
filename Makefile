@@ -1,4 +1,4 @@
-VERSION = 0.9.5
+VERSION = 0.9.6
 SBINDIR ?= /usr/sbin
 DRACUTMODDIR ?= /usr/lib/dracut/modules.d/01vmklive
 
