@@ -17,4 +17,9 @@ install: all
 clean:
 	-rm -f mklive.sh
 
-.PHONY: all clean install
+dist:
+	@echo "Building distribution tarball for tag: v$(VERSION) ..."
+	-@git archive --format=tar --prefix=void-mklive-$(VERSION)/ \
+		v$(VERSION) | xz -9 > ~/void-mklive-$(VERSION).tar.xz
+
+.PHONY: all clean install dist
