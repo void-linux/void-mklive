@@ -1,0 +1,25 @@
+void-mklive - The Void Linux live image maker
+
+This is a simple shell script to build a live image for the
+Void linux distribution. The images contain the void-installer package
+to be able to install Void linux to storage disks.
+
+Usage: vmklive [options]
+
+Options:
+ -C file		Path to configuration file (defaults to ~/.mklive.conf)
+ -c (gzip|bzip2|xz) 	Compression type for the squashfs/initramfs image.
+ -k version		Kernel version to use.
+ -o outfile		Output file name for the ISO image.
+ -r rootdir		Rootfs directory.
+ -s splash		Splash image file for isolinux.
+ -v volname		ISO Volume name.
+
+NOTE: If -k not specified it will use $(uname -r) by default.
+NOTE: the first time it is executed a configuration file will be created at ~/mklive.conf.
+NOTE: It's assumed that void-mklive is run in a Void Linux system.
+
+Take a look at the configuration file (~/mklive.conf) to tweak some
+default parameters in the generated image.
+
+	-- Juan RP <xtraeme@gmail.com>
