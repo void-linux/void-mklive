@@ -4,7 +4,7 @@ This is a simple shell script to build a live image for the
 Void linux distribution. The images contain the void-installer package
 to be able to install Void linux to storage disks.
 
-Usage: vmklive [options]
+Usage: void-mklive [options]
 
 Options:
  -C file		Path to configuration file (defaults to ~/.mklive.conf)
