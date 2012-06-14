@@ -13,4 +13,5 @@ depends() {
 install() {
     inst chmod
     inst_hook pre-pivot 01 "$moddir/vmklive-adduser.sh"
+    inst_hook pre-pivot 02 "$moddir/vmklive-conf.sh"
 }

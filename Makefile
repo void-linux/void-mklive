@@ -9,8 +9,7 @@ install: all
 	install -d $(DESTDIR)$(SBINDIR)
 	install -m755 mklive.sh $(DESTDIR)$(SBINDIR)/void-mklive
 	install -d $(DESTDIR)$(DRACUTMODDIR)
-	install -m755 dracut/module-setup.sh $(DESTDIR)$(DRACUTMODDIR)
-	install -m755 dracut/vmklive-adduser.sh $(DESTDIR)$(DRACUTMODDIR)
+	install -m755 dracut/*.sh $(DESTDIR)$(DRACUTMODDIR)
 
 clean:
 	-rm -f mklive.sh
