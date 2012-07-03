@@ -122,7 +122,7 @@ LABEL linux
 MENU LABEL Boot Void GNU/Linux ${kver} ($(uname -m))
 KERNEL vmlinuz
 APPEND initrd=initrd.lz root=live:CDLABEL=VoidLinux-live-$(uname -m)-${kver} \
- rootfstype=auto ro liveimg rd.luks=0 rd.md=0 rd.dm=0 \
+ rootfstype=auto ro liveimg rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 \
  vconsole.keymap=${KEYMAP} vconsole.unicode=1 locale.LANG=${LOCALE}
 LABEL c
 MENU LABEL Boot first HD found by BIOS
@@ -349,10 +349,6 @@ cat > $ROOTFS/etc/xbps/local-repos.conf <<_EOF
 repositories = {
 	# XBPS >= 0.16
 	/packages,
-	# XBPS < 0.16
-	/packages/noarch,
-	/packages/i686,
-	/packages/x86_64
 }
 _EOF
 # Generate a conf for remote repositories.
@@ -362,13 +358,6 @@ repositories = {
 	http://xbps.hosting-unlimited.org/binpkgs,
 	http://xbps.goodluckwith.us/binpkgs,
 	http://xbps.nopcode.org/repos/current,
-	# XBPS < 0.16
-	http://xbps.goodluckwith.us/binpkgs/i686,
-	http://xbps.goodluckwith.us/binpkgs/noarch,
-	http://xbps.goodluckwith.us/binpkgs/nonfree/i686,
-	http://xbps.nopcode.org/repos/current/x86_64,
-	http://xbps.nopcode.org/repos/current/noarch,
-	http://xbps.nopcode.org/repos/current/nonfree/x86_64
 }
 _EOF
 chmod 644 $ROOTFS/etc/xbps/*.conf || error_out $?
@@ -405,6 +394,9 @@ _lsblk=$(which lsblk)
 _blkid=$(which blkid)
 install -Dm755 ${_lsblk} "$ROOTFS/usr/bin/lsblk" || error_out $?
 install -Dm755 ${_blkid} "$ROOTFS/sbin/blkid" || error_out $?
+
+# install mount from util-linux.
+install -Dm755 /bin/mount "$ROOTFS/bin/mount" || error_out $?
 
 #
 # The pseudofs aren't needed anymore in target rootfs.
