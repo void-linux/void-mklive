@@ -21,7 +21,7 @@ fi
 # Enable autologin for getty(1).
 if [ -f ${NEWROOT}/lib/systemd/system/getty@.service ]; then
         rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
-	sed -e "s|/sbin/agetty|/sbin/live-getty|g" \
+	sed -e "s|/sbin/agetty --noclear|/sbin/live-getty|g" \
                 "${NEWROOT}/lib/systemd/system/getty@.service" > \
                 "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 fi
