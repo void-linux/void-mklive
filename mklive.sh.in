@@ -438,7 +438,7 @@ mksquashfs "$BUILDDIR/tmp" "$BUILDDIR/LiveOS/squashfs.img" \
 	-comp ${COMPRESSTYPE} 2>&1 | cat >> $LOGFILE || error_out
 chmod 444 "$BUILDDIR/LiveOS/squashfs.img" || error_out $?
 
-info_msg "[8/9] Removing rootfs directory..."
+info_msg "[8/10] Removing rootfs directory..."
 rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" "$BUILDDIR/tmp" || error_out $?
 
 #
