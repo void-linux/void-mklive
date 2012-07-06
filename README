@@ -4,6 +4,18 @@ This is a simple shell script to build a live image for the
 Void linux distribution. The images contain the void-installer package
 to be able to install Void linux to storage disks.
 
+The generated image can be booted from BIOS and EFI systems (dual boot).
+For BIOS isolinux is used and for EFI we use grub2.
+
+Dependencies:
+ - dracut
+ - grub with support for PC-BIOS and x86_64 EFI
+ - syslinux
+ - dosfstools (for mkfs.vfat)
+ - xorriso
+ - squashfs-tools
+ - void-installer
+
 Usage: void-mklive [options]
 
 Options:
@@ -12,7 +24,6 @@ Options:
  -k version		Kernel version to use.
  -o outfile		Output file name for the ISO image.
  -s splash		Splash image file for isolinux.
- -v volname		ISO Volume name.
 
 * If -k not specified it will use $(uname -r) by default.
 * The first time it is executed a config file will be created (~/mklive.conf).
