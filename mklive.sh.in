@@ -379,6 +379,7 @@ fi
 sed -i  -e "s|@@SPLASHIMAGE@@|$(basename $SPLASH_IMAGE)|" \
 	-e "s|@@KERNVER@@|${KERNELVERSION}|" \
 	-e "s|@@KEYMAP@@|${KEYMAP}|" \
+	-e "s|@@ARCH@@|$(uname -m)|" \
 	-e "s|@@LOCALE@@|${LOCALE}|" $ISOLINUX_DIR/isolinux.cfg
 
 #
@@ -390,6 +391,7 @@ cp -f $MKLIVE_DATADIR/grub_void.cfg.in $GRUB_DIR/grub_void.cfg || error_out $?
 sed -i  -e "s|@@SPLASHIMAGE@@|$(basename $SPLASH_IMAGE)|" \
 	-e "s|@@KERNVER@@|${KERNELVERSION}|" \
 	-e "s|@@KEYMAP@@|${KEYMAP}|" \
+	-e "s|@@ARCH@@|$(uname -m)|" \
 	-e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
 mkdir -p $GRUB_DIR/fonts $GRUB_DIR/locale || error_out $?
 cp -f $GRUB_DATADIR/unicode.pf2 $GRUB_DIR/fonts || error_out $?
