@@ -354,10 +354,10 @@ fi
 _lsblk=$(which lsblk)
 _blkid=$(which blkid)
 install -Dm755 ${_lsblk} "$ROOTFS/usr/bin/lsblk" || error_out $?
-install -Dm755 ${_blkid} "$ROOTFS/sbin/blkid" || error_out $?
+install -Dm755 ${_blkid} "$ROOTFS/usr/sbin/blkid" || error_out $?
 
 # install mount from util-linux.
-install -Dm755 /bin/mount "$ROOTFS/bin/mount" || error_out $?
+install -Dm755 /bin/mount "$ROOTFS/usr/bin/mount" || error_out $?
 
 #
 # The pseudofs aren't needed anymore in target rootfs.
