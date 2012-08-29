@@ -240,8 +240,8 @@ if [ -n "$REPOSITORY_CACHE" ]; then
 fi
 XBPS_VERSION=$($XBPS_BIN_CMD -V|awk '{print $2}')
 case $XBPS_VERSION in
-	# XBPS >= 0.16.6
-	[0-9].[1-9][6-9].[6-9]*) XBPS_016_6=1;;
+	# XBPS >= 0.17
+	[0-9].[1-9][7-9]*) XBPS_017=1;;
 esac
 
 info_msg "Redirecting stdout/stderr to $LOGFILE ..."
@@ -335,7 +335,7 @@ while [ $# -ne 0 ]; do
 	cp -f $bpkg $ROOTFS/packages/$arch
 	ln -sfr $ROOTFS/packages/$arch/$binpkg $ROOTFS/packages/$binpkg
 done
-if [ -n "$XBPS_016_6" ]; then
+if [ -n "$XBPS_017" ]; then
 	$XBPS_REPO_CMD index-add $ROOTFS/packages/*.xbps 2>&1 >>$LOGFILE
 	rm -f $ROOTFS/packages/index-files.plist
 else
@@ -343,16 +343,12 @@ else
 	rm -f $ROOTFS/packages/index-files.plist
 fi
 
-# install lsblk and blkid from util-linux. to avoid installing
-# the whole package.
+# Install some required utilities from util-linux.
 _lsblk=$(which lsblk)
-_blkid=$(which blkid)
 install -Dm755 ${_lsblk} "$ROOTFS/usr/bin/lsblk" || error_out $?
-install -Dm755 ${_blkid} "$ROOTFS/usr/sbin/blkid" || error_out $?
 
-# install mount from util-linux.
-install -Dm755 /bin/mount "$ROOTFS/usr/bin/mount" || error_out $?
-
+# We rely on pam now, so let's install the host login config.
+install -Dm644 /etc/pam.d/login "$ROOTFS/etc/pam.d/login" || error_out $?
 #
 # The pseudofs aren't needed anymore in target rootfs.
 #
