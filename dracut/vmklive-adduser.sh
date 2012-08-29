@@ -19,32 +19,32 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
 fi
 
 # Enable autologin for getty(1).
-if [ -f ${NEWROOT}/lib/systemd/system/getty@.service ]; then
+if [ -f ${NEWROOT}/usr/lib/systemd/system/getty@.service ]; then
         rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
-	sed -e "s|/sbin/agetty --noclear|/sbin/live-getty|g" \
-                "${NEWROOT}/lib/systemd/system/getty@.service" > \
+	sed -e "s|/sbin/agetty --noclear|/usr/sbin/live-getty|g" \
+                "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
                 "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 fi
 
-# Create /sbin/live-getty.
-cat > ${NEWROOT}/sbin/live-getty <<_EOF
+# Create /usr/sbin/live-getty.
+cat > ${NEWROOT}/usr&sbin/live-getty <<_EOF
 #!/bin/sh
 
-if [ -x /sbin/agetty ]; then
-	_getty=/sbin/agetty
-elif [ -x /sbin/getty ]; then
-	_getty=/sbin/getty
+if [ -x /usr/sbin/agetty ]; then
+	_getty=/usr&sbin/agetty
+elif [ -x /usr/sbin/getty ]; then
+	_getty=/usr/sbin/getty
 fi
 
-exec \${_getty} -n -l /sbin/live-autologin \$*
+exec \${_getty} -n -l /usr/sbin/live-autologin \$*
 _EOF
-chmod 755 ${NEWROOT}/sbin/live-getty
+chmod 755 ${NEWROOT}/usr/sbin/live-getty
 
-# Create /sbin/live-autologin.
-cat > ${NEWROOT}/sbin/live-autologin <<_EOF
+# Create /usr/sbin/live-autologin.
+cat > ${NEWROOT}/usr/sbin/live-autologin <<_EOF
 #!/bin/sh
 
 . /etc/default/live.conf
-exec /bin/login -f \$USERNAME
+exec /usr/bin/login -f \$USERNAME
 _EOF
-chmod 755 ${NEWROOT}/sbin/live-autologin
+chmod 755 ${NEWROOT}/usr/sbin/live-autologin
