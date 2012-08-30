@@ -27,11 +27,11 @@ if [ -f ${NEWROOT}/usr/lib/systemd/system/getty@.service ]; then
 fi
 
 # Create /usr/sbin/live-getty.
-cat > ${NEWROOT}/usr&sbin/live-getty <<_EOF
+cat > ${NEWROOT}/usr/sbin/live-getty <<_EOF
 #!/bin/sh
 
 if [ -x /usr/sbin/agetty ]; then
-	_getty=/usr&sbin/agetty
+	_getty=/usr/sbin/agetty
 elif [ -x /usr/sbin/getty ]; then
 	_getty=/usr/sbin/getty
 fi
