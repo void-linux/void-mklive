@@ -366,7 +366,7 @@ ISO_VOLUME="VOID_LIVE"
 if [ -n "$ROOTDIR" ]; then
 	BUILDDIR=$(mktemp --tmpdir="$ROOTDIR" -d) || exit 1
 else
-	BUILDDIR=$(mktemp --tmpdir="$(pwd -P)" -d) || exit 1a
+	BUILDDIR=$(mktemp --tmpdir="$(pwd -P)" -d) || exit 1
 fi
 BUILDDIR=$(readlink -f $BUILDDIR)
 ROOTFS="$BUILDDIR/rootfs"
