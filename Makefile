@@ -1,11 +1,12 @@
-VERSION = 0.9.8
+GITVER := $(shell git rev-parse HEAD)
+VERSION = 0.10
 PREFIX ?= /usr/local
 SBINDIR ?= $(PREFIX)/sbin
 SHAREDIR ?= $(PREFIX)/share
 DRACUTMODDIR ?= $(PREFIX)/lib/dracut/modules.d/01vmklive
 
 all:
-	sed -e "s|@@MKLIVE_VERSION@@|${VERSION}|g" mklive.sh.in > mklive.sh
+	sed -e "s|@@MKLIVE_VERSION@@|$(VERSION) $(GITVER)|g" mklive.sh.in > mklive.sh
 
 install: all
 	install -d $(DESTDIR)$(SBINDIR)

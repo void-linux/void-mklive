@@ -5,32 +5,30 @@ Void linux distribution. The images contain the void-installer package
 to be able to install Void linux to storage disks.
 
 The generated image can be booted from BIOS and EFI systems (dual boot).
-For BIOS isolinux is used and for EFI we use grub2.
+ISOLINUX is used to boot from PC-BIOS systems, while GRUB is used to
+boot in EFI systems.
 
 Dependencies:
- - xbps>=0.18.
- - systemd
- - util-linux agetty(8).
- - dracut
- - grub with support for PC-BIOS and x86_64 EFI
- - syslinux
- - dosfstools (for mkfs.vfat)
- - xorriso
- - squashfs-tools
- - void-installer
+ - xbps>=0.18
+ - syslinux (to generate the PC-BIOS bootloader)
+ - dosfstools (to generate the EFI bootloader)
+ - xorriso (to generate the ISO image)
+ - squashfs-tools (to generate the squashed rootfs)
+ - linux-user-chroot (to chroot and bind mount pseudofs)
 
 Usage: void-mklive [options]
 
 Options:
  -C file		Path to configuration file (defaults to ~/.mklive.conf)
  -c (gzip|bzip2|xz) 	Compression type for the squashfs/initramfs image.
- -k version		Kernel version to use.
+ -l "pkgname ..."	Generate a local repository in the image with these packages.
+ 			Packages must be delimited by blanks.
+ -r rootdir		Use this directory to generate the image (if unset,
+ 			current working directory will be used).
  -o outfile		Output file name for the ISO image.
  -s splash		Splash image file for isolinux.
 
-* If -k not specified it will use $(uname -r) by default.
 * The first time it is executed a config file will be created (~/mklive.conf).
-* It's assumed that void-mklive is executed in a Void Linux system.
 
 Take a look at the configuration file (~/mklive.conf) to tweak some
 default parameters in the generated image.
