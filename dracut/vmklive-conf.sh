@@ -23,3 +23,9 @@ fi
 if [ -n "$LOCALE" ]; then
     sed -i -e "s|^LANG=.*|LANG=$LOCALE|g" ${NEWROOT}/etc/locale.conf
 fi
+
+# Setup keymap for X.org evdev.
+if [ -r "${NEWROOT}/etc/udev/rules.d/75-x11-input.rules" ]; then
+    sed -i -e "s|\(ENV{xkblayout}\=\)\"us\"|\1\"${KEYMAP}\"|" \
+        ${NEWROOT}/etc/udev/rules.d/75-x11-input.rules
+fi
