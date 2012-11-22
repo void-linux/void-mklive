@@ -18,33 +18,10 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
 	echo "${USERNAME}  ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
 fi
 
-# Enable autologin for getty(1).
+# Enable autologin for agetty(8).
 if [ -f ${NEWROOT}/usr/lib/systemd/system/getty@.service ]; then
         rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
-	sed -e "s|/sbin/agetty --noclear|/usr/sbin/live-getty|g" \
+	sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \
                 "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
                 "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 fi
-
-# Create /usr/sbin/live-getty.
-cat > ${NEWROOT}/usr/sbin/live-getty <<_EOF
-#!/bin/sh
-
-if [ -x /usr/sbin/agetty ]; then
-	_getty=/usr/sbin/agetty
-elif [ -x /usr/sbin/getty ]; then
-	_getty=/usr/sbin/getty
-fi
-
-exec \${_getty} -n -l /usr/sbin/live-autologin \$*
-_EOF
-chmod 755 ${NEWROOT}/usr/sbin/live-getty
-
-# Create /usr/sbin/live-autologin.
-cat > ${NEWROOT}/usr/sbin/live-autologin <<_EOF
-#!/bin/sh
-
-. /etc/default/live.conf
-exec /usr/bin/login -f \$USERNAME
-_EOF
-chmod 755 ${NEWROOT}/usr/sbin/live-autologin
