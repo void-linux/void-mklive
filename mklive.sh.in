@@ -159,6 +159,11 @@ generate_initramfs() {
 	    "$ROOTFS/usr/sbin/agetty" || error_out $?
     install -Dm755 $ROOTFS/kernel_temp/usr/bin/lsblk \
 	    "$ROOTFS/usr/bin/lsblk" || error_out $?
+    # Install stdbuf from coreutils, required by void-installer.
+    install -Dm755 $ROOTFS/kernel_temp/usr/bin/stdbuf \
+	"$ROOTFS/usr/bin/stdbuf" || error_out $?
+    install -Dm755 $ROOTFS/kernel_temp/usr/libexec/coreutils/libstdbuf.so \
+	"$ROOTFS/usr/libexec/coreutils/libstdbuf.so" || error_out $?
 
     $CHROOT_CMD $ROOTFS/kernel_temp dracut --no-hostonly \
 	    --add "dmsquash-live vmklive" --${COMPRESSTYPE} \
