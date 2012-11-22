@@ -8,6 +8,7 @@ The generated image can be booted from BIOS and EFI systems (dual boot).
 For BIOS isolinux is used and for EFI we use grub2.
 
 Dependencies:
+ - xbps>=0.18.
  - systemd
  - util-linux agetty(8).
  - dracut
