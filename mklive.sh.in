@@ -129,13 +129,12 @@ install_packages() {
 	    info_msg "  $f"
     done
     # Check that all pkgs are reachable.
-    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -n xbps-git \
-        ${PACKAGE_LIST} >>$LOGFILE 2>&1
+    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -n ${PACKAGE_LIST} >>$LOGFILE 2>&1
     if [ $? -ne 0 ]; then
 	    info_msg "Missing required binary packages, exiting..."
 	    error_out
     fi
-    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} xbps-git ${PACKAGE_LIST} >>$LOGFILE 2>&1
+    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} ${PACKAGE_LIST} >>$LOGFILE 2>&1
     [ $? -ne 0 ] && error_out $?
     ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -u >>$LOGFILE 2>&1
     [ $? -ne 0 ] && error_out $?
