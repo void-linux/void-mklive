@@ -190,7 +190,7 @@ generate_local_repository() {
         bpkg=$repo/$binpkg
         cp -f $bpkg $ROOTFS/packages
     done
-    LD_PRELOAD="$ROOTFS/usr/lib/libxbps.so" \
+    LD_LIBRARY_PATH="$ROOTFS/usr/lib" \
         $ROOTFS/usr/sbin/$XBPS_RINDEX_CMD -a $ROOTFS/packages/*.xbps 2>&1 >>$LOGFILE
     rm -f $ROOTFS/packages/index-files.plist
 }
