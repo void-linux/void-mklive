@@ -20,6 +20,10 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
 	echo "${USERNAME}  ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
 fi
 
+chroot ${NEWROOT} systemctl disable graphical.target
+chroot ${NEWROOT} systemctl enable multi-user.target
+touch ${NEWROOT}/etc/sysctl.conf
+
 # Enable autologin for agetty(8).
 if [ -f ${NEWROOT}/usr/lib/systemd/system/getty@.service ]; then
         rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
