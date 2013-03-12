@@ -12,7 +12,7 @@ echo "USERNAME=$USERNAME" >> ${NEWROOT}/etc/default/live.conf
 chmod 644 ${NEWROOT}/etc/default/live.conf
 
 # Create new user and remove password. We'll use autologin by default.
-chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G audio,video,wheel -s /bin/sh
+chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G adm,wheel -s /bin/sh
 chroot ${NEWROOT} passwd -d $USERNAME 2>&1 >/dev/null
 
 # Enable sudo permission by default.
@@ -20,9 +20,8 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
 	echo "${USERNAME}  ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
 fi
 
-chroot ${NEWROOT} systemctl disable graphical.target
-chroot ${NEWROOT} systemctl enable multi-user.target
-touch ${NEWROOT}/etc/sysctl.conf
+chroot ${NEWROOT} systemctl disable graphical.target 2>&1 >/dev/null
+chroot ${NEWROOT} systemctl enable multi-user.target 2>&1 >/dev/null
 
 # Enable autologin for agetty(8).
 if [ -f ${NEWROOT}/usr/lib/systemd/system/getty@.service ]; then
