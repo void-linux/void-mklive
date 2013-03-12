@@ -42,7 +42,9 @@ error_out() {
 
 umount_kernel_fs() {
     for f in sys/fs/cgroup/systemd sys/fs/cgroup dev/shm dev/pts dev proc sys run; do
-        umount -f $ROOTFS/kernel_temp/$f &>/dev/null
+        if [ -d $ROOTFS/kernel_temp/$f ]; then
+            umount $ROOTFS/kernel_temp/$f || true
+        fi
     done
 }
 
