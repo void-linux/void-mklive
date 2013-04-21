@@ -1,0 +1,161 @@
+#!/bin/sh
+#-
+# Copyright (c) 2013 Juan Romero Pardines.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#-
+
+readonly PROGNAME=$(basename $0)
+readonly ARCH=$(uname -m)
+readonly PKGBASE="base-system"
+
+trap 'printf "\nInterrupted! exiting...\n"; exit $?' INT TERM HUP
+
+info_msg() {
+    printf "\033[1m$@\n\033[m"
+}
+
+die() {
+    echo "FATAL: $@"
+    [ -d "$rootfs" ] && rm -rf $rootfs
+    exit 1
+}
+
+usage() {
+    echo "Usage: $PROGNAME [-a raspberrypi]"
+}
+
+run_cmd() {
+    info_msg "Running $@ ..."
+    if [ -n "${_ARCH}" ]; then
+        eval XBPS_TARGET_ARCH=${_ARCH} "$@" >/dev/null 2>&1
+    else
+        eval "$@" >/dev/null 2>&1
+    fi
+    [ $? -ne 0 ] && die "Failed to run $@"
+}
+
+register_binfmt() {
+    if [ "$ARCH" = "${_ARCH}" ]; then
+        return 0
+    fi
+    case "${_ARCH}" in
+        armv6l)
+            echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
+            cp -f $(which qemu-arm-static) $rootfs/usr/bin || die "failed to copy qemu-arm-static to the rootfs"
+            ;;
+        *)
+            die "Unknown target architecture!"
+            ;;
+    esac
+}
+
+#
+# main()
+#
+while getopts "a:h" opt; do
+    case $opt in
+        a) TARGET_ARCH="$OPTARG";;
+        h) usage; exit 0;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+if [ "$(id -u)" -ne 0 ]; then
+    die "need root perms to continue, exiting."
+fi
+
+#
+# Check for required binaries.
+#
+for f in systemd-nspawn xbps-install xbps-reconfigure xbps-query; do
+    if ! $f --version >/dev/null 2>&1; then
+        die "$f binary is missing in your system, exiting."
+    fi
+done
+
+#
+# Sanitize target arch.
+#
+case "$TARGET_ARCH" in
+    raspberrypi) _ARCH=armv6l; QEMU_BIN=qemu-arm-static;;
+    *) ;;
+esac
+
+#
+# Check if package base-system is available.
+#
+run_cmd "xbps-query -R -ppkgver $PKGBASE"
+
+rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
+chmod 755 $rootfs
+
+#
+# Install base-system to the rootfs directory.
+#
+run_cmd "xbps-install -S -r $rootfs -y $PKGBASE"
+
+#
+# Reconfigure packages for target architecture: must be reconfigured
+# thru the qemu user mode binary.
+#
+if [ -n "$TARGET_ARCH" ]; then
+    info_msg "Reconfiguring packages for $TARGET_ARCH ..."
+    register_binfmt
+    xbps-reconfigure -r $rootfs base-directories
+    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure shadow"
+    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure systemd"
+    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure -a"
+    (rm -f $rootfs/lib32; rm -f $rootfs/lib64) >/dev/null 2>&1
+else
+    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure -f systemd"
+fi
+
+#
+# Setup default root password.
+#
+chroot $rootfs sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'
+
+#
+# Cleanup rootfs.
+#
+rm -rf $rootfs/dev/* $rootfs/run/* $rootfs/tmp/* $rootfs/tmp/.* 2>/dev/null
+rm -f $rootfs/etc/.pwd.lock 2>/dev/null
+rm -rf $rootfs/var/cache/xbps 2>/dev/null
+
+#
+# Generate final tarball.
+#
+arch=$ARCH
+if [ -n "$TARGET_ARCH" ]; then
+    rm -f $rootfs/usr/bin/qemu-*-static
+    arch=$TARGET_ARCH
+fi
+
+tarball=void-${arch}-rootfs-$(date '+%Y%m%d').tar.xz
+
+run_cmd "tar cp -C $rootfs . | xz -9 > $tarball"
+rm -rf $rootfs
+
+info_msg "Successfully created $tarball"
+
+# vim: set ts=4 sw=4 et:
