@@ -26,4 +26,5 @@ KERNEL /boot/vmlinuz
 APPEND initrd=/boot/initrd.lz root=live:CDLABEL=VOID_LIVE rootfstype=auto ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.keymap=@@KEYMAP@@ vconsole.unicode=1 locale.LANG=@@LOCALE@@
 LABEL c
 MENU LABEL Boot first HD found by BIOS
-LOCALBOOT 0x80
+COM32 chain.c32
+APPEND hd0
