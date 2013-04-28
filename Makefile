@@ -11,6 +11,7 @@ all:
 install: all
 	install -d $(DESTDIR)$(SBINDIR)
 	install -m755 mklive.sh $(DESTDIR)$(SBINDIR)/void-mklive
+	install -m755 void-mkrootfs.sh $(DESTDIR)$(SBINDIR)/void-mkrootfs
 	install -d $(DESTDIR)$(DRACUTMODDIR)
 	install -m755 dracut/*.sh $(DESTDIR)$(DRACUTMODDIR)
 	install -d $(DESTDIR)$(SHAREDIR)/void-mklive
