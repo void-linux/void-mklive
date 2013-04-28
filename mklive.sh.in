@@ -40,14 +40,6 @@ error_out() {
     exit 1
 }
 
-umount_kernel_fs() {
-    for f in sys/fs/cgroup/systemd sys/fs/cgroup dev/shm dev/pts dev proc sys run; do
-        if [ -d $ROOTFS/kernel_temp/$f ]; then
-            umount $ROOTFS/kernel_temp/$f || true
-        fi
-    done
-}
-
 write_etc_motd() {
     cat >> "$ROOTFS/etc/motd" <<_EOF
 ###############################################################################
@@ -157,8 +149,6 @@ generate_initramfs() {
     chroot $ROOTFS/kernel_temp /usr/bin/dracut --no-hostonly \
         --add " dmsquash-live vmklive " --${COMPRESSTYPE} \
         "/boot/initrd.lz" >>$LOGFILE 2>&1
-
-    umount_kernel_fs
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
     # We rely on pam now, so let's install the host login config.
