@@ -33,8 +33,6 @@ info_msg() {
 error_out() {
     info_msg "There was an error in line $1 ... cleaning up $BUILDDIR, exiting."
 
-    umount_kernel_fs
-
     [ -d "$BUILDDIR" ] && rm -rf "$BUILDDIR"
 
     exit 1
@@ -127,8 +125,18 @@ install_packages() {
     ${XBPS_REMOVE_CMD} ${XBPS_ARGS} -o >>$LOGFILE 2>&1
     ${XBPS_QUERY_CMD} -r "$ROOTFS" -l > "${OUTPUT_FILE%.iso}"-package-list.txt
 
-    # Reconfigure all pkgs again via linux-user-chroot.
-    chroot $ROOTFS /usr/sbin/xbps-reconfigure -fa >>$LOGFILE 2>&1
+    systemd-nspawn -D $ROOTFS xbps-reconfigure -f systemd >>$LOGFILE 2>&1
+
+    # Enable some services if found.
+    if [ -f $ROOTFS/usr/lib/systemd/system/gdm.service ]; then
+        systemd-nspawn -D $ROOTFS systemctl enable gdm.service >>$LOGFILE 2>&1
+    fi
+    if [ -f $ROOTFS/usr/lib/systemd/system/avahi-daemon.service ]; then
+        systemd-nspawn -D $ROOTFS systemctl enable avahi-daemon.service >>$LOGFILE 2>&1
+    fi
+    if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
+        systemd-nspawn -D $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
+    fi
 }
 
 generate_initramfs() {
@@ -148,7 +156,7 @@ generate_initramfs() {
 
     chroot $ROOTFS/kernel_temp /usr/bin/dracut --no-hostonly \
         --add " dmsquash-live vmklive " --${COMPRESSTYPE} \
-        "/boot/initrd.lz" >>$LOGFILE 2>&1
+        "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
     # We rely on pam now, so let's install the host login config.
@@ -159,11 +167,9 @@ generate_initramfs() {
 }
 
 copy_kernel_and_modules() {
-    cp -a $ROOTFS/kernel_temp/boot/vmlinuz-${KERNELVERSION} \
-        $BOOT_DIR/vmlinuz
+    cp -a $ROOTFS/kernel_temp/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
     mkdir -p $ROOTFS/lib/modules
-    cp -a $ROOTFS/kernel_temp/lib/modules/${KERNELVERSION} \
-        $ROOTFS/lib/modules
+    cp -a $ROOTFS/kernel_temp/lib/modules/$KERNELVERSION $ROOTFS/lib/modules
 
     # remove temporary rootfs.
     rm -rf $ROOTFS/kernel_temp
@@ -382,7 +388,8 @@ case $XBPS_VERSION in
     *) echo "Your xbps utilities are too old ($XBPS_VERSION), 0.21 is required."; exit 1;;
 esac
 
-KERNELVERSION=$($XBPS_QUERY_CMD -R --property version kernel)
+_linux_series=$($XBPS_QUERY_CMD -Rx linux)
+KERNELVERSION=$($XBPS_QUERY_CMD -R --property version ${_linux_series})
 
 if [ -z "$OUTPUT_FILE" ]; then
     OUTPUT_FILE="$HOME/void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
