@@ -13,7 +13,7 @@ fi
 
 insmod font
 
-if loadfont "(${voidlive}/boot/grub/fonts/unicode.pf2" ; then
+if loadfont "(${voidlive})/boot/grub/fonts/unicode.pf2" ; then
     insmod gfxterm
     set gfxmode="auto"
     
