@@ -151,9 +151,8 @@ generate_initramfs() {
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -y \
         base-system void-mklive >>$LOGFILE 2>&1
 
-    chroot $ROOTFS/kernel_temp /usr/bin/dracut --no-hostonly \
-        --add "drm dmsquash-live vmklive" --omit "caps" \
-        --add-drivers "xfs vfat ext2 ext3 ext4 btrfs" --${COMPRESSTYPE} \
+    chroot $ROOTFS/kernel_temp /usr/bin/dracut --no-hostonly --${COMPRESSTYPE} \
+        --add "drm dmsquash-live vmklive" --omit "btrfs resume caps" \
         "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
