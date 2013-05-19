@@ -452,7 +452,7 @@ configure_eth() {
 }
 
 iface_setup() {
-    ifconfig $1|grep -q 'inet addr:'
+    ip addr show dev $1|grep -q 'inet '
     return $?
 }
 
@@ -461,7 +461,7 @@ configure_net_dhcp() {
 
     iface_setup $dev
     if [ $? -eq 1 ]; then
-        udhcpc -q -t 10 -n -i $dev 2>&1 | tee $LOG | \
+        dhcpcd -t 10 -w -4 -L $dev 2>&1 | tee $LOG | \
             DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run udhcpc. See $LOG for details." ${MSGBOXSIZE}
@@ -490,13 +490,19 @@ configure_net_static() {
 
     set -- $(cat $ANSWER)
     ip=$1; gw=$2; dns1=$3; dns2=$4
-    echo "running: ifconfig $dev $IPADDR up" >$LOG
-    ifconfig $dev $ip up >$LOG 2>&1
+    echo "running: ip link set dev $dev up" >$LOG
+    ip link set dev $dev up >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to setup $dev interface." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to bring $dev interface." ${MSGBOXSIZE}
         return 1
     fi
-    route add default gw $gw >$LOG 2>&1
+    echo "running: ip addr add $ip dev $dev"
+    ip addr add $ip dev $dev >$LOG 2>&1
+    if [ $? -ne 0 ]; then
+        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to set ip to the $dev interface." ${MSGBOXSIZE}
+        return 1
+    fi
+    ip route add $gw dev $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to setup your gateway." ${MSGBOXSIZE}
         return 1
@@ -851,7 +857,7 @@ menu() {
         "Partition" "Partition disk(s)" \
         "Filesystems" "Configure filesystems and mount points" \
         "Install" "Start installation with saved settings" \
-         "Exit" "Exit installation"
+        "Exit" "Exit installation"
 
     if [ $? -eq 3 ]; then
         # Show settings
