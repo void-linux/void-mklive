@@ -679,7 +679,7 @@ umount_filesystems() {
         echo "Unmounting $TARGETDIR/$f..." >$LOG
         umount $TARGETDIR/$f >$LOG 2>&1
     done
-    local mnts=$(grep -E '^MOUNTPOINT.*$' $CONF_FILE)
+    local mnts="$(grep -E '^MOUNTPOINT.*$' $CONF_FILE)"
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         local dev=$2; local fstype=$3; local mntpt=$5
