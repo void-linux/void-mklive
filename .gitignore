@@ -1,1 +1,3 @@
-void-mklive.sh
+installer.sh
+mklive.sh
+mkrootfs.sh

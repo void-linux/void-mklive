@@ -1,7 +1,7 @@
 void-mklive - The Void Linux live image maker
 
-This is a simple shell script to build a live image for the
-Void linux distribution. The images contain the void-installer package
+This is a simple shell script to build a live image for the Void
+Linux distribution. The images contain a simple dialog-based installer
 to be able to install Void linux to storage disks.
 
 The generated image can be booted from BIOS and EFI systems (dual boot).
@@ -33,5 +33,8 @@ Options:
 
 Take a look at the configuration file (~/mklive.conf) to tweak some
 default parameters in the generated image.
+
+Additionally void-mkrootfs generates a rootfs tarball suitable for unpacking
+on a directory ready to 'chroot'.
 
 	-- Juan RP <xtraeme@gmail.com>
