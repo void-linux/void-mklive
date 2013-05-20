@@ -151,8 +151,8 @@ generate_initramfs() {
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -y \
         base-system void-mklive >>$LOGFILE 2>&1
 
-    chroot $ROOTFS/kernel_temp /usr/bin/dracut --no-hostonly --${COMPRESSTYPE} \
-        --add "drm dmsquash-live vmklive" --omit "btrfs resume caps" \
+    chroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
+        --add "drm vmklive" --omit "btrfs resume caps" \
         "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
@@ -160,6 +160,14 @@ generate_initramfs() {
 
 copy_kernel_and_modules() {
     cp -a $ROOTFS/kernel_temp/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
+    # Copy network modules required by the network install.
+    mkdir -p $ROOTFS/usr/lib/modules/$KERNELVERSION/kernel/drivers
+    cp -a $ROOTFS/kernel_temp/usr/lib/modules/$KERNELVERSION/kernel/drivers/net \
+        $ROOTFS/usr/lib/modules/$KERNELVERSION/kernel/drivers
+    cp $ROOTFS/kernel_temp/usr/lib/modules/$KERNELVERSION/modules.* \
+        $ROOTFS/usr/lib/modules/$KERNELVERSION
+    # re-run depmod.
+    depmod -b $ROOTFS/usr $KERNELVERSION
 
     # remove temporary rootfs.
     rm -rf $ROOTFS/kernel_temp
@@ -206,9 +214,8 @@ generate_grub_efi_boot() {
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
         -e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
-    mkdir -p $GRUB_DIR/fonts $GRUB_DIR/locale
+    mkdir -p $GRUB_DIR/fonts
     cp -f $GRUB_DATADIR/unicode.pf2 $GRUB_DIR/fonts
-    cp -f /boot/grub/locale/* $GRUB_DIR/locale
 
     # Create EFI vfat image.
     dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=4096  >>$LOGFILE 2>&1
