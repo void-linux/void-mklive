@@ -193,6 +193,7 @@ generate_isolinux_boot() {
     cp -f $SYSLINUX_DATADIR/libcom32.c32 "$ISOLINUX_DIR"
     cp -f $SYSLINUX_DATADIR/vesamenu.c32 "$ISOLINUX_DIR"
     cp -f $SYSLINUX_DATADIR/libutil.c32 "$ISOLINUX_DIR"
+    cp -f $SYSLINUX_DATADIR/chain.c32 "$ISOLINUX_DIR"
     cp -f $MKLIVE_DATADIR/isolinux.cfg.in \
         "$ISOLINUX_DIR"/isolinux.cfg
 
