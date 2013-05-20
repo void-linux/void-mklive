@@ -3,5 +3,7 @@
 # ex: ts=8 sw=4 sts=4 et filetype=sh
 
 # Copy all modules from initramfs to new rootfs.
+KVER=$(uname -r)
 mkdir -p $NEWROOT/usr/lib/modules
-cp -a /usr/lib/modules/* $NEWROOT/usr/lib/modules
+cp -a /usr/lib/modules/$KVER/kernel/* $NEWROOT/usr/lib/modules/$KVER/kernel/
+depmod -b $NEWROOT/usr
