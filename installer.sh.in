@@ -683,7 +683,7 @@ mount_filesystems() {
 umount_filesystems() {
     local f
 
-    for f in sys proc dev; do
+    for f in sys/fs/fuse/connections sys proc dev; do
         echo "Unmounting $TARGETDIR/$f..." >$LOG
         umount $TARGETDIR/$f >$LOG 2>&1
     done
