@@ -262,10 +262,14 @@ ${RESET}\n" 18 80
 }
 
 menu_keymap() {
-    local KEYMAPS="de German fr French it Italian en English es Spanish ru Russia us American"
+    local _keymaps="$(localectl --no-pager list-keymaps)"
+    local _KEYMAPS=
 
+    for f in ${_keymaps}; do
+        _KEYMAPS="${_KEYMAPS} ${f} -"
+    done
     while true; do
-        DIALOG --title " Select your keymap " --menu "$MENULABEL" 14 70 14 ${KEYMAPS}
+        DIALOG --title " Select your keymap " --menu "$MENULABEL" 14 70 14 ${_KEYMAPS}
         if [ $? -eq 0 ]; then
             set_option KEYMAP "$(cat $ANSWER)"
             loadkeys "$(cat $ANSWER)"
@@ -283,7 +287,7 @@ set_keymap() {
 }
 
 menu_locale() {
-    local _locales="$(localectl --no-pager list-locales)"
+    local _locales="$(grep -E '\.UTF-8' /etc/default/libc-locales|awk '{print $1}'|sed -e 's/^#//')"
     local _LOCALES=
 
     for f in ${_locales}; do
@@ -292,7 +296,7 @@ menu_locale() {
     while true; do
         DIALOG --title " Select your locale " --menu "$MENULABEL" 14 70 14 ${_LOCALES}
         if [ $? -eq 0 ]; then
-            set_option LANG "$(cat $ANSWER)"
+            set_option LOCALE "$(cat $ANSWER)"
             LOCALE_DONE=1
             break
         else
@@ -303,7 +307,11 @@ menu_locale() {
 
 set_locale() {
     local LOCALE=$(get_option LOCALE)
-    sed -i -e "s|LANG=.*|LANG=$KEYMAP|g" $TARGETDIR/etc/locale.conf
+    sed -i -e "s|LANG=.*|LANG=$LOCALE|g" $TARGETDIR/etc/locale.conf
+    # Uncomment locale from /etc/default/libc-locales and regenerate it.
+    sed -e "/${LOCALE}/s/^\#//" -i $TARGETDIR/etc/default/libc-locales
+    echo "Running xbps-reconfigure -f glibc-locales ..." >$LOG
+    chroot $TARGETDIR xbps-reconfigure -f glibc-locales
 }
 
 menu_timezone() {
@@ -311,7 +319,7 @@ menu_timezone() {
     local _TIMEZONES=
 
     for f in ${_tzones}; do
-        _TIMEZONES="${_tzones} ${f} -"
+        _TIMEZONES="${_TIMEZONES} ${f} -"
     done
     while true; do
         DIALOG --title " Select your timezone " --menu "$MENULABEL" 14 70 14 ${_TIMEZONES}
