@@ -23,7 +23,7 @@ MENU COLOR sel          * #ffffffff #FF5255FF *
 LABEL linux
 MENU LABEL Boot Void GNU/Linux @@KERNVER@@ @@ARCH@@
 KERNEL /boot/vmlinuz
-APPEND initrd=/boot/initrd.lz root=live:CDLABEL=VOID_LIVE ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@
+APPEND initrd=/boot/initrd.lz root=live:CDLABEL=VOID_LIVE ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@
 LABEL c
 MENU LABEL Boot first HD found by BIOS
 COM32 chain.c32
