@@ -152,7 +152,7 @@ generate_initramfs() {
         base-system void-mklive >>$LOGFILE 2>&1
 
     chroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
-        --add "drm vmklive" --omit "btrfs caps dash resume" \
+        --add "vmklive" --omit "btrfs caps dash resume" \
         "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
