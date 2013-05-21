@@ -17,4 +17,5 @@ install() {
     inst_hook pre-pivot 01 "$moddir/adduser.sh"
     inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
     inst_hook pre-pivot 03 "$moddir/copy-initramfs.sh"
+    inst_hook pre-pivot 04 "$moddir/locale.sh"
 }
