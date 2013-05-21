@@ -14,8 +14,7 @@ install() {
     inst /usr/bin/chroot
     inst /usr/bin/chmod
     inst /usr/bin/sed
-    inst /usr/sbin/depmod
     inst_hook pre-pivot 01 "$moddir/adduser.sh"
     inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
-    inst_hook pre-pivot 03 "$moddir/copy-kmods.sh"
+    inst_hook pre-pivot 03 "$moddir/copy-initramfs.sh"
 }
