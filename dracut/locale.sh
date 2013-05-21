@@ -12,3 +12,12 @@ LOCALE=$(getarg locale.LANG)
 # Create new user and remove password. We'll use autologin by default.
 sed -e "s,^\#\($LOCALE.*\),\1," -i $NEWROOT/etc/default/libc-locales
 chroot $NEWROOT xbps-reconfigure -f glibc-locales >/dev/null 2>&1
+
+# also enable this locale in newroot.
+echo "LANG=$LOCALE" > $NEWROOT/etc/locale.conf
+echo "LC_COLLATE=C" >> $NEWROOT/etc/locale.conf
+
+# set keymap too.
+KEYMAP=$(getarg vconsole.keymap)
+[ -z "$KEYMAP" ] && KEYMAP="us"
+sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/vconsole.conf
