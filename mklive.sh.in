@@ -132,12 +132,6 @@ install_packages() {
     systemd-nspawn -D $ROOTFS xbps-reconfigure -f systemd >>$LOGFILE 2>&1
 
     # Enable some services if found.
-    if [ -f $ROOTFS/usr/lib/systemd/system/gdm.service ]; then
-        systemd-nspawn -D $ROOTFS systemctl enable gdm.service >>$LOGFILE 2>&1
-    fi
-    if [ -f $ROOTFS/usr/lib/systemd/system/avahi-daemon.service ]; then
-        systemd-nspawn -D $ROOTFS systemctl enable avahi-daemon.service >>$LOGFILE 2>&1
-    fi
     if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
         systemd-nspawn -D $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
     fi
@@ -160,15 +154,10 @@ generate_initramfs() {
 
 copy_kernel_and_modules() {
     cp -a $ROOTFS/kernel_temp/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
-    # Copy network modules required by the network install.
-    mkdir -p $ROOTFS/usr/lib/modules/$KERNELVERSION/kernel/drivers
-    cp -a $ROOTFS/kernel_temp/usr/lib/modules/$KERNELVERSION/kernel/drivers/net \
-        $ROOTFS/usr/lib/modules/$KERNELVERSION/kernel/drivers
-    cp $ROOTFS/kernel_temp/usr/lib/modules/$KERNELVERSION/modules.* \
-        $ROOTFS/usr/lib/modules/$KERNELVERSION
-    # re-run depmod.
-    depmod -b $ROOTFS/usr $KERNELVERSION
-
+    # Copy kernel modules to the rootfs.
+    mkdir -p $ROOTFS/usr/lib/modules
+    cp -a $ROOTFS/kernel_temp/usr/lib/modules/$KERNELVERSION \
+        $ROOTFS/usr/lib/modules
     # remove temporary rootfs.
     rm -rf $ROOTFS/kernel_temp
 }
