@@ -129,7 +129,7 @@ install_packages() {
     ${XBPS_REMOVE_CMD} ${XBPS_ARGS} -o >>$LOGFILE 2>&1
     ${XBPS_QUERY_CMD} -r "$ROOTFS" -l > "${OUTPUT_FILE%.iso}"-package-list.txt
 
-    systemd-nspawn -D $ROOTFS xbps-reconfigure -f systemd >>$LOGFILE 2>&1
+    systemd-nspawn -D $ROOTFS xbps-reconfigure -fa >>$LOGFILE 2>&1
 
     # Enable some services if found.
     if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
@@ -147,7 +147,7 @@ generate_initramfs() {
 
     chroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
         --add "vmklive" --omit "btrfs caps dash resume" \
-        "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
+        --force "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
 }
