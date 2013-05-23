@@ -1,6 +1,6 @@
 #!/bin/sh
 #-
-# Copyright (c) 2012 Juan Romero Pardines <xtraeme@gmail.com>.
+# Copyright (c) 2012-2013 Juan Romero Pardines <xtraeme@gmail.com>.
 #               2012 Dave Elusive <davehome@redthumb.info.tm>.
 # All rights reserved.
 #
@@ -188,12 +188,13 @@ menu_filesystems() {
         dev=$(cat $ANSWER)
         DIALOG --title " Select the filesystem type for $dev " \
             --menu "$MENULABEL" ${MENUSIZE} \
-            "vfat" "FAT32" \
             "btrfs" "Oracle's Btrfs" \
             "ext2" "Linux ext2 (no journaling)" \
             "ext3" "Linux ext3 (journal)" \
             "ext4" "Linux ext4 (journal)" \
+            "f2fs" "Flash-Friendly Filesystem" \
             "swap" "Linux swap" \
+            "vfat" "FAT32" \
             "xfs" "SGI's XFS"
         if [ $? -eq 0 ]; then
             fstype=$(cat $ANSWER)
@@ -620,12 +621,13 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
 
         if [ "$mkfs" -eq 1 ]; then
             case "$fstype" in
-            vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
-            xfs) MKFS="mkfs.xfs -f"; modprobe xfs >$LOG 2>&1;;
+            btrfs) MKFS="mkfs.btrfs"; modprobe btrfs >$LOG 2>&1;;
             ext2) MKFS="mke2fs"; modprobe ext2 >$LOG 2>&1;;
             ext3) MKFS="mke2fs -j"; modprobe ext3 >$LOG 2>&1;;
             ext4) MKFS="mke2fs -t ext4"; modprobe ext4 >$LOG 2>&1;;
-            btrfs) MKFS="mkfs.btrfs"; modprobe btrfs >$LOG 2>&1;;
+            f2fs) MKFS="mkfs.f2fs"; modprobe f2fs >$LOG 2>&1;;
+            vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
+            xfs) MKFS="mkfs.xfs -f"; modprobe xfs >$LOG 2>&1;;
             esac
             DIALOG --infobox "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
             echo "Running $MKFS $dev..." >$LOG
