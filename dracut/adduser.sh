@@ -26,3 +26,19 @@ rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \
     "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
     "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+
+if [ -d ${NEWROOT}/etc/polkit-1 ]; then
+    # If polkit is installed allow users in the wheel group to run anything.
+    cat > ${NEWROOT}/etc/polkit-1/rules.d/void-live.rules <<_EOF
+polkit.addAdminRule(function(action, subject) {
+    return ["unix-group:wheel"];
+});
+
+polkit.addRule(function(action, subject) {
+    if (subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});
+_EOF
+    chown polkitd:polkitd ${NEWROOT}/etc/polkit-1/rules.d/10-void-live.rules
+fi
