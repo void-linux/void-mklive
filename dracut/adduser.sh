@@ -40,5 +40,5 @@ polkit.addRule(function(action, subject) {
     }
 });
 _EOF
-    chown polkitd:polkitd ${NEWROOT}/etc/polkit-1/rules.d/10-void-live.rules
+    chown polkitd:polkitd ${NEWROOT}/etc/polkit-1/rules.d/void-live.rules
 fi
