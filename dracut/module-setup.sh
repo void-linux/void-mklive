@@ -11,7 +11,6 @@ depends() {
 }
 
 install() {
-    inst /usr/bin/chown
     inst /usr/bin/chroot
     inst /usr/bin/chmod
     inst /usr/bin/sed
