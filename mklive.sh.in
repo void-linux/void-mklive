@@ -255,7 +255,7 @@ generate_iso_image() {
         -eltorito-boot boot/isolinux/isolinux.bin \
         -eltorito-catalog boot/isolinux/boot.cat \
         -no-emul-boot -boot-load-size 4 -boot-info-table \
-        -eltorito-alt-boot --efi-boot boot/grub/efiboot.img -no-emul-boot \
+        -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat \
         -isohybrid-mbr $SYSLINUX_DATADIR/isohdpfx.bin \
         -output "$OUTPUT_FILE" "$BUILDDIR" >>$LOGFILE 2>&1
 }
