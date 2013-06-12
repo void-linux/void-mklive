@@ -25,6 +25,8 @@ fi
 rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \
     "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
+    "${NEWROOT}/etc/systemd/system/getty@.service"
+ln -sf /etc/systemd/system/getty@.service \
     "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 
 if [ -d ${NEWROOT}/etc/polkit-1 ]; then
