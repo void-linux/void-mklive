@@ -454,7 +454,7 @@ configure_eth() {
 
     DIALOG --yesno "Do you want to use DHCP for $dev?" ${YESNOSIZE}
     rval=$?
-    if [ $rvañ -eq 0 ]; then
+    if [ $rval -eq 0 ]; then
         configure_net_dhcp $dev
     elif [ $rval -eq 1 ]; then
         configure_net_static $dev
