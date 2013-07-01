@@ -450,12 +450,13 @@ configure_wifi() {
 }
 
 configure_eth() {
-    local dev="$1"
+    local dev="$1" rval
 
     DIALOG --yesno "Do you want to use DHCP for $dev?" ${YESNOSIZE}
-    if [ $? -eq 0 ]; then
+    rval=$?
+    if [ $rvañ -eq 0 ]; then
         configure_net_dhcp $dev
-    elif [ $? -eq 1 ]; then
+    elif [ $rval -eq 1 ]; then
         configure_net_static $dev
     fi
 }
@@ -785,22 +786,24 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # network settings for target
     if [ -n "$NETWORK_DONE" ]; then
-        local net=$(grep -E '^NETWORK.*' $CONF_FILE)
+        local net="$(get_option NETWORK)"
         set -- ${net}
-        local dev=$2; local type=$3; local ip=$4; local gw=$5
-        local dns1=$6; local dns2=$7
-        if [ "$type" = "dhcp" ]; then
+        local _dev="$1" _type="$2" _ip="$3" _gw="$4" _dns1="$5" _dns2="$6"
+        if [ -z "$_type" ]; then
+            # network type empty??!!!
+            :
+        elif [ "$_type" = "dhcp" ]; then
             # if user had dhcp enabled, enable dhcpcd service for that device.
             chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
-        else
+        elif [ -n "$dev" -a -n "$type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhdpcd.conf.orig
-            echo "# Static IP configuration set by the void-installer for $dev." \
+            echo "# Static IP configuration set by the void-installer for $_dev." \
                 >$TARGETDIR/etc/dhcpcd.conf
-            echo "interface $dev" >>$TARGETDIR/etc/dhcpcd.conf
-            echo "static ip_address=$ip" >>$TARGETDIR/etc/dhcpcd.conf
-            echo "static routers=$gw" >>$TARGETDIR/etc/dhcpcd.conf
-            echo "static domain_name_servers=$dns1 $dns2" >>$TARGETDIR/etc/dhcpcd.conf
+            echo "interface $_dev" >>$TARGETDIR/etc/dhcpcd.conf
+            echo "static ip_address=$_ip" >>$TARGETDIR/etc/dhcpcd.conf
+            echo "static routers=$_gw" >>$TARGETDIR/etc/dhcpcd.conf
+            echo "static domain_name_servers=$_dns1 $_dns2" >>$TARGETDIR/etc/dhcpcd.conf
             chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
         fi
     fi
