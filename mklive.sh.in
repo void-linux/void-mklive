@@ -363,9 +363,11 @@ if [ $? -ne 0 ]; then
     error_out
 fi
 
-XBPS_ARGS="-r $ROOTFS -Sy"
+XBPS_ARGS="-r $ROOTFS -y"
 if [ -n "$REPOSITORY_CACHE" ]; then
     XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
+else
+    XBPS_ARGS="$XBPS_ARGS -c /var/cache/xbps"
 fi
 XBPS_VERSION=$($XBPS_QUERY_CMD -V|awk '{print $2}')
 case $XBPS_VERSION in
@@ -374,8 +376,11 @@ case $XBPS_VERSION in
     *) echo "Your xbps utilities are too old ($XBPS_VERSION), 0.21 is required."; exit 1;;
 esac
 
-_linux_series=$($XBPS_QUERY_CMD -Rx linux)
-KERNELVERSION=$($XBPS_QUERY_CMD -R --property version ${_linux_series})
+# Sync index for remote repos first.
+$XBPS_INSTALL_CMD -r $ROOTFS -S >/dev/null 2>&1
+
+_linux_series=$($XBPS_QUERY_CMD -r $ROOTFS -Rx linux)
+KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS -R --property version ${_linux_series})
 
 if [ -z "$OUTPUT_FILE" ]; then
     OUTPUT_FILE="$HOME/void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
