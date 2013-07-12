@@ -143,7 +143,7 @@ generate_initramfs() {
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
-        base-system void-mklive >>$LOGFILE 2>&1
+        base-system void-mklive -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
 
     systemd-nspawn -D $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
         --force-add "vmklive" "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
@@ -315,6 +315,9 @@ fi
 if [ -z "$COMPRESSTYPE" ]; then
     COMPRESSTYPE=xz
 fi
+if [ -z "$REPOSITORYCACHE" ]; then
+    REPOSITORY_CACHE="/var/cache/xbps"
+fi
 
 # Create or read configuration file.
 if [ ! -r $CONFIG_FILE ]; then
@@ -364,11 +367,7 @@ if [ $? -ne 0 ]; then
 fi
 
 XBPS_ARGS="-r $ROOTFS -y"
-if [ -n "$REPOSITORY_CACHE" ]; then
-    XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
-else
-    XBPS_ARGS="$XBPS_ARGS -c /var/cache/xbps"
-fi
+XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
 XBPS_VERSION=$($XBPS_QUERY_CMD -V|awk '{print $2}')
 case $XBPS_VERSION in
 # XBPS >= 0.21
