@@ -363,7 +363,7 @@ if [ $? -ne 0 ]; then
     error_out
 fi
 
-XBPS_ARGS="-r $ROOTFS -y"
+XBPS_ARGS="-r $ROOTFS -Sy"
 if [ -n "$REPOSITORY_CACHE" ]; then
     XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
 fi
