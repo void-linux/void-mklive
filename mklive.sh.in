@@ -142,7 +142,7 @@ install_packages() {
 generate_initramfs() {
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
-    $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -y \
+    $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
         base-system void-mklive >>$LOGFILE 2>&1
 
     systemd-nspawn -D $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
