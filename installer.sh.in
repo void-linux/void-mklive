@@ -150,9 +150,9 @@ show_partitions() {
         for p in /sys/block/$disk/$disk*; do
             if [ -d $p ]; then
                 part=$(basename $p)
-                fstype=$(blkid /dev/$part|awk '{print $3}'|sed -e 's/TYPE=\"\(.*\)\"/\1/g')
+                fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
                 [ "$fstype" = "iso9660" ] && continue
-                fssize=$(lsblk -r /dev/$part|awk '{print $4}'|grep -v SIZE)
+                fssize=$(lsblk -nr /dev/$part|awk '{print $4}')
                 echo "/dev/$part"
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
@@ -160,16 +160,16 @@ show_partitions() {
         # LVM
         for p in $(ls /dev/mapper 2>/dev/null|grep -v control); do
             [ "$p" = "live-rw" ] && continue
-            fstype=$(blkid /dev/$part|awk '{print $3}'|sed -e 's/TYPE=\"\(.*\)\"/\1/g')
-            fssize=$(lsblk -r /dev/mapper/$p|awk '{print $4}'|grep -v SIZE)
+            fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
+            fssize=$(lsblk -nr /dev/mapper/$p|awk '{print $4}')
             echo "/dev/mapper/$p"
             echo "size:${fssize:-unknown};fstype:${fstype:-none}"
         done
         # Software raid (md)
         for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
             if cat /proc/mdstat|grep -qw $(echo $p|sed -e 's|/dev/||g'); then
-                fstype=$(blkid /dev/$part|awk '{print $3}'|sed -e 's/TYPE=\"\(.*\)\"/\1/g')
-                fssize=$(lsblk -r /dev/$p|awk '{print $4}'|grep -v SIZE)
+                fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
+                fssize=$(lsblk -nr /dev/$p|awk '{print $4}')
                 echo "$p"
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
@@ -219,7 +219,7 @@ menu_filesystems() {
         else
             continue
         fi
-        fssize=$(lsblk -r $dev|awk '{print $4}'|grep -v SIZE)
+        fssize=$(lsblk -nr $dev|awk '{print $4}')
         set -- "$fstype" "$fssize" "$mntpoint" "$reformat"
         if [ -n "$1" -a -n "$2" -a -n "$3" -a -n "$4" ]; then
             local bdev=$(basename $dev)
@@ -615,7 +615,7 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
                 DIE 1
             fi
             # Add entry for target fstab
-            uuid=$(blkid $dev|awk '{print $2}'|sed -e 's/UUID=\"\(.*\)\"/\1/g')
+            uuid=$(blkid -o value -s UUID "$dev")
             echo "UUID=$uuid none swap sw 0 0" >>$TARGET_FSTAB
             continue
         fi
@@ -650,7 +650,7 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
             DIE 1
         fi
         # Add entry to target fstab
-        uuid=$(blkid $dev|awk '{print $2}'|sed -e 's/UUID=\"\(.*\)\"/\1/g')
+        uuid=$(blkid -o value -s UUID "$dev")
         echo "UUID=$uuid $mntpt $fstype defaults 0 1" >>$TARGET_FSTAB
     done
 
@@ -670,7 +670,7 @@ failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
             DIE
         fi
         # Add entry to target fstab
-        uuid=$(blkid $dev|awk '{print $2}'|sed -e 's/UUID=\"\(.*\)\"/\1/g')
+        uuid=$(blkid -o value -s UUID "$dev")
         echo "UUID=$uuid $mntpt $fstype defaults 0 1" >>$TARGET_FSTAB
     done
 }
