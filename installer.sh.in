@@ -128,14 +128,12 @@ show_disks() {
         fi
     done
     # SATA/SCSI and Virtual disks (virtio)
-    for dev in $(ls /sys/block|grep -E '^[sv]d'); do
-        if [ "$(cat /sys/block/$dev/device/type)" != "5" ]; then
-            echo "/dev/$dev"
-            size=$(cat /sys/block/$dev/size)
-            sectorsize=$(cat /sys/block/$dev/queue/hw_sector_size)
-            gbytes="$(($size * $sectorsize / 1024 / 1024 / 1024))"
-            echo "size:${gbytes}GB;sector_size:$sectorsize"
-        fi
+    for dev in $(ls /sys/block|grep -E '^([sv]|xv)d'); do
+        echo "/dev/$dev"
+        size=$(cat /sys/block/$dev/size)
+        sectorsize=$(cat /sys/block/$dev/queue/hw_sector_size)
+        gbytes="$(($size * $sectorsize / 1024 / 1024 / 1024))"
+        echo "size:${gbytes}GB;sector_size:$sectorsize"
     done
 }
 
