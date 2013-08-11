@@ -29,6 +29,8 @@
 set -E
 trap "echo; error_out $LINENO $?" INT TERM HUP ERR
 
+readonly PROGNAME=$(basename $0)
+
 info_msg() {
     printf "\033[1m$@\n\033[m"
 }
@@ -110,6 +112,7 @@ Options:
                     current working directory will be used).
  -o outfile         Output file name for the ISO image.
  -s splash          Splash image file for isolinux.
+ -V                 Show version.
 _EOF
     exit 1
 }
@@ -263,7 +266,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "C:c:l:o:r:s:h" opt; do
+while getopts "C:c:l:o:r:s:hV" opt; do
     case $opt in
         C) CONFIG_FILE="$OPTARG";;
         c) COMPRESSTYPE="$OPTARG";;
@@ -272,6 +275,7 @@ while getopts "C:c:l:o:r:s:h" opt; do
         r) ROOTDIR="$OPTARG";;
         s) SPLASH_IMAGE="$OPTARG";;
         h) usage;;
+        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
 shift $(($OPTIND - 1))

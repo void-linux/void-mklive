@@ -41,7 +41,7 @@ die() {
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-a raspberrypi]"
+    echo "Usage: $PROGNAME [-a raspberrypi] [-V]"
 }
 
 run_cmd() {
@@ -72,10 +72,11 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "a:h" opt; do
+while getopts "a:hV" opt; do
     case $opt in
         a) TARGET_ARCH="$OPTARG";;
         h) usage; exit 0;;
+        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
 shift $(($OPTIND - 1))

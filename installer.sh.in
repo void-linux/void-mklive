@@ -84,7 +84,7 @@ WIDGET_SIZE="10 70"
 DIALOG() {
     rm -f $ANSWER
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- http://www.voidlinux.eu/${RESET}" \
+        --backtitle "${BOLD}${WHITE}Void Linux installation -- http://www.voidlinux.eu/ (@@MKLIVE_VERSION@@)${RESET}" \
         --cancel-label "Back" --aspect 20 "$@" 2>$ANSWER
     return $?
 }
