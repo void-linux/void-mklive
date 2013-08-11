@@ -15,6 +15,7 @@ all: $(SCRIPTS)
 
 install: all
 	install -d $(DESTDIR)$(SBINDIR)
+	install -m755 mkimage.sh $(DESTDIR)$(SBINDIR)/void-mkimage
 	install -m755 mklive.sh $(DESTDIR)$(SBINDIR)/void-mklive
 	install -m755 mkrootfs.sh $(DESTDIR)$(SBINDIR)/void-mkrootfs
 	install -m755 installer.sh $(DESTDIR)$(SBINDIR)/void-installer
