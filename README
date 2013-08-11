@@ -35,6 +35,7 @@ Take a look at the configuration file (~/mklive.conf) to tweak some
 default parameters in the generated image.
 
 Additionally void-mkrootfs generates a rootfs tarball suitable for unpacking
-on a directory ready to 'chroot'.
+on a directory ready to 'chroot'; and `void-mkimage` can generate a working disk
+image with a specified rootfs tarball.
 
 	-- Juan RP <xtraeme@gmail.com>
