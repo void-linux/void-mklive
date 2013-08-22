@@ -707,19 +707,9 @@ umount_filesystems() {
     umount $TARGETDIR >$LOG 2>&1
 }
 
-install_packages() {
-    local _grub=
-
-    if [ -n "$EFI_SYSTEM" ]; then
-        _grub="grub-x86_64-efi"
-    else
-        _grub="grub"
-    fi
-
-    mkdir -p $TARGETDIR/boot/grub
-    stdbuf -oL xbps-install -C /tmp/xbps.conf \
-        -r $TARGETDIR -Sy base-system ${_grub} 2>&1 | \
-        DIALOG --title "Installing base system packages..." \
+copy_rootfs() {
+    LANG=C cp -axvn / $TARGETDIR 2>&1 | \
+        DIALOG --title "Copyring live image to target rootfs ..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
@@ -765,7 +755,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         enable_localsrc
     fi
     # Install required packages.
-    install_packages
+    copy_rootfs
+    # Disable autologin and remove motd from live image.
+    rm -f $TARGETDIR/etc/motd $TARGETDIR/etc/systemd/system/getty@.service
+    # Remove live user.
+    . /etc/default/live.conf
+    echo "Removing $USERNAME live user from targetdir ..." >$LOG
+    chroot $TARGETDIR userdel -r $USERNAME >>$LOG 2>&1
 
     DIALOG --infobox "Applying installer settings..." 4 60
 
