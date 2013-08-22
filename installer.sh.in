@@ -716,6 +716,24 @@ copy_rootfs() {
     fi
 }
 
+install_packages() {
+    local _grub=
+
+    if [ -n "$EFI_SYSTEM" ]; then
+        _grub="grub-x86_64-efi"
+    else
+        _grub="grub"
+    fi
+
+    mkdir -p $TARGETDIR/boot/grub
+    stdbuf -oL xbps-install  -r $TARGETDIR -Sy base-system ${_grub} 2>&1 | \
+        DIALOG --title "Installing base system packages..." \
+        --programbox 24 80
+    if [ $? -ne 0 ]; then
+        DIE 1
+    fi
+}
+
 menu_install() {
     # Don't continue if filesystems are not ready.
     validate_filesystems || return 1
@@ -751,20 +769,20 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     mount_filesystems
 
     # If source not set use defaults.
-    if [ -z "$SOURCE_DONE" ]; then
-        enable_localsrc
+    if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
+        copy_rootfs
+        # Disable autologin and remove motd from live image.
+        rm -f $TARGETDIR/etc/motd $TARGETDIR/etc/systemd/system/getty@.service
+        # Remove live user.
+        . /etc/default/live.conf
+        echo "Removing $USERNAME live user from targetdir ..." >$LOG
+        chroot $TARGETDIR userdel -r $USERNAME >>$LOG 2>&1
+        echo "Rebuilding initramfs for target ..." >$LOG
+        chroot $TARGETDIR dracut --force >>$LOG 2>&1
+    else
+        # network install, use packages.
+        install_packages
     fi
-    # Install required packages.
-    copy_rootfs
-    # Disable autologin and remove motd from live image.
-    rm -f $TARGETDIR/etc/motd $TARGETDIR/etc/systemd/system/getty@.service
-    # Remove live user.
-    . /etc/default/live.conf
-    echo "Removing $USERNAME live user from targetdir ..." >$LOG
-    chroot $TARGETDIR userdel -r $USERNAME >>$LOG 2>&1
-    echo "Rebuilding initramfs for target ..." >$LOG
-    chroot $TARGETDIR dracut --force >>$LOG 2>&1
-
     DIALOG --infobox "Applying installer settings..." 4 60
 
     # copy target fstab.
@@ -821,16 +839,6 @@ Do you want to reboot the system?" ${YESNOSIZE}
     fi
 }
 
-enable_localsrc() {
-    # local and fallback to official remote.
-    echo "repositories = { /packages, http://xbps.nopcode.org/repos/current }" >/tmp/xbps.conf
-}
-
-enable_netsrc() {
-    # only remote.
-    echo "repositories = { http://xbps.nopcode.org/repos/current }" > /tmp/xbps.conf
-}
-
 menu_source() {
     local src=
 
@@ -839,8 +847,8 @@ menu_source() {
         "Local" "Packages from ISO image" \
         "Network" "Packages from official remote reposity"
     case "$(cat $ANSWER)" in
-        "Local") src="local"; enable_localsrc;;
-        "Network") src="net"; enable_netsrc; menu_network;;
+        "Local") src="local";;
+        "Network") src="net"; menu_network;;
         *) return 1;;
     esac
     SOURCE_DONE=1
