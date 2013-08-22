@@ -1,41 +1,19 @@
-void-mklive - The Void Linux live image maker
+## The Void Linux image/live/rootfs maker and installer
 
-This is a simple shell script to build a live image for the Void
-Linux distribution. The images contain a simple dialog-based installer
-to be able to install Void linux to storage disks.
+This repository contains utilities for Void Linux:
 
-The generated image can be booted from BIOS and EFI systems (dual boot).
-ISOLINUX is used to boot from PC-BIOS systems, while GRUB is used to
-boot in EFI systems.
+ * void-installer (The Void Linux el-cheapo installer for x86)
+ * void-mkimage   (The Void Linux image maker for x86 and Raspberry Pi)
+ * void-mklive    (The Void Linux live image maker x86)
+ * void-mkrootfs  (The Void Linux rootfs maker for x86 and Raspberry Pi)
 
-Dependencies:
+#### Dependencies
 
- - xbps>=0.21
- - GNU bash
- - syslinux (to generate the PC-BIOS bootloader)
- - dosfstools (to generate the EFI bootloader)
- - xorriso (to generate the ISO image)
- - squashfs-tools (to generate the squashed rootfs)
+ * xbps>=0.21
+ * GNU bash
+ * syslinux (to generate the PC-BIOS bootloader)
+ * dosfstools (to generate the EFI bootloader)
+ * xorriso (to generate the ISO image)
+ * squashfs-tools (to generate the squashed rootfs)
+ * parted (to generate image)
 
-Usage: void-mklive [options]
-
-Options:
- -C file		Path to configuration file (defaults to ~/.mklive.conf)
- -c (gzip|bzip2|xz) 	Compression type for the squashfs/initramfs image.
- -l "pkgname ..."	Generate a local repository in the image with these packages.
- 			Packages must be delimited by blanks.
- -r rootdir		Use this directory to generate the image (if unset,
- 			current working directory will be used).
- -o outfile		Output file name for the ISO image.
- -s splash		Splash image file for isolinux.
-
-* The first time it is executed a config file will be created (~/mklive.conf).
-
-Take a look at the configuration file (~/mklive.conf) to tweak some
-default parameters in the generated image.
-
-Additionally void-mkrootfs generates a rootfs tarball suitable for unpacking
-on a directory ready to 'chroot'; and `void-mkimage` can generate a working disk
-image with a specified rootfs tarball.
-
-	-- Juan RP <xtraeme@gmail.com>
