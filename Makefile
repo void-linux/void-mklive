@@ -1,5 +1,5 @@
-GITVER := $(shell git rev-parse HEAD)
-VERSION = 0.20
+GITVER := $(shell git rev-parse --short HEAD)
+VERSION = 0.21
 PREFIX ?= /usr/local
 SBINDIR ?= $(PREFIX)/sbin
 SHAREDIR ?= $(PREFIX)/share
