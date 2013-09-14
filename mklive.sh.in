@@ -76,12 +76,9 @@ write_conf_file() {
 #
 # To build an official live image add the following packages:
 #  - dialog
-#  - dracut-network
-#  - dosfstools
 #  - f2fs-tools
 #  - grub-x86_64-efi
-#  - parted
-PACKAGE_LIST="dialog dracut-network dosfstools f2fs-tools grub-x86_64-efi parted"
+PACKAGE_LIST="dialog f2fs-tools grub-x86_64-efi"
 
 # Default Void Linux splash image for grub/syslinux.
 SPLASH_IMAGE=/usr/share/void-artwork/splash.png
