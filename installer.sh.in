@@ -708,9 +708,9 @@ umount_filesystems() {
 }
 
 copy_rootfs() {
-    LANG=C cp -axvn / $TARGETDIR 2>&1 | \
-        DIALOG --title "Copyring live image to target rootfs ..." \
-        --programbox 24 80
+    DIALOG --title "Check /dev/tty7 for details" \
+        --infobox "Copyring live image to target rootfs, please wait ..." 4 60
+    LANG=C cp -axvn / $TARGETDIR >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIE 1
     fi
@@ -776,12 +776,14 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         # Remove live user.
         . /etc/default/live.conf
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
-        chroot $TARGETDIR userdel -r $USERNAME >>$LOG 2>&1
-        DIALOG --infobox "Rebuilding initramfs for target ..." 4 60
+        chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
+        DIALOG --title "Check /dev/tty7 for details" \
+            --infobox "Rebuilding initramfs for target ..." 4 60
         echo "Rebuilding initramfs for target ..." >$LOG
         chroot $TARGETDIR dracut --force >>$LOG 2>&1
-        DIALOG --infobox "Removing temporary packages from target ..." 4 60
-        echo "Removing unused packages from target ..." >$LOG
+        DIALOG --title "Check /dev/tty7 for details" \
+            --infobox "Removing temporary packages from target ..." 4 60
+        echo "Removing temporaray packages from target ..." >$LOG
         xbps-remove -r $TARGETDIR -Ry dialog f2fs-tools >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target
     else
