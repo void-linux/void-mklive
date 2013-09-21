@@ -114,7 +114,7 @@ parted $FILENAME mkpart primary ${_btype} 2048s 256M
 parted $FILENAME mkpart primary ${ROOT_FSTYPE} 256M 100%
 parted $FILENAME toggle 1 boot
 LOOPDEV=$(losetup --show --find -P $FILENAME)
-mkfs.${BOOT_FSTYPE} -F32 ${LOOPDEV}p1 >/dev/null 2>&1
+mkfs.${BOOT_FSTYPE} ${LOOPDEV}p1 >/dev/null 2>&1
 mkfs.${ROOT_FSTYPE} ${LOOPDEV}p2 >/dev/null 2>&1
 
 info_msg "Unpacking rootfs tarball ..."
