@@ -365,7 +365,8 @@ esac
 $XBPS_INSTALL_CMD -r $ROOTFS -S >/dev/null 2>&1
 
 _linux_series=$($XBPS_QUERY_CMD -r $ROOTFS -Rx linux)
-KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS -R --property version ${_linux_series})
+KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS -R --property pkgver ${_linux_series})
+KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion $KERNELVERSION)
 
 if [ -z "$OUTPUT_FILE" ]; then
     OUTPUT_FILE="$HOME/void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
