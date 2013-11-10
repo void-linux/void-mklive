@@ -41,7 +41,7 @@ die() {
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-a raspberrypi] [-V]"
+    echo "Usage: $PROGNAME [-a raspberrypi] [-p 'pkg1 pkg2'] [-V]"
 }
 
 run_cmd() {
@@ -72,9 +72,10 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "a:hV" opt; do
+while getopts "a:hp:V" opt; do
     case $opt in
         a) TARGET_ARCH="$OPTARG";;
+        p) EXTRA_PKGS="$OPTARG";;
         h) usage; exit 0;;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
@@ -113,7 +114,7 @@ chmod 755 $rootfs
 #
 # Install base-system to the rootfs directory.
 #
-run_cmd "xbps-install -S -r $rootfs -y $PKGBASE"
+run_cmd "xbps-install -S -r $rootfs -y $PKGBASE $EXTRA_PKGS"
 
 #
 # Reconfigure packages for target architecture: must be reconfigured
