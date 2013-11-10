@@ -85,6 +85,12 @@ if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
+for f in parted mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
+    if ! which ${f} >/dev/null; then
+        die "Cannot find ${f}, exiting."
+    fi
+done
+
 IMGSIZE="$2"
 if [ -z "$IMGSIZE" ]; then
     IMGSIZE="2G"
@@ -111,7 +117,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
 fi
 parted $FILENAME mkpart primary ${_btype} 2048s 256M
-parted $FILENAME mkpart primary ${ROOT_FSTYPE} 256M 100%
+parted $FILENAME mkpart primary ext2 256M 100%
 parted $FILENAME toggle 1 boot
 LOOPDEV=$(losetup --show --find -P $FILENAME)
 mkfs.${BOOT_FSTYPE} ${LOOPDEV}p1 >/dev/null 2>&1
