@@ -85,12 +85,6 @@ if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
-for f in parted mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
-    if ! which ${f} >/dev/null; then
-        die "Cannot find ${f}, exiting."
-    fi
-done
-
 IMGSIZE="$2"
 if [ -z "$IMGSIZE" ]; then
     IMGSIZE="2G"
@@ -107,6 +101,12 @@ fi
 if [ -z "$FILENAME" ]; then
     FILENAME="void-image-$(date +%Y%m%d).img"
 fi
+
+for f in parted mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
+    if ! which ${f} >/dev/null; then
+        die "Cannot find ${f}, exiting."
+    fi
+done
 
 info_msg "Creating disk image ($IMGSIZE) ..."
 dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 conv=sparse >/dev/null 2>&1
