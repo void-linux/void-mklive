@@ -135,6 +135,10 @@ BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
 ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
 echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 0" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 1" >> ${ROOTFSDIR}/etc/fstab
+if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
+   sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
+fi
+
 umount ${ROOTFSDIR}/boot
 umount $ROOTFSDIR
 losetup -d $LOOPDEV
