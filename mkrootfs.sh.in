@@ -28,7 +28,7 @@ readonly PROGNAME=$(basename $0)
 readonly ARCH=$(uname -m)
 readonly PKGBASE="base-system"
 
-trap 'printf "\nInterrupted! exiting...\n"; exit $?' INT TERM HUP
+trap 'die "Interrupted! exiting..."' INT TERM HUP
 
 info_msg() {
     printf "\033[1m$@\n\033[m"
@@ -36,21 +36,37 @@ info_msg() {
 
 die() {
     echo "FATAL: $@"
+    umount_pseudofs
     [ -d "$rootfs" ] && rm -rf $rootfs
     exit 1
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-a raspberrypi] [-p 'pkg1 pkg2'] [-V]"
+    echo "Usage: $PROGNAME [-a rpi] [-p 'pkg1 pkg2'] [-V]"
+}
+
+mount_pseudofs() {
+    for f in dev proc sys; do
+        [ ! -d $rootfs/$f ] && mkdir -p $rootfs/$f
+        mount -r --bind /$f $rootfs/$f
+    done
+}
+
+umount_pseudofs() {
+    for f in dev proc sys; do
+        umount -f $rootfs/$f >/dev/null 2>&1
+    done
+}
+
+run_cmd_target() {
+    info_msg "Running $@ for target $_ARCH ..."
+    eval XBPS_TARGET_ARCH=${_ARCH} "$@" >/dev/null 2>&1
+    [ $? -ne 0 ] && die "Failed to run $@"
 }
 
 run_cmd() {
     info_msg "Running $@ ..."
-    if [ -n "${_ARCH}" ]; then
-        eval XBPS_TARGET_ARCH=${_ARCH} "$@" >/dev/null 2>&1
-    else
-        eval "$@" >/dev/null 2>&1
-    fi
+    eval "$@" >/dev/null 2>&1
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
@@ -89,7 +105,7 @@ fi
 #
 # Check for required binaries.
 #
-for f in systemd-nspawn xbps-install xbps-reconfigure xbps-query; do
+for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
     if ! $f --version >/dev/null 2>&1; then
         die "$f binary is missing in your system, exiting."
     fi
@@ -99,7 +115,7 @@ done
 # Sanitize target arch.
 #
 case "$TARGET_ARCH" in
-    raspberrypi) _ARCH=armv6l; QEMU_BIN=qemu-arm-static;;
+    rpi) _ARCH=armv6l; QEMU_BIN=qemu-arm-static;;
     *) ;;
 esac
 
@@ -111,10 +127,18 @@ run_cmd "xbps-query -R -ppkgver $PKGBASE"
 rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
 chmod 755 $rootfs
 
+PKGS="${PKGBASE}"
+[ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
+
+mount_pseudofs
 #
 # Install base-system to the rootfs directory.
 #
-run_cmd "xbps-install -S -r $rootfs -y $PKGBASE $EXTRA_PKGS"
+run_cmd_target "xbps-install -S -r $rootfs -y ${PKGS}"
+
+# Enable en_US.UTF-8 locale and generate it into the target rootfs.
+LOCALE=en_US.UTF-8
+sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
 
 #
 # Reconfigure packages for target architecture: must be reconfigured
@@ -123,24 +147,24 @@ run_cmd "xbps-install -S -r $rootfs -y $PKGBASE $EXTRA_PKGS"
 if [ -n "$TARGET_ARCH" ]; then
     info_msg "Reconfiguring packages for $TARGET_ARCH ..."
     register_binfmt
-    xbps-reconfigure -r $rootfs base-directories
-    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure shadow"
-    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure systemd"
-    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure -a"
-    (rm -f $rootfs/lib32; rm -f $rootfs/lib64) >/dev/null 2>&1
+    run_cmd "xbps-reconfigure -r $rootfs base-directories"
+    run_cmd "chroot $rootfs xbps-reconfigure shadow"
+    run_cmd "chroot $rootfs xbps-reconfigure systemd"
+    run_cmd "chroot $rootfs xbps-reconfigure -a"
+    rmdir $rootfs/usr/lib32
+    rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
 else
-    run_cmd "systemd-nspawn -D $rootfs xbps-reconfigure -f systemd"
+    run_cmd "chroot $rootfs xbps-reconfigure systemd"
 fi
 
 #
 # Setup default root password.
 #
-chroot $rootfs sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'
-
+run_cmd "chroot $rootfs sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'"
+umount_pseudofs
 #
 # Cleanup rootfs.
 #
-rm -rf $rootfs/dev/* $rootfs/run/* $rootfs/tmp/* $rootfs/tmp/.* 2>/dev/null
 rm -f $rootfs/etc/.pwd.lock 2>/dev/null
 rm -rf $rootfs/var/cache/xbps 2>/dev/null
 
