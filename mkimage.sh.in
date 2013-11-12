@@ -102,7 +102,7 @@ if [ -z "$FILENAME" ]; then
     FILENAME="void-image-$(date +%Y%m%d).img"
 fi
 
-for f in parted mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
+for f in parted losetup mount mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
     if ! which ${f} >/dev/null; then
         die "Cannot find ${f}, exiting."
     fi
