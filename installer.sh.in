@@ -781,7 +781,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         DIALOG --title "Check /dev/tty7 for details" \
             --infobox "Removing temporary packages from target ..." 4 60
         echo "Removing temporaray packages from target ..." >$LOG
-        xbps-remove -r $TARGETDIR -Ry dialog f2fs-tools >>$LOG 2>&1
+        xbps-remove -r $TARGETDIR -Ry dialog >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target
         # mount required fs
         mount_filesystems
