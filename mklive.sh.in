@@ -71,14 +71,9 @@ write_conf_file() {
 # Default configuration file for vmklive-@VERSION@.
 #
 # List of packages to be installed into the live image.
+# NOTE: base-system and dialog packages are always added by default.
 #
-# The 'base-system' package is always added to the generated image.
-#
-# To build an official live image add the following packages:
-#  - dialog
-#  - f2fs-tools
-#  - grub-x86_64-efi
-PACKAGE_LIST="dialog f2fs-tools grub-x86_64-efi"
+#PACKAGE_LIST=""
 
 # Default Void Linux splash image for grub/syslinux.
 SPLASH_IMAGE=/usr/share/void-artwork/splash.png
@@ -314,9 +309,9 @@ fi
 . $CONFIG_FILE
 
 if [ -z "$PACKAGE_LIST" ]; then
-    PACKAGE_LIST="base-system"
+    PACKAGE_LIST="base-system dialog"
 else
-    PACKAGE_LIST="base-system $PACKAGE_LIST"
+    PACKAGE_LIST="base-system dialog $PACKAGE_LIST"
 fi
 if [ ! -f $SYSLINUX_DATADIR/isolinux.bin ]; then
     echo "Missing required isolinux files in $SYSLINUX_DATADIR, exiting..."
