@@ -30,7 +30,7 @@ if [ cpuid -l ]; then
         linux (${voidlive})/boot/vmlinuz \
 		root=live:CDLABEL=VOID_LIVE ro \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
-		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@
+		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@
         initrd (${voidlive})/boot/initrd.lz
     }
 fi
