@@ -145,6 +145,12 @@ install_packages() {
     if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
         systemd-nspawn -D $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
     fi
+
+    if [ -x installer.sh ]; then
+        install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
+    else
+        install -Dm755 /usr/sbin/void-installer $ROOTFS/usr/sbin/void-installer
+    fi
 }
 
 generate_initramfs() {
