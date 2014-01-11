@@ -114,6 +114,13 @@ _EOF
     exit 1
 }
 
+copy_void_keys() {
+    if [ ! -d "$1"/var/db/xbps/keys ]; then
+        mkdir -p "$1"/var/db/xbps/keys
+        cp /var/db/xbps/keys/*.plist "$1"/var/db/xbps/keys
+    fi
+}
+
 install_packages() {
     for f in ${PACKAGE_LIST}; do
         info_msg "  $f"
@@ -138,11 +145,10 @@ install_packages() {
     if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
         systemd-nspawn -D $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
     fi
-
-    install -Dm755 /usr/sbin/void-installer $ROOTFS/usr/sbin/void-installer
 }
 
 generate_initramfs() {
+    copy_void_keys $ROOTFS/kernel_temp
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
@@ -351,12 +357,11 @@ XBPS_ARGS="-r $ROOTFS -y"
 XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
 XBPS_VERSION=$($XBPS_QUERY_CMD -V|awk '{print $2}')
 case $XBPS_VERSION in
-# XBPS >= 0.21
-    [0-9].[2-9][1-9]*) ;;
-    *) echo "Your xbps utilities are too old ($XBPS_VERSION), 0.21 is required."; exit 1;;
+    *) ;;
 esac
 
 # Sync index for remote repos first.
+copy_void_keys $ROOTFS
 $XBPS_INSTALL_CMD -r $ROOTFS -S >/dev/null 2>&1
 
 _linux_series=$($XBPS_QUERY_CMD -r $ROOTFS -Rx linux)
