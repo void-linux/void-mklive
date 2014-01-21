@@ -1,6 +1,6 @@
 #!/bin/sh
 #-
-# Copyright (c) 2013 Juan Romero Pardines.
+# Copyright (c) 2013-2014 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@
 readonly PROGNAME=$(basename $0)
 readonly ARCH=$(uname -m)
 readonly PKGBASE="base-system"
+readonly VOIDRSAPUBKEY="60:ae:0c:d6:f0:95:17:80:bc:93:46:7a:89:af:a3:2d"
 
 trap 'die "Interrupted! exiting..."' INT TERM HUP
 
@@ -42,7 +43,7 @@ die() {
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-a rpi] [-p 'pkg1 pkg2'] [-V]"
+    echo "Usage: $PROGNAME [-k xbps-keys-dir] [-m rpi|odroid-u2] [-p 'pkg1 pkg2'] [-V]"
 }
 
 mount_pseudofs() {
@@ -75,7 +76,7 @@ register_binfmt() {
         return 0
     fi
     case "${_ARCH}" in
-        armv6l)
+        armv?l)
             echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
             cp -f $(which qemu-arm-static) $rootfs/usr/bin || die "failed to copy qemu-arm-static to the rootfs"
             ;;
@@ -88,9 +89,10 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "a:hp:V" opt; do
+while getopts "k:m:hp:V" opt; do
     case $opt in
-        a) TARGET_ARCH="$OPTARG";;
+        k) KEYSDIR="$OPTARG";;
+        m) TARGET_ARCH="$OPTARG";;
         p) EXTRA_PKGS="$OPTARG";;
         h) usage; exit 0;;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
@@ -115,16 +117,26 @@ done
 # Sanitize target arch.
 #
 case "$TARGET_ARCH" in
-    rpi) _ARCH=armv6l; QEMU_BIN=qemu-arm-static;;
+    rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
+    odroid*) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     *) ;;
 esac
 
+if [ -z "$KEYSDIR" ]; then
+    KEYSDIR="/var/db/xbps/keys" # use void default
+fi
 #
 # Check if package base-system is available.
 #
+rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
+if [ ! -f "$KEYSDIR/${VOIDRSAPUBKEY}.plist" ]; then
+    die "cannot find xbps keyst to install binary packages, exiting."
+fi
+mkdir -p $rootfs/var/db/xbps/keys
+cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
+
 run_cmd "xbps-query -R -ppkgver $PKGBASE"
 
-rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
 chmod 755 $rootfs
 
 PKGS="${PKGBASE}"
@@ -144,8 +156,8 @@ sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
 # Reconfigure packages for target architecture: must be reconfigured
 # thru the qemu user mode binary.
 #
-if [ -n "$TARGET_ARCH" ]; then
-    info_msg "Reconfiguring packages for $TARGET_ARCH ..."
+if [ -n "${_ARCH}" ]; then
+    info_msg "Reconfiguring packages for ${_ARCH} ..."
     register_binfmt
     run_cmd "xbps-reconfigure -r $rootfs base-directories"
     run_cmd "chroot $rootfs xbps-reconfigure shadow"
