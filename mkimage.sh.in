@@ -116,7 +116,7 @@ parted $FILENAME mktable msdos
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
 fi
-parted $FILENAME mkpart primary ${_btype} 2048s 256M
+parted $FILENAME mkpart primary ${_btype} 4096s 256M
 parted $FILENAME mkpart primary ext2 256M 100%
 parted $FILENAME toggle 1 boot
 LOOPDEV=$(losetup --show --find -P $FILENAME)
