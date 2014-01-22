@@ -137,8 +137,8 @@ fi
 mkdir -p $rootfs/var/db/xbps/keys
 cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
 
-run_cmd "xbps-install -S $XBPS_CONF -r $rootfs"
-run_cmd "xbps-query -r $rootfs $XBPS_CONF -ppkgver $PKGBASE"
+run_cmd "xbps-install -S $XBPS_CONFFILE -r $rootfs"
+run_cmd "xbps-query -r $rootfs $XBPS_CONFFILE -ppkgver $PKGBASE"
 
 chmod 755 $rootfs
 
@@ -149,7 +149,7 @@ mount_pseudofs
 #
 # Install base-system to the rootfs directory.
 #
-run_cmd_target "xbps-install -S $XBPS_CONF -r $rootfs -y ${PKGS}"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE -r $rootfs -y ${PKGS}"
 
 # Enable en_US.UTF-8 locale and generate it into the target rootfs.
 LOCALE=en_US.UTF-8
