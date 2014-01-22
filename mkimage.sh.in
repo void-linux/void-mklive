@@ -32,7 +32,11 @@ trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 cleanup() {
     umount -f ${ROOTFSDIR}/boot 2>/dev/null
     umount -f ${ROOTFSDIR} 2>/dev/null
-    [ -e "$LOOPDEV" ] && losetup -d $LOOPDEV 2>/dev/null
+    if [ -e "$LOOPDEV" ]; then
+        partx -d $LOOPDEV 2>/dev/null
+        losetup -d $LOOPDEV 2>/dev/null
+    fi
+	
     [ -d "$ROOTFSDIR" ] && rmdir $ROOTFSDIR
 }
 
@@ -102,25 +106,27 @@ if [ -z "$FILENAME" ]; then
     FILENAME="void-image-$(date +%Y%m%d).img"
 fi
 
-for f in parted losetup mount mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
+for f in parted partx losetup mount mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
     if ! which ${f} >/dev/null; then
         die "Cannot find ${f}, exiting."
     fi
 done
 
 info_msg "Creating disk image ($IMGSIZE) ..."
-dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 conv=sparse >/dev/null 2>&1
+dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 >/dev/null 2>&1
 
 info_msg "Creating disk image partitions/filesystems ..."
 parted $FILENAME mktable msdos
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
+    _args="-I"
 fi
 parted $FILENAME mkpart primary ${_btype} 4096s 256M
 parted $FILENAME mkpart primary ext2 256M 100%
 parted $FILENAME toggle 1 boot
-LOOPDEV=$(losetup --show --find -P $FILENAME)
-mkfs.${BOOT_FSTYPE} ${LOOPDEV}p1 >/dev/null 2>&1
+LOOPDEV=$(losetup --show --find $FILENAME)
+partx -a $LOOPDEV
+mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
 mkfs.${ROOT_FSTYPE} ${LOOPDEV}p2 >/dev/null 2>&1
 
 info_msg "Unpacking rootfs tarball ..."
@@ -141,6 +147,7 @@ fi
 
 umount ${ROOTFSDIR}/boot
 umount $ROOTFSDIR
+partx -d $LOOPDEV
 losetup -d $LOOPDEV
 rmdir $ROOTFSDIR
 
