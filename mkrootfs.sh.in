@@ -132,7 +132,7 @@ fi
 #
 rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
 if [ ! -f "$KEYSDIR/${VOIDRSAPUBKEY}.plist" ]; then
-    die "cannot find xbps keyst to install binary packages, exiting."
+    die "cannot find xbps keys to install binary packages, exiting."
 fi
 mkdir -p $rootfs/var/db/xbps/keys
 cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
