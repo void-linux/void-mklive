@@ -43,7 +43,7 @@ die() {
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-k xbps-keys-dir] [-m rpi|odroid-u2] [-p 'pkg1 pkg2'] [-R xbps-repo-url] [-V]"
+    echo "Usage: $PROGNAME [-C xbps.conf] [-k xbps-keys-dir] [-m rpi|odroid-u2] [-p 'pkg1 pkg2'] [-V]"
 }
 
 mount_pseudofs() {
@@ -89,8 +89,9 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "hk:m:p:R:V" opt; do
+while getopts "C:hk:m:p:V" opt; do
     case $opt in
+        C) XBPS_CONFFILE="-C $OPTARG";;
         h) usage; exit 0;;
         k) KEYSDIR="$OPTARG";;
         m) TARGET_ARCH="$OPTARG";;
@@ -136,8 +137,8 @@ fi
 mkdir -p $rootfs/var/db/xbps/keys
 cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
 
-run_cmd "xbps-install -S -R ${XBPS_REPO} -r $rootfs"
-run_cmd "xbps-query -r $rootfs -R ${XBPS_REPO} -ppkgver $PKGBASE"
+run_cmd "xbps-install -S $XBPS_CONF -r $rootfs"
+run_cmd "xbps-query -r $rootfs $XBPS_CONF -ppkgver $PKGBASE"
 
 chmod 755 $rootfs
 
@@ -148,7 +149,7 @@ mount_pseudofs
 #
 # Install base-system to the rootfs directory.
 #
-run_cmd_target "xbps-install -S -R ${XBPS_REPO} -r $rootfs -y ${PKGS}"
+run_cmd_target "xbps-install -S $XBPS_CONF -r $rootfs -y ${PKGS}"
 
 # Enable en_US.UTF-8 locale and generate it into the target rootfs.
 LOCALE=en_US.UTF-8
