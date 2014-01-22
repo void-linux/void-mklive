@@ -138,7 +138,7 @@ mkdir -p $rootfs/var/db/xbps/keys
 cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
 
 run_cmd "xbps-install -S $XBPS_CONFFILE -r $rootfs"
-run_cmd "xbps-query -r $rootfs $XBPS_CONFFILE -ppkgver $PKGBASE"
+run_cmd "xbps-query -R -r $rootfs $XBPS_CONFFILE -ppkgver $PKGBASE"
 
 chmod 755 $rootfs
 
