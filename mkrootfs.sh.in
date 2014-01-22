@@ -61,13 +61,13 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $@ for target $_ARCH ..."
-    eval XBPS_TARGET_ARCH=${_ARCH} "$@" >/dev/null 2>&1
+    eval XBPS_TARGET_ARCH=${_ARCH} "$@"
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
 run_cmd() {
     info_msg "Running $@ ..."
-    eval "$@" >/dev/null 2>&1
+    eval "$@"
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
