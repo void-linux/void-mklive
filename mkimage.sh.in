@@ -56,9 +56,10 @@ usage() {
     echo " The <size> argument expects a number (GB). If <size> is not set, defaults to 2."
     echo
     echo "OPTIONS"
-    echo " -b <fstype>    Set /boot <fstype> (defaults to fat32, 256MB)"
+    echo " -b <fstype>    Set /boot <fstype> (defaults to FAT, 32MB)"
     echo " -o <filename>  Set output <filename>."
-    echo " -r <fstype>    Set / <fstype> (defaults to ext4, 256MB - <size>)"
+    echo " -r <fstype>    Set / <fstype> (defaults to ext4, 32MB - <size>)"
+    echo " -p <platform>  Set platform type: cubieboard2, rpi, odroid-u2"
     echo
     echo " Resulting image will have 2 partitions, /boot and / of total <size>." 
     exit 0
@@ -67,11 +68,12 @@ usage() {
 #
 # main()
 #
-while getopts "b:o:r:hV" opt; do
+while getopts "b:o:r:p:hV" opt; do
     case $opt in
         b) BOOT_FSTYPE="$OPTARG";;
         o) FILENAME="$OPTARG";;
         r) ROOT_FSTYPE="$OPTARG";;
+        p) PLATFORM="$OPTARG";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
         h) usage;;
     esac
@@ -106,14 +108,26 @@ if [ -z "$FILENAME" ]; then
     FILENAME="void-image-$(date +%Y%m%d).img"
 fi
 
+case "$PLATFORM" in
+    cubieboard2|odroid-u2|rpi);;
+    *) die "Unknown platform or platform unset, set it with -p!"
+esac
+
 for f in parted partx losetup mount mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
     if ! which ${f} >/dev/null; then
         die "Cannot find ${f}, exiting."
     fi
 done
 
+# dd conv=sparse support first appeared in coreutils-8.16, disable it in
+# older versions.
+DD_VERSION=$(dd --version|head -n1|awk '{print $3}')
+case "$DD_VERSION" in
+    [8-9].1[6-9]*|[8-9].[2-9]*) DD_SPARSE="conv=sparse";;
+esac
+
 info_msg "Creating disk image ($IMGSIZE) ..."
-dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 >/dev/null 2>&1
+dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 ${DD_SPARSE} >/dev/null 2>&1
 
 info_msg "Creating disk image partitions/filesystems ..."
 parted $FILENAME mktable msdos
@@ -121,8 +135,8 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
     _args="-I"
 fi
-parted $FILENAME mkpart primary ${_btype} 4096s 256M
-parted $FILENAME mkpart primary ext2 256M 100%
+parted $FILENAME mkpart primary ${_btype} 4096s 64M
+parted $FILENAME mkpart primary ext2 64M 100%
 parted $FILENAME toggle 1 boot
 LOOPDEV=$(losetup --show --find $FILENAME)
 partx -a $LOOPDEV
@@ -141,8 +155,14 @@ BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
 ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
 echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 0" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 1" >> ${ROOTFSDIR}/etc/fstab
+
 if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
    sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
+fi
+
+# For cubieboard we need to flash u-boot to the image.
+if [ "$PLATFORM" = "cubieboard2" ]; then
+    dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
 fi
 
 umount ${ROOTFSDIR}/boot
@@ -152,6 +172,6 @@ losetup -d $LOOPDEV
 rmdir $ROOTFSDIR
 
 chmod 644 $FILENAME
-info_msg "Successfully created $FILENAME image."
+info_msg "Successfully created $FILENAME ($PLATFORM) image."
 
 # vim: set ts=4 sw=4 et:
