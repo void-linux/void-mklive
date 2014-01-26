@@ -121,6 +121,7 @@ done
 case "$TARGET_ARCH" in
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
     odroid*) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    cubieboard*) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     *) ;;
 esac
 
