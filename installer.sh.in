@@ -709,7 +709,7 @@ umount_filesystems() {
 
 copy_rootfs() {
     DIALOG --title "Check /dev/tty7 for details" \
-        --infobox "Copyring live image to target rootfs, please wait ..." 4 60
+        --infobox "Copying live image to target rootfs, please wait ..." 4 60
     LANG=C cp -axvnu / $TARGETDIR >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIE 1
