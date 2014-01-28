@@ -43,7 +43,18 @@ die() {
 }
 
 usage() {
-    echo "Usage: $PROGNAME [-C xbps.conf] [-k xbps-keys-dir] [-m rpi|odroid-u2] [-p 'pkg1 pkg2'] [-V]"
+    cat <<_EOF
+Usage: $PROGNAME [options] <platform>
+
+Supported platforms: cubieboard2, odroid-u2, rpi
+
+Options
+    -C <file>   Full path to the XBPS configuration file
+    -h          Show this help
+    -k <dir>    Full path to a directory with the XBPS RSA public keys for repositories
+    -p <pkgs>   Additional packages to install into the rootfs (separated by blanks)
+    -V          Show version
+_EOF
 }
 
 mount_pseudofs() {
@@ -89,18 +100,30 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "C:hk:m:p:V" opt; do
+while getopts "C:hk:p:V" opt; do
     case $opt in
         C) XBPS_CONFFILE="-C $OPTARG";;
         h) usage; exit 0;;
         k) KEYSDIR="$OPTARG";;
-        m) TARGET_ARCH="$OPTARG";;
         p) EXTRA_PKGS="$OPTARG";;
-        R) XBPS_REPO="$OPTARG";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
 shift $(($OPTIND - 1))
+
+PLATFORM="$1"
+
+if [ -z "$PLATFORM" ]; then
+    echo "$PROGNAME: platform was not set!"
+    usage; exit 1
+fi
+
+case "$PLATFORM" in
+    cubieboard2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
+    *) die "$PROGNAME: invalid platform!";;
+esac
 
 if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
@@ -114,16 +137,6 @@ for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
         die "$f binary is missing in your system, exiting."
     fi
 done
-
-#
-# Sanitize target arch.
-#
-case "$TARGET_ARCH" in
-    rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
-    odroid*) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    cubieboard*) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    *) ;;
-esac
 
 if [ -z "$KEYSDIR" ]; then
     KEYSDIR="/var/db/xbps/keys" # use void default
@@ -143,7 +156,7 @@ run_cmd "xbps-query -R -r $rootfs $XBPS_CONFFILE -ppkgver $PKGBASE"
 
 chmod 755 $rootfs
 
-PKGS="${PKGBASE}"
+PKGS="${PKGBASE} ${PLATFORM}-base"
 [ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
 
 mount_pseudofs
@@ -193,11 +206,11 @@ if [ -n "$TARGET_ARCH" ]; then
     arch=$TARGET_ARCH
 fi
 
-tarball=void-${arch}-rootfs-$(date '+%Y%m%d').tar.xz
+tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
 
 run_cmd "tar cp -C $rootfs . | xz -9 > $tarball"
 rm -rf $rootfs
 
-info_msg "Successfully created $tarball"
+info_msg "Successfully created $tarball ($PLATFORM)"
 
 # vim: set ts=4 sw=4 et:
