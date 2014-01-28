@@ -3,9 +3,10 @@
 This repository contains utilities for Void Linux:
 
  * void-installer (The Void Linux el-cheapo installer for x86)
- * void-mkimage   (The Void Linux image maker for x86 and Raspberry Pi)
- * void-mklive    (The Void Linux live image maker x86)
- * void-mkrootfs  (The Void Linux rootfs maker for x86 and Raspberry Pi)
+ * void-mklive    (The Void Linux live image maker for x86)
+
+ * void-mkimage   (The Void Linux image maker for ARM platforms)
+ * void-mkrootfs  (The Void Linux rootfs maker for ARM platforms)
 
 #### Dependencies
 
