@@ -321,9 +321,9 @@ fi
 . $CONFIG_FILE
 
 if [ -z "$PACKAGE_LIST" ]; then
-    PACKAGE_LIST="dcron base-system dialog"
+    PACKAGE_LIST="base-system dialog"
 else
-    PACKAGE_LIST="dcron base-system dialog $PACKAGE_LIST"
+    PACKAGE_LIST="base-system dialog $PACKAGE_LIST"
 fi
 if [ ! -f $SYSLINUX_DATADIR/isolinux.bin ]; then
     echo "Missing required isolinux files in $SYSLINUX_DATADIR, exiting..."
