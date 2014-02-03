@@ -909,6 +909,7 @@ menu() {
         --title " Void Linux installation menu " \
         --menu "$MENULABEL" 10 70 0 \
         "Keyboard" "Set system keyboard" \
+        "Network" "Set up the network" \
         "Source" "Set source installation" \
         "Hostname" "Set system hostname" \
         "Locale" "Set system locale" \
@@ -927,7 +928,8 @@ menu() {
     fi
 
     case $(cat $ANSWER) in
-        "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Source";;
+        "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
+        "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
         "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Hostname";;
         "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="Locale";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
