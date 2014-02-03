@@ -725,6 +725,8 @@ install_packages() {
         _grub="grub"
     fi
 
+    mkdir -p $TARGETDIR/var/db/xbps/keys
+    cp /var/db/xbps/keys/*.plist $TARGETDIR/var/db/xbps/keys
     mkdir -p $TARGETDIR/boot/grub
     stdbuf -oL xbps-install  -r $TARGETDIR -Sy base-system ${_grub} 2>&1 | \
         DIALOG --title "Installing base system packages..." \
