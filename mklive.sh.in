@@ -139,11 +139,11 @@ install_packages() {
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
 
-    systemd-nspawn -D $ROOTFS xbps-reconfigure -fa >>$LOGFILE 2>&1
+    xbps-uchroot $ROOTFS xbps-reconfigure -fa >>$LOGFILE 2>&1
 
     # Enable some services if found.
     if [ -f $ROOTFS/usr/lib/systemd/system/NetworkManager.service ]; then
-        systemd-nspawn -D $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
+        xbps-uchroot $ROOTFS systemctl enable NetworkManager.service >>$LOGFILE 2>&1
     fi
 
     if [ -x installer.sh ]; then
@@ -160,7 +160,7 @@ generate_initramfs() {
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
         base-system void-mklive -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
 
-    systemd-nspawn -D $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
+    xbps-uchroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
         --force-add "vmklive" "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
