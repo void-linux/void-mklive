@@ -75,9 +75,6 @@ write_conf_file() {
 #
 #PACKAGE_LIST=""
 
-# Default Void Linux splash image for grub/syslinux.
-SPLASH_IMAGE=/usr/share/void-artwork/splash.png
-
 # Default keymap to use.
 KEYMAP=us
 
@@ -134,10 +131,10 @@ install_packages() {
     ${XBPS_INSTALL_CMD} ${XBPS_ARGS} ${PACKAGE_LIST} >>$LOGFILE 2>&1
     ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -u >>$LOGFILE 2>&1
     ${XBPS_REMOVE_CMD} ${XBPS_ARGS} -o >>$LOGFILE 2>&1
-    ${XBPS_QUERY_CMD} -r "$ROOTFS" -l | sort > "${OUTPUT_FILE%.iso}"-package-list.txt
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
+    xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales
 
     if [ -x installer.sh ]; then
         install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
@@ -146,12 +143,18 @@ install_packages() {
     fi
 }
 
+copy_dracut_files() {
+    mkdir -p $1/usr/lib/dracut/modules.d/01vmklive
+    cp dracut/*.sh $1/usr/lib/dracut/modules.d/01vmklive/
+}
+
 generate_initramfs() {
     copy_void_keys $ROOTFS/kernel_temp
+    copy_dracut_files $ROOTFS/kernel_temp
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
     $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
-        base-system void-mklive -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
+        base-system -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
 
     xbps-uchroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
         --force-add "vmklive" "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
@@ -168,13 +171,10 @@ generate_isolinux_boot() {
     cp -f $SYSLINUX_DATADIR/vesamenu.c32 "$ISOLINUX_DIR"
     cp -f $SYSLINUX_DATADIR/libutil.c32 "$ISOLINUX_DIR"
     cp -f $SYSLINUX_DATADIR/chain.c32 "$ISOLINUX_DIR"
-    cp -f $MKLIVE_DATADIR/isolinux.cfg.in \
-        "$ISOLINUX_DIR"/isolinux.cfg
+    cp -f isolinux/isolinux.cfg.in "$ISOLINUX_DIR"/isolinux.cfg
+    cp -f isolinux/${SPLASH_IMAGE} "$ISOLINUX_DIR"
 
-    if [ -f "$SPLASH_IMAGE" ]; then
-        cp -f $SPLASH_IMAGE "$ISOLINUX_DIR"
-    fi
-    sed -i  -e "s|@@SPLASHIMAGE@@|$(basename $SPLASH_IMAGE)|" \
+    sed -i  -e "s|@@SPLASHIMAGE@@|${SPLASH_IMAGE}|" \
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
@@ -182,9 +182,9 @@ generate_isolinux_boot() {
 }
 
 generate_grub_efi_boot() {
-    cp -f $MKLIVE_DATADIR/grub.cfg $GRUB_DIR
-    cp -f $MKLIVE_DATADIR/grub_void.cfg.in $GRUB_DIR/grub_void.cfg
-    sed -i  -e "s|@@SPLASHIMAGE@@|$(basename $SPLASH_IMAGE)|" \
+    cp -f grub/grub.cfg $GRUB_DIR
+    cp -f grub/grub_void.cfg.in $GRUB_DIR/grub_void.cfg
+    sed -i  -e "s|@@SPLASHIMAGE@@|${SPLASH_IMAGE}|" \
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
@@ -274,11 +274,8 @@ fi
 if [ -z "$GRUB_DATADIR" ]; then
     GRUB_DATADIR=/usr/share/grub
 fi
-if [ -z "$MKLIVE_DATADIR" ]; then
-    MKLIVE_DATADIR=/usr/share/void-mklive
-fi
 if [ -z "$SPLASH_IMAGE" ]; then
-    SPLASH_IMAGE=/usr/share/void-artwork/splash.png
+    SPLASH_IMAGE=splash.png
 fi
 if [ -z "$XBPS_INSTALL_CMD" ]; then
     XBPS_INSTALL_CMD=xbps-install
