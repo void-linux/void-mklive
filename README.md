@@ -2,11 +2,11 @@
 
 This repository contains utilities for Void Linux:
 
- * void-installer (The Void Linux el-cheapo installer for x86)
- * void-mklive    (The Void Linux live image maker for x86)
+ * installer (The Void Linux el-cheapo installer for x86)
+ * mklive    (The Void Linux live image maker for x86)
 
- * void-mkimage   (The Void Linux image maker for ARM platforms)
- * void-mkrootfs  (The Void Linux rootfs maker for ARM platforms)
+ * mkimage   (The Void Linux image maker for ARM platforms)
+ * mkrootfs  (The Void Linux rootfs maker for ARM platforms)
 
 #### Dependencies
 
@@ -19,3 +19,14 @@ This repository contains utilities for Void Linux:
  * parted (to generate image)
  * qemu-user-static binaries (to generate foreign rootfs)
 
+#### Usage
+
+Type
+
+    $ make
+
+and then see the usage output:
+
+    $ ./mklive.sh -h
+    $ ./mkrootfs.sh -h
+    $ ./mkimage.sh -h
