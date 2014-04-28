@@ -134,7 +134,7 @@ install_packages() {
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
-    xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales
+    xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales >>$LOGFILE 2>&1
 
     if [ -x installer.sh ]; then
         install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
@@ -213,6 +213,7 @@ generate_grub_efi_boot() {
 
 generate_squashfs() {
     # Find out required size for the rootfs and create an ext3fs image off it.
+    modprobe -q loop
     ROOTFS_SIZE=$(du -sk "$ROOTFS"|awk '{print $1}')
     mkdir -p "$BUILDDIR/tmp/LiveOS"
     dd if=/dev/zero of="$BUILDDIR/tmp/LiveOS/ext3fs.img" \
