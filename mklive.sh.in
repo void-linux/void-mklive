@@ -366,7 +366,7 @@ KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS -R --property pkgver ${_linux_series}
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion $KERNELVERSION)
 
 if [ -z "$OUTPUT_FILE" ]; then
-    OUTPUT_FILE="$HOME/void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
+    OUTPUT_FILE="void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
 fi
 
 info_msg "Redirecting stdout/stderr to $LOGFILE ..."
