@@ -192,6 +192,8 @@ generate_grub_efi_boot() {
     mkdir -p $GRUB_DIR/fonts
     cp -f $GRUB_DATADIR/unicode.pf2 $GRUB_DIR/fonts
 
+    modprobe -q loop
+
     # Create EFI vfat image.
     dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=4096  >>$LOGFILE 2>&1
     mkfs.vfat -F12 -S 512 -n "grub_uefi" "$GRUB_DIR/efiboot.img" >>$LOGFILE 2>&1
@@ -213,7 +215,6 @@ generate_grub_efi_boot() {
 
 generate_squashfs() {
     # Find out required size for the rootfs and create an ext3fs image off it.
-    modprobe -q loop
     ROOTFS_SIZE=$(du -sk "$ROOTFS"|awk '{print $1}')
     mkdir -p "$BUILDDIR/tmp/LiveOS"
     dd if=/dev/zero of="$BUILDDIR/tmp/LiveOS/ext3fs.img" \
