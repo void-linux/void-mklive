@@ -649,7 +649,7 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
 
         if [ "$mkfs" -eq 1 ]; then
             case "$fstype" in
-            btrfs) MKFS="mkfs.btrfs"; modprobe btrfs >$LOG 2>&1;;
+            btrfs) MKFS="mkfs.btrfs -f"; modprobe btrfs >$LOG 2>&1;;
             ext2) MKFS="mke2fs"; modprobe ext2 >$LOG 2>&1;;
             ext3) MKFS="mke2fs -j"; modprobe ext3 >$LOG 2>&1;;
             ext4) MKFS="mke2fs -t ext4"; modprobe ext4 >$LOG 2>&1;;
