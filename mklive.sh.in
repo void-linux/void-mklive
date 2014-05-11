@@ -245,7 +245,7 @@ generate_iso_image() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat -no-emul-boot \
         -isohybrid-mbr $SYSLINUX_DATADIR/isohdpfx.bin \
-        -output "$OUTPUT_FILE" "$BUILDDIR" >>$LOGFILE 2>&1
+        -output "$CURDIR/$OUTPUT_FILE" "$BUILDDIR" >>$LOGFILE 2>&1
 }
 
 #
@@ -327,6 +327,8 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "Must be run as root, exiting..."
     exit 1
 fi
+
+readonly CURDIR="$PWD"
 
 ISO_VOLUME="VOID_LIVE"
 if [ -n "$ROOTDIR" ]; then
@@ -416,7 +418,7 @@ generate_iso_image
 info_msg "[7/7] Removing build directory..."
 rm -rf "$BUILDDIR"
 
-hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
-info_msg "Created $(readlink -f $OUTPUT_FILE) ($hsize) successfully."
+hsize=$(du -sh "$CURDIR/$OUTPUT_FILE"|awk '{print $1}')
+info_msg "Created $(readlink -f $CURDIR/$OUTPUT_FILE) ($hsize) successfully."
 
 exit 0
