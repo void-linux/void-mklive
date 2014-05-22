@@ -3,7 +3,7 @@
 # vim: set ts=4 sw=4 et:
 #
 #-
-# Copyright (c) 2009-2013 Juan Romero Pardines.
+# Copyright (c) 2009-2014 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 set -E
 trap "echo; error_out $LINENO $?" INT TERM HUP ERR
 
+readonly REQUIRED_PKGS="base-files syslinux grub-x86_64-efi squashfs-tools xorriso"
 readonly PROGNAME=$(basename $0)
 
 info_msg() {
@@ -65,48 +66,22 @@ and follow the on-screen instructions. Thanks for using Void Linux.
 _EOF
 }
 
-write_conf_file() {
-    cat > "$1" <<_EOF
-# *-*- sh -*-*
-# Default configuration file for vmklive-@VERSION@.
-#
-# List of packages to be installed into the live image.
-# NOTE: base-system and dialog packages are always added by default.
-#
-#PACKAGE_LIST=""
-
-# Default keymap to use.
-KEYMAP=us
-
-# Default locale to use.
-LOCALE=en_US.UTF-8
-
-# Path to XBPS utilities.
-#XBPS_INSTALL_CMD=xbps-install
-#XBPS_QUERY_CMD=xbps-query
-#XBPS_RECONFIGURE_CMD=xbps-reconfigure
-#XBPS_REMOVE_CMD=xbps-remove
-#XBPS_RINDEX_CMD=xbps-rindex
-#XBPS_UHELPER_CMD=xbps-uhelper
-
-# XBPS cache directory to install packages from.
-#REPOSITORY_CACHE=/blah/foo
-
-_EOF
-    chmod 644 "$1"
-}
-
 usage() {
     cat <<_EOF
 Usage: $(basename $0) [options]
 
 Options:
- -C file            Path to configuration file (defaults to ~/.mklive.conf)
- -c (gzip|bzip2|xz) Compression type for the initramfs/squashfs image.
- -r rootdir         Use this directory to generate the image (if unset, defaults to cwd).
- -o outfile         Output file name for the ISO image.
- -s splash          Splash image file for isolinux.
- -V                 Show version.
+ -r <repo-url>      Use this XBPS repository (may be specified multiple times).
+ -c <cachedir>      Use this XBPS cache directory (/var/cache/xbps if unset).
+ -k <keymap>        Default keymap to use (us if unset)
+ -l <locale>        Default locale to use (en_US.UTF-8 if unset).
+ -i <gzip|bzip2|xz> Compression type for the initramfs image (gzip if unset).
+ -s <gzip|bzip2|xz> Compression type for the squashfs image (xz if unset)
+ -o <file>          Output file name for the ISO image (auto if unset).
+ -p "pkg pkgN ..."  Install additional packages into the ISO image.
+
+The $(basename $0) script generates a live image of the Void Linux distribution.
+This ISO image can be written to a CD/DVD-ROM or any USB stick.
 _EOF
     exit 1
 }
@@ -118,19 +93,24 @@ copy_void_keys() {
     fi
 }
 
+install_prereqs() {
+    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${REQUIRED_PKGS} >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then
+        info_msg "Failed to install required software, exiting..."
+        error_out
+    fi
+}
+
 install_packages() {
-    for f in ${PACKAGE_LIST}; do
-        info_msg "  $f"
-    done
     # Check that all pkgs are reachable.
-    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -n ${PACKAGE_LIST} >>$LOGFILE 2>&1
+    ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} >>$LOGFILE 2>&1
     if [ $? -ne 0 ]; then
         info_msg "Missing required binary packages, exiting..."
         error_out
     fi
-    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} ${PACKAGE_LIST} >>$LOGFILE 2>&1
-    ${XBPS_INSTALL_CMD} ${XBPS_ARGS} -u >>$LOGFILE 2>&1
-    ${XBPS_REMOVE_CMD} ${XBPS_ARGS} -o >>$LOGFILE 2>&1
+    ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} >>$LOGFILE 2>&1
+    ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR  -yu >>$LOGFILE 2>&1
+    ${XBPS_REMOVE_CMD} -r $ROOTFS $XBPS_CACHEDIR -o >>$LOGFILE 2>&1
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
@@ -149,19 +129,17 @@ copy_dracut_files() {
 }
 
 generate_initramfs() {
-    copy_void_keys $ROOTFS/kernel_temp
-    copy_dracut_files $ROOTFS/kernel_temp
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
-    $XBPS_INSTALL_CMD -r $ROOTFS/kernel_temp -Sy \
+    copy_dracut_files $VOIDHOSTDIR
+    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y \
         base-system -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
 
-    xbps-uchroot $ROOTFS/kernel_temp /usr/bin/dracut --${COMPRESSTYPE} \
+    xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${COMPRESSTYPE} \
         --force-add "vmklive" "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
 
-    mv $ROOTFS/kernel_temp/boot/initrd.lz $BOOT_DIR
-    cp $ROOTFS/kernel_temp/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
-    rm -rf $ROOTFS/kernel_temp
+    mv $VOIDHOSTDIR/boot/initrd.lz $BOOT_DIR
+    cp $VOIDHOSTDIR/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
 }
 
 generate_isolinux_boot() {
@@ -189,8 +167,6 @@ generate_grub_efi_boot() {
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
         -e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
-    mkdir -p $GRUB_DIR/fonts
-    cp -f $GRUB_DATADIR/unicode.pf2 $GRUB_DIR/fonts
 
     modprobe -q loop
 
@@ -202,9 +178,9 @@ generate_grub_efi_boot() {
     LOOP_DEVICE="$(losetup --show --find ${GRUB_DIR}/efiboot.img)"
     mount -o rw,flush -t vfat "${LOOP_DEVICE}" "${GRUB_EFI_TMPDIR}" >>$LOGFILE 2>&1
 
+    cd $IMAGEDIR
     mkdir -p "${GRUB_EFI_TMPDIR}/EFI/boot/"
-    cd "$BUILDDIR"
-    grub-mkstandalone --directory="/usr/lib/grub/x86_64-efi" \
+    grub-mkstandalone --directory="$VOIDHOSTDIR/usr/lib/grub/x86_64-efi" \
         --format="x86_64-efi" \
         --compression="xz" --output="${GRUB_EFI_TMPDIR}/EFI/boot/bootx64.efi" \
         "boot/grub/grub.cfg" >>$LOGFILE 2>&1
@@ -222,14 +198,13 @@ generate_squashfs() {
     mkdir -p "$BUILDDIR/tmp-rootfs"
     mkfs.ext3 -F -m1 "$BUILDDIR/tmp/LiveOS/ext3fs.img" >>$LOGFILE 2>&1
     mount -o loop "$BUILDDIR/tmp/LiveOS/ext3fs.img" "$BUILDDIR/tmp-rootfs"
-    cd $BUILDDIR
-    cp -a rootfs/* tmp-rootfs/
+    cp -a $ROOTFS/* $BUILDDIR/tmp-rootfs/
     umount -f "$BUILDDIR/tmp-rootfs"
-    mkdir -p "$BUILDDIR/LiveOS"
+    mkdir -p "$IMAGEDIR/LiveOS"
 
-    mksquashfs "$BUILDDIR/tmp" "$BUILDDIR/LiveOS/squashfs.img" \
+    mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
         -comp ${COMPRESSTYPE} >>$LOGFILE 2>&1
-    chmod 444 "$BUILDDIR/LiveOS/squashfs.img"
+    chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
     # Remove rootfs and temporary dirs, we don't need them anymore.
     rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" "$BUILDDIR/tmp"
 }
@@ -245,82 +220,38 @@ generate_iso_image() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat -no-emul-boot \
         -isohybrid-mbr $SYSLINUX_DATADIR/isohdpfx.bin \
-        -output "$CURDIR/$OUTPUT_FILE" "$BUILDDIR" >>$LOGFILE 2>&1
+        -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" >>$LOGFILE 2>&1
 }
+
+# Required packages in the image for a working system.
+PACKAGE_LIST="base-system dialog"
 
 #
 # main()
 #
-while getopts "C:c:o:r:s:hV" opt; do
+while getopts "r:c:k:l:i:s:o:p:h" opt; do
     case $opt in
-        C) CONFIG_FILE="$OPTARG";;
-        c) COMPRESSTYPE="$OPTARG";;
+        r) XBPS_REPOSITORY+="--repository=$OPTARG ";;
+        c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
+        k) KEYMAP="$OPTARG";;
+        l) LOCALE="$OPTARG";;
+        i) INITRAMFS_COMPRESSION="$OPTARG";;
+        s) SQUASHFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
-        r) ROOTDIR="$OPTARG";;
-        s) SPLASH_IMAGE="$OPTARG";;
+        p) PACKAGE_LIST+=" $OPTARG";;
         h) usage;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
 shift $(($OPTIND - 1))
 
 # Set defaults
-if [ -z "$CONFIG_FILE" ]; then
-    CONFIG_FILE="$HOME/.mklive.conf"
-fi
+: ${XBPS_CACHEDIR=--cachedir=/var/cache/xbps}
+: ${KEYMAP:=us}
+: ${LOCALE:=en_US.UTF-8}
+: ${INITRAMFS_COMPRESSION:=gzip}
+: ${SQUASHFS_COMPRESSION:=xz}
+
 LOGFILE="$(mktemp -t vmklive-XXXXXXXXXX.log)"
-
-if [ -z "$SYSLINUX_DATADIR" ]; then
-    SYSLINUX_DATADIR=/usr/share/syslinux
-fi
-if [ -z "$GRUB_DATADIR" ]; then
-    GRUB_DATADIR=/usr/share/grub
-fi
-if [ -z "$SPLASH_IMAGE" ]; then
-    SPLASH_IMAGE=splash.png
-fi
-if [ -z "$XBPS_INSTALL_CMD" ]; then
-    XBPS_INSTALL_CMD=xbps-install
-fi
-if [ -z "$XBPS_REMOVE_CMD" ]; then
-    XBPS_REMOVE_CMD=xbps-remove
-fi
-if [ -z "$XBPS_QUERY_CMD" ]; then
-    XBPS_QUERY_CMD=xbps-query
-fi
-if [ -z "$XBPS_RINDEX_CMD" ]; then
-    XBPS_RINDEX_CMD=xbps-rindex
-fi
-if [ -z "$XBPS_UHELPER_CMD" ]; then
-    XBPS_UHELPER_CMD=xbps-uhelper
-fi
-if [ -z "$XBPS_RECONFIGURE_CMD" ]; then
-    XBPS_RECONFIGURE_CMD=xbps-reconfigure
-fi
-if [ -z "$COMPRESSTYPE" ]; then
-    COMPRESSTYPE=xz
-fi
-if [ -z "$REPOSITORYCACHE" ]; then
-    REPOSITORY_CACHE="/var/cache/xbps"
-fi
-
-# Create or read configuration file.
-if [ ! -r $CONFIG_FILE ]; then
-    info_msg "Creating config file at $CONFIG_FILE."
-    write_conf_file $CONFIG_FILE
-fi
-
-. $CONFIG_FILE
-
-if [ -z "$PACKAGE_LIST" ]; then
-    PACKAGE_LIST="base-system dialog"
-else
-    PACKAGE_LIST="base-system dialog $PACKAGE_LIST"
-fi
-if [ ! -f $SYSLINUX_DATADIR/isolinux.bin ]; then
-    echo "Missing required isolinux files in $SYSLINUX_DATADIR, exiting..."
-    exit 1
-fi
 
 # Check for root permissions.
 if [ "$(id -u)" -ne 0 ]; then
@@ -337,13 +268,26 @@ else
     BUILDDIR=$(mktemp --tmpdir="$(pwd -P)" -d)
 fi
 BUILDDIR=$(readlink -f $BUILDDIR)
-ROOTFS="$BUILDDIR/rootfs"
-BOOT_DIR="$BUILDDIR/boot"
+IMAGEDIR="$BUILDDIR/image"
+ROOTFS="$IMAGEDIR/rootfs"
+VOIDHOSTDIR="$BUILDDIR/void-host"
+BOOT_DIR="$IMAGEDIR/boot"
 ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
-mkdir -p $ISOLINUX_DIR $GRUB_DIR
+: ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
+: ${SPLASH_IMAGE:=splash.png}
+: ${XBPS_INSTALL_CMD:=xbps-install}
+: ${XBPS_REMOVE_CMD:=xbps-remove}
+: ${XBPS_QUERY_CMD:=xbps-query}
+: ${XBPS_RINDEX_CMD:=xbps-rindex}
+: ${XBPS_UHELPER_CMD:=xbps-uhelper}
+: ${XBPS_RECONFIGURE_CMD:=xbps-reconfigure}
+: ${COMPRESSTYPE:=xz}
+: ${REPOSITORY_CACHE:=/var/cache/xbps}
+
+mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
 #
 # Check there are repos registered before anything.
 #
@@ -353,30 +297,30 @@ if [ $? -ne 0 ]; then
     error_out
 fi
 
-XBPS_ARGS="-r $ROOTFS -y"
-XBPS_ARGS="$XBPS_ARGS -c $REPOSITORY_CACHE"
-XBPS_VERSION=$($XBPS_QUERY_CMD -V|awk '{print $2}')
-case $XBPS_VERSION in
-    *) ;;
-esac
+info_msg "Redirecting stdout/stderr to $LOGFILE ..."
 
+info_msg "[1/9] Synchronizing XBPS repository data..."
 # Sync index for remote repos first.
 copy_void_keys $ROOTFS
-$XBPS_INSTALL_CMD -r $ROOTFS -S >/dev/null 2>&1
+$XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S >/dev/null 2>&1
+cp -a $ROOTFS/* $VOIDHOSTDIR
 
-_linux_series=$($XBPS_QUERY_CMD -r $ROOTFS -Rx linux)
-KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS -R --property pkgver ${_linux_series})
+_linux_series=$($XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -x linux)
+KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion $KERNELVERSION)
 
-if [ -z "$OUTPUT_FILE" ]; then
-    OUTPUT_FILE="void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"
-fi
+: ${OUTPUT_FILE="void-live-$(uname -m)-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
-info_msg "Redirecting stdout/stderr to $LOGFILE ..."
+#
+# Install required packages to generate the image.
+#
+info_msg "[2/9] Installing software to generate the image: ${REQUIRED_PKGS} ..."
+install_prereqs
+
 #
 # Install live system and specified packages.
 #
-info_msg "[1/7] Installing packages into the rootfs..."
+info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
 #
@@ -385,37 +329,39 @@ install_packages
 mkdir -p "$ROOTFS"/etc
 write_etc_motd
 
+export PATH=$VOIDHOSTDIR/usr/bin:$VOIDHOSTDIR/usr/sbin:$PATH
+export LD_LIBRARY_PATH=$VOIDHOSTDIR/usr/lib
 #
 # Generate the initramfs.
 #
-info_msg "[2/7] Generating initramfs image ($COMPRESSTYPE)..."
+info_msg "[4/9] Generating initramfs image ($COMPRESSTYPE)..."
 generate_initramfs
 
 #
 # Generate the isolinux boot.
 #
-info_msg "[3/7] Generating isolinux support for PC-BIOS systems..."
+info_msg "[5/9] Generating isolinux support for PC-BIOS systems..."
 generate_isolinux_boot
 
 #
 # Generate the GRUB EFI boot.
 #
-info_msg "[4/7] Generating GRUB support for EFI systems..."
+info_msg "[6/9] Generating GRUB support for EFI systems..."
 generate_grub_efi_boot
 
 #
 # Generate the squashfs image from rootfs.
 #
-info_msg "[5/7] Generating squashfs image ($COMPRESSTYPE) from rootfs..."
+info_msg "[7/9] Generating squashfs image ($COMPRESSTYPE) from rootfs..."
 generate_squashfs
 
 #
 # Generate the ISO image.
 #
-info_msg "[6/7] Generating ISO image..."
+info_msg "[8/9] Generating ISO image..."
 generate_iso_image
 
-info_msg "[7/7] Removing build directory..."
+info_msg "[9/9] Removing build directory..."
 rm -rf "$BUILDDIR"
 
 hsize=$(du -sh "$CURDIR/$OUTPUT_FILE"|awk '{print $1}')

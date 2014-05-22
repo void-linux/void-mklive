@@ -12,12 +12,8 @@ This repository contains utilities for Void Linux:
 
  * xbps>=0.35
  * GNU bash
- * syslinux (to generate the PC-BIOS bootloader)
- * dosfstools (to generate the EFI bootloader)
- * xorriso (to generate the ISO image)
- * squashfs-tools (to generate the squashed rootfs)
- * parted (to generate image)
- * qemu-user-static binaries (to generate foreign rootfs)
+ * parted (for mkimage)
+ * qemu-user-static binaries (for mkrootfs)
 
 #### Usage
 
