@@ -75,7 +75,7 @@ Options:
  -c <cachedir>      Use this XBPS cache directory (/var/cache/xbps if unset).
  -k <keymap>        Default keymap to use (us if unset)
  -l <locale>        Default locale to use (en_US.UTF-8 if unset).
- -i <gzip|bzip2|xz> Compression type for the initramfs image (gzip if unset).
+ -i <gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
  -s <gzip|bzip2|xz> Compression type for the squashfs image (xz if unset)
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
@@ -132,13 +132,12 @@ generate_initramfs() {
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
     copy_dracut_files $VOIDHOSTDIR
-    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y \
-        base-system -c $REPOSITORY_CACHE >>$LOGFILE 2>&1
+    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y base-system >>$LOGFILE 2>&1
 
-    xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${COMPRESSTYPE} \
-        --force-add "vmklive" "/boot/initrd.lz" $KERNELVERSION >>$LOGFILE 2>&1
+    xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
+        --force-add "vmklive" "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
 
-    mv $VOIDHOSTDIR/boot/initrd.lz $BOOT_DIR
+    mv $VOIDHOSTDIR/boot/initrd $BOOT_DIR
     cp $VOIDHOSTDIR/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
 }
 
@@ -203,7 +202,7 @@ generate_squashfs() {
     mkdir -p "$IMAGEDIR/LiveOS"
 
     mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
-        -comp ${COMPRESSTYPE} >>$LOGFILE 2>&1
+        -comp ${SQUASHFS_COMPRESSION} >>$LOGFILE 2>&1
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
     # Remove rootfs and temporary dirs, we don't need them anymore.
     rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" "$BUILDDIR/tmp"
@@ -248,7 +247,7 @@ shift $(($OPTIND - 1))
 : ${XBPS_CACHEDIR=--cachedir=/var/cache/xbps}
 : ${KEYMAP:=us}
 : ${LOCALE:=en_US.UTF-8}
-: ${INITRAMFS_COMPRESSION:=gzip}
+: ${INITRAMFS_COMPRESSION:=xz}
 : ${SQUASHFS_COMPRESSION:=xz}
 
 LOGFILE="$(mktemp -t vmklive-XXXXXXXXXX.log)"
@@ -284,8 +283,6 @@ ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 : ${XBPS_RINDEX_CMD:=xbps-rindex}
 : ${XBPS_UHELPER_CMD:=xbps-uhelper}
 : ${XBPS_RECONFIGURE_CMD:=xbps-reconfigure}
-: ${COMPRESSTYPE:=xz}
-: ${REPOSITORY_CACHE:=/var/cache/xbps}
 
 mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
 #
@@ -334,7 +331,7 @@ export LD_LIBRARY_PATH=$VOIDHOSTDIR/usr/lib
 #
 # Generate the initramfs.
 #
-info_msg "[4/9] Generating initramfs image ($COMPRESSTYPE)..."
+info_msg "[4/9] Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
 
 #
@@ -352,7 +349,7 @@ generate_grub_efi_boot
 #
 # Generate the squashfs image from rootfs.
 #
-info_msg "[7/9] Generating squashfs image ($COMPRESSTYPE) from rootfs..."
+info_msg "[7/9] Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
 
 #

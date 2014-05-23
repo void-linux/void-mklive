@@ -31,6 +31,6 @@ if [ cpuid -l ]; then
 		root=live:CDLABEL=VOID_LIVE ro \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
 		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@
-        initrd (${voidlive})/boot/initrd.lz
+        initrd (${voidlive})/boot/initrd
     }
 fi
