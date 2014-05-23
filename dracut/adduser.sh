@@ -4,6 +4,8 @@
 
 type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 
+echo void-live > ${NEWROOT}/etc/hostname
+
 USERNAME=$(getarg live.user)
 [ -z "$USERNAME" ] && USERNAME=anon
 
@@ -12,16 +14,24 @@ echo "USERNAME=$USERNAME" >> ${NEWROOT}/etc/default/live.conf
 chmod 644 ${NEWROOT}/etc/default/live.conf
 
 # Create new user and remove password. We'll use autologin by default.
-chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G \
-    systemd-journal,wheel -s /bin/bash
+chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G systemd-journal,wheel -s /bin/bash
 chroot ${NEWROOT} passwd -d $USERNAME >/dev/null 2>&1
+
+# Setup default root password (voidlinux).
+chroot ${NEWROOT} sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'
 
 # Enable sudo permission by default.
 if [ -f ${NEWROOT}/etc/sudoers ]; then
     echo "${USERNAME}  ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
 fi
 
-# Enable autologin for agetty(8).
+# Enable autologin for agetty(8) on tty1 and disable pam_systemd.
+if [ -d ${NEWROOT}/etc/runit ]; then
+    sed -e "s|\-8|& -a $USERNAME|g" -i ${NEWROOT}/etc/sv/agetty-tty1/run
+    sed -e '/systemd/d' -i ${NEWROOT}/etc/pam.d/*
+fi
+
+# Enable autologin for agetty(8) on tty1 with systemd.
 if [ -d ${NEWROOT}/etc/systemd/system ]; then
     rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
     sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \

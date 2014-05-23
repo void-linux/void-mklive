@@ -18,5 +18,5 @@ KEYMAP=$(getarg vconsole.keymap)
 if [ -f ${NEWROOT}/etc/vconsole.conf ]; then
     sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/vconsole.conf
 elif [ -f ${NEWROOT}/etc/rc.conf ]; then
-    sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/rc.conf.conf
+    sed -e "s,^#KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/rc.conf
 fi
