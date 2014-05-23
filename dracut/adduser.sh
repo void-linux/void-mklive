@@ -22,12 +22,14 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
 fi
 
 # Enable autologin for agetty(8).
-rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
-sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \
-    "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
-    "${NEWROOT}/etc/systemd/system/getty@.service"
-ln -sf /etc/systemd/system/getty@.service \
-    "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+if [ -d ${NEWROOT}/etc/systemd/system ]; then
+    rm -f "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+    sed -e "s|/sbin/agetty --noclear|& -a ${USERNAME}|g" \
+        "${NEWROOT}/usr/lib/systemd/system/getty@.service" > \
+        "${NEWROOT}/etc/systemd/system/getty@.service"
+    ln -sf /etc/systemd/system/getty@.service \
+        "${NEWROOT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+fi
 
 if [ -d ${NEWROOT}/etc/polkit-1 ]; then
     # If polkit is installed allow users in the wheel group to run anything.

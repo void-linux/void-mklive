@@ -14,4 +14,9 @@ echo "LC_COLLATE=C" >> $NEWROOT/etc/locale.conf
 # set keymap too.
 KEYMAP=$(getarg vconsole.keymap)
 [ -z "$KEYMAP" ] && KEYMAP="us"
-sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/vconsole.conf
+
+if [ -f ${NEWROOT}/etc/vconsole.conf ]; then
+    sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/vconsole.conf
+elif [ -f ${NEWROOT}/etc/rc.conf ]; then
+    sed -e "s,^KEYMAP=.*,KEYMAP=$KEYMAP," -i $NEWROOT/etc/rc.conf.conf
+fi

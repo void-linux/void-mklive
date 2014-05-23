@@ -113,8 +113,10 @@ install_packages() {
     ${XBPS_REMOVE_CMD} -r $ROOTFS $XBPS_CACHEDIR -o >>$LOGFILE 2>&1
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
-    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
-    xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales >>$LOGFILE 2>&1
+    if [ -f $ROOTFS/etc/default/libc-locales ]; then
+        sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
+        xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales >>$LOGFILE 2>&1
+    fi
 
     if [ -x installer.sh ]; then
         install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
