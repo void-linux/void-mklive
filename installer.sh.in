@@ -262,7 +262,11 @@ ${RESET}\n" 18 80
 }
 
 menu_keymap() {
-    local _keymaps="$(localectl --no-pager list-keymaps)"
+    if [ -x "/usr/bin/localectl" ]; then
+        local _keymaps="$(localectl --no-pager list-keymaps)"
+    else
+        local _keymaps="$(find /usr/share/kbd/keymaps/ -type f -iname "*.map.gz" -printf "%f\n" | sed 's|.map.gz||g' | sort)"
+    fi
     local _KEYMAPS=
 
     for f in ${_keymaps}; do
@@ -283,7 +287,11 @@ menu_keymap() {
 
 set_keymap() {
     local KEYMAP=$(get_option KEYMAP)
-    sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/vconsole.conf
+    if [ -f "/etc/vconsole.conf" ]; then
+        sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/vconsole.conf
+    else
+        sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/rc.conf
+    fi
 }
 
 menu_locale() {
@@ -315,7 +323,11 @@ set_locale() {
 }
 
 menu_timezone() {
-    local _tzones="$(timedatectl --no-pager list-timezones)"
+    if [ -x "/usr/bin/timedatectl" ]; then
+        local _tzones="$(timedatectl --no-pager list-timezones)"
+    else
+        local _tzones="$(find /usr/share/zoneinfo Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
+    fi
     local _TIMEZONES=
 
     for f in ${_tzones}; do
@@ -430,7 +442,7 @@ set_bootloader() {
 
 test_network() {
     rm -f xtraeme.asc && \
-        xbps-uhelper fetch http://xbps.nopcode.org/live/xtraeme.asc >$LOG 2>&1
+        xbps-uhelper fetch http://repo.voidlinux.eu/live/xtraeme.asc >$LOG 2>&1
     if [ $? -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
@@ -765,6 +777,14 @@ install_packages() {
     fi
 }
 
+enable_dhcpd() {
+    if [ -x "/usr/bin/systemctl" ]; then
+        chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
+    else
+        ln -s /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
+    fi
+}
+
 menu_install() {
     # Don't continue if filesystems are not ready.
     validate_filesystems || return 1
@@ -849,9 +869,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ "$_type" = "dhcp" ]; then
             if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
                 cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                chroot $TARGETDIR systemctl enable dhcpcd@${_dev}.service >$LOG 2>&1
+                if [ -x "/usr/bin/systemctl" ]; then
+                    chroot $TARGETDIR systemctl enable dhcpcd@${_dev}.service >$LOG 2>&1
+                else
+                    ln -s /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
+                fi
             else
-                chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
+                enable_dhcpd
             fi
         elif [ -n "$dev" -a -n "$type" = "static" ]; then
             # static IP through dhcpcd.
@@ -862,7 +886,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             echo "static ip_address=$_ip" >>$TARGETDIR/etc/dhcpcd.conf
             echo "static routers=$_gw" >>$TARGETDIR/etc/dhcpcd.conf
             echo "static domain_name_servers=$_dns1 $_dns2" >>$TARGETDIR/etc/dhcpcd.conf
-            chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
+            enable_dhcpd
         fi
     fi
 
