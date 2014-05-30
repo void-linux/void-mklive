@@ -58,6 +58,11 @@ if [ -e /sys/firmware/efi/systab ]; then
     EFI_SYSTEM=1
 fi
 
+# Detect if systemd is installed
+if [ "$(cat /proc/1/comm)" = "systemd" ]; then
+    SYSTEMD_INIT=1
+fi
+
 # dialog colors
 BLACK="\Z0"
 RED="\Z1"
@@ -262,7 +267,7 @@ ${RESET}\n" 18 80
 }
 
 menu_keymap() {
-    if [ -x "/usr/bin/localectl" ]; then
+    if [ "$SYSTEMD_INIT" -eq 1 ]; then
         local _keymaps="$(localectl --no-pager list-keymaps)"
     else
         local _keymaps="$(find /usr/share/kbd/keymaps/ -type f -iname "*.map.gz" -printf "%f\n" | sed 's|.map.gz||g' | sort)"
@@ -323,10 +328,10 @@ set_locale() {
 }
 
 menu_timezone() {
-    if [ -x "/usr/bin/timedatectl" ]; then
+    if [ "$SYSTEMD_INIT" -eq 1 ]; then
         local _tzones="$(timedatectl --no-pager list-timezones)"
     else
-        local _tzones="$(find /usr/share/zoneinfo Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
+        local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
     fi
     local _TIMEZONES=
 
@@ -778,7 +783,7 @@ install_packages() {
 }
 
 enable_dhcpd() {
-    if [ -x "/usr/bin/systemctl" ]; then
+    if [ "$SYSTEMD_INIT" -eq 1 ]; then
         chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
     else
         ln -s /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
@@ -869,7 +874,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ "$_type" = "dhcp" ]; then
             if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
                 cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                if [ -x "/usr/bin/systemctl" ]; then
+                if [ "$SYSTEMD_INIT" -eq 1 ]; then
                     chroot $TARGETDIR systemctl enable dhcpcd@${_dev}.service >$LOG 2>&1
                 else
                     ln -s /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
