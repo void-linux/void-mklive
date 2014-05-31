@@ -71,6 +71,7 @@ usage() {
 Usage: $(basename $0) [options]
 
 Options:
+ -b <system-pkg>    Set an alternative base-system package (defaults to base-system).
  -r <repo-url>      Use this XBPS repository (may be specified multiple times).
  -c <cachedir>      Use this XBPS cache directory (/var/cache/xbps if unset).
  -k <keymap>        Default keymap to use (us if unset)
@@ -138,8 +139,12 @@ generate_initramfs() {
     copy_dracut_files $VOIDHOSTDIR
     $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y base-system >>$LOGFILE 2>&1
 
+    if [ "$BASE_SYSTEM_PKG" = "base-system-runit" ]; then
+        # for runit omit the systemd module
+        _args="--omit 'systemd'"
+    fi
     xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
-        --force-add "vmklive" "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
+        --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $VOIDHOSTDIR/boot/initrd $BOOT_DIR
     cp $VOIDHOSTDIR/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
@@ -226,14 +231,12 @@ generate_iso_image() {
         -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" >>$LOGFILE 2>&1
 }
 
-# Required packages in the image for a working system.
-PACKAGE_LIST="base-system dialog"
-
 #
 # main()
 #
-while getopts "r:c:k:l:i:s:o:p:h" opt; do
+while getopts "b:r:c:k:l:i:s:o:p:h" opt; do
     case $opt in
+        b) BASE_SYSTEM_PKG="$OPTARG";;
         r) XBPS_REPOSITORY+="--repository=$OPTARG ";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         k) KEYMAP="$OPTARG";;
@@ -241,7 +244,7 @@ while getopts "r:c:k:l:i:s:o:p:h" opt; do
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
-        p) PACKAGE_LIST+=" $OPTARG";;
+        p) PACKAGE_LIST="$OPTARG";;
         h) usage;;
     esac
 done
@@ -253,6 +256,10 @@ shift $(($OPTIND - 1))
 : ${LOCALE:=en_US.UTF-8}
 : ${INITRAMFS_COMPRESSION:=xz}
 : ${SQUASHFS_COMPRESSION:=xz}
+: ${BASE_SYSTEM_PKG:=base-system}
+
+# Required packages in the image for a working system.
+PACKAGE_LIST="$BASE_SYSTEM_PKG dialog $PACKAGE_LIST"
 
 LOGFILE="$(mktemp -t vmklive-XXXXXXXXXX.log)"
 
