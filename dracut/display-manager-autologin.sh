@@ -31,6 +31,8 @@ fi
 
 # Configure lxdm autologin.
 if [ -r ${NEWROOT}/etc/lxdm/lxdm.conf ]; then
-    sed -i -e "s|^\#\# \(autologin=\).*|\1$USERNAME|" \
-        ${NEWROOT}/etc/lxdm/lxdm.conf
+    sed -e "s,.*autologin.*=.*,autologin=$USERNAME," -i ${NEWROOT}/etc/lxdm/lxdm.conf
+    if [ -x ${NEWROOT}/usr/bin/enlightenment_start ]; then
+        sed -e "s,.*session.*=.*,session=/usr/bin/enlightenment_start," -i ${NEWROOT}/etc/lxdm/lxdm.conf
+    fi
 fi
