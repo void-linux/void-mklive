@@ -667,9 +667,9 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
         if [ "$mkfs" -eq 1 ]; then
             case "$fstype" in
             btrfs) MKFS="mkfs.btrfs -f"; modprobe btrfs >$LOG 2>&1;;
-            ext2) MKFS="mke2fs"; modprobe ext2 >$LOG 2>&1;;
-            ext3) MKFS="mke2fs -j"; modprobe ext3 >$LOG 2>&1;;
-            ext4) MKFS="mke2fs -t ext4"; modprobe ext4 >$LOG 2>&1;;
+            ext2) MKFS="mke2fs -F"; modprobe ext2 >$LOG 2>&1;;
+            ext3) MKFS="mke2fs -F -j"; modprobe ext3 >$LOG 2>&1;;
+            ext4) MKFS="mke2fs -F -t ext4"; modprobe ext4 >$LOG 2>&1;;
             f2fs) MKFS="mkfs.f2fs"; modprobe f2fs >$LOG 2>&1;;
             vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
             xfs) MKFS="mkfs.xfs -f"; modprobe xfs >$LOG 2>&1;;
@@ -763,7 +763,7 @@ copy_rootfs() {
 }
 
 install_packages() {
-    local _grub=
+    local _grub= _syspkg=
 
     if [ -n "$EFI_SYSTEM" ]; then
         _grub="grub-x86_64-efi"
@@ -771,10 +771,13 @@ install_packages() {
         _grub="grub"
     fi
 
+    _syspkg="base-system"
+    [ -z "$SYSTEMD_INIT" ] && _syspkg="base-system-runit"
+
     mkdir -p $TARGETDIR/var/db/xbps/keys
     cp /var/db/xbps/keys/*.plist $TARGETDIR/var/db/xbps/keys
     mkdir -p $TARGETDIR/boot/grub
-    stdbuf -oL xbps-install  -r $TARGETDIR -Sy base-system ${_grub} 2>&1 | \
+    stdbuf -oL xbps-install  -r $TARGETDIR -Sy ${_syspkg} ${_grub} 2>&1 | \
         DIALOG --title "Installing base system packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
@@ -824,10 +827,15 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # If source not set use defaults.
     if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
         copy_rootfs
-        # Disable autologin and remove motd from live image.
-        rm -f $TARGETDIR/etc/motd $TARGETDIR/etc/systemd/system/getty@.service
-        # Remove live user.
         . /etc/default/live.conf
+        # Disable autologin and remove motd from live image.
+        if [ "$SYSTEMD_INIT" -eq 1 ]; then
+            rm -f $TARGETDIR/etc/systemd/system/getty@.service
+        else
+            sed -e "s,-a $USERNAME,,g" -i $TARGETDIR/etc/sv/agetty-tty1/run
+        fi
+        rm -f $TARGETDIR/etc/motd
+        # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
         DIALOG --title "Check /dev/tty7 for details" \
