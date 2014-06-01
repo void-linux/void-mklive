@@ -105,7 +105,7 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "b:C:hk:p:r:V" opt; do
+while getopts "b:C:c:hk:p:r:V" opt; do
     case $opt in
         b) PKGBASE="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
