@@ -26,10 +26,10 @@
 
 readonly PROGNAME=$(basename $0)
 readonly ARCH=$(uname -m)
-readonly PKGBASE="base-system"
 readonly VOIDRSAPUBKEY="60:ae:0c:d6:f0:95:17:80:bc:93:46:7a:89:af:a3:2d"
 
 trap 'die "Interrupted! exiting..."' INT TERM HUP
+
 
 info_msg() {
     printf "\033[1m$@\n\033[m"
@@ -49,10 +49,13 @@ Usage: $PROGNAME [options] <platform>
 Supported platforms: cubieboard2, odroid-u2, rpi
 
 Options
+    -b <syspkg> Set an alternative base-system package (defaults to base-system)
+    -c <dir>    Set XBPS cache directory (defaults to /var/cache/xbps)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
     -k <dir>    Full path to a directory with the XBPS RSA public keys for repositories
     -p <pkgs>   Additional packages to install into the rootfs (separated by blanks)
+    -r <repo>   Set XBPS repository (may be set multiple times)
     -V          Show version
 _EOF
 }
@@ -97,15 +100,20 @@ register_binfmt() {
     esac
 }
 
+: ${XBPS_CACHEDIR:=--cachedir=/var/cache/xbps}
+: ${PKGBASE:=base-system}
 #
 # main()
 #
-while getopts "C:hk:p:V" opt; do
+while getopts "b:C:hk:p:r:V" opt; do
     case $opt in
+        b) PKGBASE="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
+        c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         h) usage; exit 0;;
         k) KEYSDIR="$OPTARG";;
         p) EXTRA_PKGS="$OPTARG";;
+        r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
@@ -151,8 +159,8 @@ fi
 mkdir -p $rootfs/var/db/xbps/keys
 cp $KEYSDIR/${VOIDRSAPUBKEY}.plist $rootfs/var/db/xbps/keys
 
-run_cmd "xbps-install -S $XBPS_CONFFILE -r $rootfs"
-run_cmd "xbps-query -R -r $rootfs $XBPS_CONFFILE -ppkgver $PKGBASE"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $rootfs"
+run_cmd_target "xbps-query -R -r $rootfs $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -ppkgver $PKGBASE"
 
 chmod 755 $rootfs
 
@@ -163,7 +171,7 @@ mount_pseudofs
 #
 # Install base-system to the rootfs directory.
 #
-run_cmd_target "xbps-install -S $XBPS_CONFFILE -r $rootfs -y ${PKGS}"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $rootfs -y ${PKGS}"
 
 # Enable en_US.UTF-8 locale and generate it into the target rootfs.
 LOCALE=en_US.UTF-8
@@ -178,12 +186,16 @@ if [ -n "${_ARCH}" ]; then
     register_binfmt
     run_cmd "xbps-reconfigure -r $rootfs base-directories"
     run_cmd "chroot $rootfs xbps-reconfigure shadow"
-    run_cmd "chroot $rootfs xbps-reconfigure systemd"
+    if [ "$PKGBASE" = "base-system" ]; then
+        run_cmd "chroot $rootfs xbps-reconfigure systemd"
+    fi
     run_cmd "chroot $rootfs xbps-reconfigure -a"
     rmdir $rootfs/usr/lib32
     rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
 else
-    run_cmd "chroot $rootfs xbps-reconfigure systemd"
+    if [ "$PKGBASE" = "base-system" ]; then
+        run_cmd "chroot $rootfs xbps-reconfigure systemd"
+    fi
 fi
 
 #
@@ -195,7 +207,7 @@ umount_pseudofs
 # Cleanup rootfs.
 #
 rm -f $rootfs/etc/.pwd.lock 2>/dev/null
-rm -rf $rootfs/var/cache/xbps 2>/dev/null
+rm -rf $rootfs/var/cache/* 2>/dev/null
 
 #
 # Generate final tarball.
