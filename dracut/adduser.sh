@@ -25,10 +25,9 @@ if [ -f ${NEWROOT}/etc/sudoers ]; then
     echo "${USERNAME}  ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
 fi
 
-# Enable autologin for agetty(8) on tty1 and disable pam_systemd.
+# Enable autologin for agetty(8) on tty1 with runit.
 if [ -d ${NEWROOT}/etc/runit ]; then
     sed -e "s|\-8|& -a $USERNAME|g" -i ${NEWROOT}/etc/sv/agetty-tty1/run
-    sed -e '/systemd/d' -i ${NEWROOT}/etc/pam.d/*
 fi
 
 # Enable autologin for agetty(8) on tty1 with systemd.
