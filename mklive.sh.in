@@ -90,7 +90,7 @@ _EOF
 copy_void_keys() {
     if [ ! -d "$1"/var/db/xbps/keys ]; then
         mkdir -p "$1"/var/db/xbps/keys
-        cp /var/db/xbps/keys/*.plist "$1"/var/db/xbps/keys
+        cp keys/*.plist "$1"/var/db/xbps/keys
     fi
 }
 
@@ -286,6 +286,7 @@ ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
+: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current}
 : ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
 : ${SPLASH_IMAGE:=splash.png}
 : ${XBPS_INSTALL_CMD:=xbps-install}
@@ -310,7 +311,7 @@ info_msg "Redirecting stdout/stderr to $LOGFILE ..."
 info_msg "[1/9] Synchronizing XBPS repository data..."
 # Sync index for remote repos first.
 copy_void_keys $ROOTFS
-$XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S >/dev/null 2>&1
+$XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
 cp -a $ROOTFS/* $VOIDHOSTDIR
 
 _linux_series=$($XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -x linux)
