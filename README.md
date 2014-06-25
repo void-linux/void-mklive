@@ -26,3 +26,15 @@ and then see the usage output:
     $ ./mklive.sh -h
     $ ./mkrootfs.sh -h
     $ ./mkimage.sh -h
+
+#### Examples
+
+Build an x86 live image with runit and keyboard set to 'fr':
+
+    # ./mklive.sh -b base-system-runit -k fr
+
+Build an x86 live image with systemd and some optional packages:
+
+    # ./mklive.sh -p 'vim rtorrent'
+
+See the usage output for more information :-)
