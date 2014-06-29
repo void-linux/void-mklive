@@ -4,4 +4,6 @@
 
 # Copy the initramfs back to the new rootfs for proper shutdown.
 KVER=$(uname -r)
-cp /run/initramfs/live/boot/initrd $NEWROOT/boot/initramfs-${KVER}.img
+if [ -x /usr/bin/systemctl ]; then
+    cp /run/initramfs/live/boot/initrd $NEWROOT/boot/initramfs-${KVER}.img
+fi
