@@ -186,14 +186,16 @@ generate_grub_efi_boot() {
     LOOP_DEVICE="$(losetup --show --find ${GRUB_DIR}/efiboot.img)"
     mount -o rw,flush -t vfat "${LOOP_DEVICE}" "${GRUB_EFI_TMPDIR}" >>$LOGFILE 2>&1
 
-    cd $IMAGEDIR
-    mkdir -p "${GRUB_EFI_TMPDIR}/EFI/boot/"
-    grub-mkstandalone --directory="$VOIDHOSTDIR/usr/lib/grub/x86_64-efi" \
+    cp -a $IMAGEDIR/boot $VOIDHOSTDIR
+    xbps-uchroot $VOIDHOSTDIR grub-mkstandalone --directory="/usr/lib/grub/x86_64-efi" \
         --format="x86_64-efi" \
-        --compression="xz" --output="${GRUB_EFI_TMPDIR}/EFI/boot/bootx64.efi" \
+        --compression="xz" --output="/tmp/bootx64.efi" \
         "boot/grub/grub.cfg" >>$LOGFILE 2>&1
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
+    cd $IMAGEDIR
+    mkdir -p ${GRUB_EFI_TMPDIR}/EFI/boot
+    cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/boot/
     rm -rf $GRUB_EFI_TMPDIR
 }
 
