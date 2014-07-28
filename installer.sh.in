@@ -772,9 +772,9 @@ install_packages() {
     fi
 
     _syspkg="base-system"
-    [ -z "$SYSTEMD_INIT" ] && _syspkg="base-system-runit"
 
-    mkdir -p $TARGETDIR/var/db/xbps/keys
+    mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share/xbps
+    cp -a /usr/share/xbps/repo.d $TARGETDIR/usr/share/xbps/
     cp /var/db/xbps/keys/*.plist $TARGETDIR/var/db/xbps/keys
     mkdir -p $TARGETDIR/boot/grub
     stdbuf -oL xbps-install  -r $TARGETDIR -Sy ${_syspkg} ${_grub} 2>&1 | \
