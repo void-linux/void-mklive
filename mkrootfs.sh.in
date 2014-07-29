@@ -178,14 +178,14 @@ if [ -n "${_ARCH}" ]; then
     register_binfmt
     run_cmd "xbps-reconfigure -r $rootfs base-directories"
     run_cmd "chroot $rootfs xbps-reconfigure shadow"
-    if [ "$PKGBASE" = "base-system" ]; then
+    if [ "$PKGBASE" = "base-system-systemd" ]; then
         run_cmd "chroot $rootfs xbps-reconfigure systemd"
     fi
     run_cmd "chroot $rootfs xbps-reconfigure -a"
     rmdir $rootfs/usr/lib32
     rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
 else
-    if [ "$PKGBASE" = "base-system" ]; then
+    if [ "$PKGBASE" = "base-system-systemd" ]; then
         run_cmd "chroot $rootfs xbps-reconfigure systemd"
     fi
 fi
@@ -205,9 +205,9 @@ rm -rf $rootfs/var/cache/* 2>/dev/null
 # Generate final tarball.
 #
 arch=$ARCH
-if [ -n "$TARGET_ARCH" ]; then
-    rm -f $rootfs/usr/bin/qemu-*-static
-    arch=$TARGET_ARCH
+if [ -n "${_ARCH}" ]; then
+    rm -f $rootfs/usr/bin/$QEMU_BIN
+    arch=${_ARCH}
 fi
 
 tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
