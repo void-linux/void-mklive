@@ -860,6 +860,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # copy target fstab.
     install -Dm644 $TARGET_FSTAB $TARGETDIR/etc/fstab
+    # Mount /tmp as tmpfs.
+    echo "tmpfs /tmp tmpfs defaults,nosuid,nodev 0 0" >> $TARGETDIR/etc/fstab
+
 
     # set up keymap, locale, timezone, hostname and root passwd.
     set_keymap
