@@ -297,17 +297,8 @@ ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 : ${XBPS_RECONFIGURE_CMD:=xbps-reconfigure}
 
 mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
-#
-# Check there are repos registered before anything.
-#
-${XBPS_QUERY_CMD} -L >/dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo "No repositories available, exiting..."
-    error_out
-fi
 
 info_msg "Redirecting stdout/stderr to $LOGFILE ..."
-
 info_msg "[1/9] Synchronizing XBPS repository data..."
 # Sync index for remote repos first.
 copy_void_keys $ROOTFS
