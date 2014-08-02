@@ -14,7 +14,7 @@ echo "USERNAME=$USERNAME" >> ${NEWROOT}/etc/default/live.conf
 chmod 644 ${NEWROOT}/etc/default/live.conf
 
 # Create new user and remove password. We'll use autologin by default.
-chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G systemd-journal,wheel -s /bin/bash
+chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G wheel -s /bin/bash
 chroot ${NEWROOT} passwd -d $USERNAME >/dev/null 2>&1
 
 # Setup default root password (voidlinux).
