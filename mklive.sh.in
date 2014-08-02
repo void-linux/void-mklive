@@ -191,11 +191,10 @@ generate_grub_efi_boot() {
         --format="x86_64-efi" \
         --compression="xz" --output="/tmp/bootx64.efi" \
         "boot/grub/grub.cfg" >>$LOGFILE 2>&1
-    umount "$GRUB_EFI_TMPDIR"
-    losetup --detach "${LOOP_DEVICE}"
-    cd $IMAGEDIR
     mkdir -p ${GRUB_EFI_TMPDIR}/EFI/boot
     cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/boot/
+    umount "$GRUB_EFI_TMPDIR"
+    losetup --detach "${LOOP_DEVICE}"
     rm -rf $GRUB_EFI_TMPDIR
 }
 
