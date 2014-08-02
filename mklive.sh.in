@@ -139,9 +139,8 @@ generate_initramfs() {
     copy_dracut_files $VOIDHOSTDIR
     $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y base-system >>$LOGFILE 2>&1
 
-    if [ "$BASE_SYSTEM_PKG" = "base-system-runit" ]; then
-        # for runit omit the systemd module
-        _args="--omit 'systemd'"
+    if [ "$BASE_SYSTEM_PKG" = "base-system-systemd" ]; then
+        _args="--add systemd"
     fi
     xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
         --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
