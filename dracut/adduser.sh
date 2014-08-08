@@ -27,7 +27,7 @@ fi
 
 # Enable autologin for agetty(8) on tty1 with runit.
 if [ -d ${NEWROOT}/etc/runit ]; then
-    sed -e "s|\-8|& -a $USERNAME|g" -i ${NEWROOT}/etc/sv/agetty-tty1/run
+    sed "s|agetty|& -a $USERNAME|" -i ${NEWROOT}/etc/sv/agetty-tty1/run
 fi
 
 # Enable autologin for agetty(8) on tty1 with systemd.
