@@ -242,7 +242,7 @@ menu_partitions() {
         local device=$(cat $ANSWER)
 
         DIALOG --title "Modify Partition Table on $device" --msgbox "\n
-${BOLD}GNU parted will be executed in disk $device.${RESET}\n\n
+${BOLD}cfdisk will be executed in disk $device.${RESET}\n\n
 For BIOS systems, MBR or GPT partition tables are supported.\n
 To use GPT on PC BIOS systems an empty partition of 1MB must be added\n
 at the first 2GB of the disk with the TOGGLE \`bios_grub' enabled.\n
@@ -257,7 +257,7 @@ ${BOLD}WARNING: changes made by parted are destructive, you've been warned.
 ${RESET}\n" 18 80
         if [ $? -eq 0 ]; then
             while true; do
-                clear; parted $device; PARTITIONS_DONE=1; partprobe $device
+                clear; cfdisk $device; PARTITIONS_DONE=1; partx -a $device
                 break
             done
         else
