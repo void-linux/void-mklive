@@ -253,7 +253,6 @@ EFI System Partition. This partition must have mountpoint as \`/boot/efi'.\n\n
 At least 2 partitions are required: swap and rootfs (/).\n
 For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
 ${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
-${BOLD}WARNING: changes made by parted are destructive, you've been warned.
 ${RESET}\n" 18 80
         if [ $? -eq 0 ]; then
             while true; do
