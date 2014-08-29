@@ -291,7 +291,8 @@ menu_keymap() {
 
 set_keymap() {
     local KEYMAP=$(get_option KEYMAP)
-    if [ -f "/etc/vconsole.conf" ]; then
+
+    if [ -f /etc/vconsole.conf ]; then
         sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/vconsole.conf
     else
         sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/rc.conf
@@ -319,6 +320,7 @@ menu_locale() {
 
 set_locale() {
     local LOCALE=$(get_option LOCALE)
+
     sed -i -e "s|LANG=.*|LANG=$LOCALE|g" $TARGETDIR/etc/locale.conf
     # Uncomment locale from /etc/default/libc-locales and regenerate it.
     sed -e "/${LOCALE}/s/^\#//" -i $TARGETDIR/etc/default/libc-locales
