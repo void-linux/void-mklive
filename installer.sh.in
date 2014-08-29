@@ -153,21 +153,13 @@ show_partitions() {
         for p in /sys/block/$disk/$disk*; do
             if [ -d $p ]; then
                 part=$(basename $p)
-                fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
+                fstype=$(lsblk -nfr /dev/$part|awk '{print $2}'|head -1)
                 [ "$fstype" = "iso9660" ] && continue
-                fssize=$(lsblk -nr /dev/$part|awk '{print $4}')
+                [ "$fstype" = "crypto_LUKS" ] && continue
+                fssize=$(lsblk -nr /dev/$part|awk '{print $4}'|head -1)
                 echo "/dev/$part"
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
-        done
-        # LVM
-        for p in $(ls /dev/mapper 2>/dev/null|grep -v control); do
-            [ "$p" = "live-rw" ] && continue
-            [ "$p" = "live-base" ] && continue
-            fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
-            fssize=$(lsblk -nr /dev/mapper/$p|awk '{print $4}')
-            echo "/dev/mapper/$p"
-            echo "size:${fssize:-unknown};fstype:${fstype:-none}"
         done
         # Software raid (md)
         for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
@@ -177,6 +169,14 @@ show_partitions() {
                 echo "$p"
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
+        done
+        if [ ! -e /sbin/lvs ]; then
+            continue
+        fi
+        # LVM
+        lvs --noheadings|while read lvname vgname perms size; do
+            echo "/dev/mapper/${vgname}-${lvname}"
+            echo "size:${size};fstype:lvm"
         done
     done
 }
