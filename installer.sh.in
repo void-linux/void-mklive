@@ -36,6 +36,7 @@ BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
 FILESYSTEMS_DONE=
+SYSTEMD_INIT=
 
 TARGETDIR=/mnt/target
 LOG=/dev/tty7
@@ -267,7 +268,7 @@ ${RESET}\n" 18 80
 }
 
 menu_keymap() {
-    if [ "$SYSTEMD_INIT" -eq 1 ]; then
+    if [ -n "$SYSTEMD_INIT" ]; then
         local _keymaps="$(localectl --no-pager list-keymaps)"
     else
         local _keymaps="$(find /usr/share/kbd/keymaps/ -type f -iname "*.map.gz" -printf "%f\n" | sed 's|.map.gz||g' | sort)"
@@ -330,7 +331,7 @@ set_locale() {
 }
 
 menu_timezone() {
-    if [ "$SYSTEMD_INIT" -eq 1 ]; then
+    if [ -n "$SYSTEMD_INIT" ]; then
         local _tzones="$(timedatectl --no-pager list-timezones)"
     else
         local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
@@ -354,7 +355,12 @@ menu_timezone() {
 
 set_timezone() {
     local TIMEZONE="$(get_option TIMEZONE)"
-    ln -sf /usr/share/zoneinfo/${TIMEZONE} $TARGETDIR/etc/localtime
+
+    if [ -z "$SYSTEMD_INIT" ]; then
+        sed -i -e "s|#TIMEZONE=.*|TIMEZONE=$TIMEZONE|g" $TARGETDIR/etc/rc.conf
+    else
+        ln -sf /usr/share/zoneinfo/${TIMEZONE} $TARGETDIR/etc/localtime
+    fi
 }
 
 menu_hostname() {
@@ -635,7 +641,7 @@ as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
 }
 
 create_filesystems() {
-    local mnts dev mntpt fstype mkfs size rv uuid
+    local mnts dev mntpt fstype fspassno mkfs size rv uuid
 
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
     set -- ${mnts}
@@ -697,7 +703,12 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        echo "UUID=$uuid $mntpt $fstype defaults 0 1" >>$TARGET_FSTAB
+        if [ "$fstype" = "f2fs" ]; then
+            fspassno=0
+        else
+            fspassno=1
+        fi
+        echo "UUID=$uuid $mntpt $fstype defaults 0 $fspassno" >>$TARGET_FSTAB
     done
 
     # mount all filesystems in target rootfs
@@ -717,7 +728,7 @@ failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        echo "UUID=$uuid $mntpt $fstype defaults 0 1" >>$TARGET_FSTAB
+        echo "UUID=$uuid $mntpt $fstype defaults 0 2" >>$TARGET_FSTAB
     done
 }
 
@@ -788,7 +799,7 @@ install_packages() {
 }
 
 enable_dhcpd() {
-    if [ "$SYSTEMD_INIT" -eq 1 ]; then
+    if [ -n "$SYSTEMD_INIT" ]; then
         chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
     else
         ln -s /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
@@ -831,7 +842,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         copy_rootfs
         . /etc/default/live.conf
         # Disable autologin and remove motd from live image.
-        if [ "$SYSTEMD_INIT" -eq 1 ]; then
+        if [ -n "$SYSTEMD_INIT" ]; then
             rm -f $TARGETDIR/etc/systemd/system/getty@.service
         else
             sed -e "s,-a $USERNAME,,g" -i $TARGETDIR/etc/sv/agetty-tty1/run
@@ -846,7 +857,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         chroot $TARGETDIR dracut --force >>$LOG 2>&1
         DIALOG --title "Check /dev/tty7 for details" \
             --infobox "Removing temporary packages from target ..." 4 60
-        echo "Removing temporaray packages from target ..." >$LOG
+        echo "Removing temporary packages from target ..." >$LOG
         xbps-remove -r $TARGETDIR -Ry dialog >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target
         # mount required fs
@@ -887,7 +898,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ "$_type" = "dhcp" ]; then
             if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
                 cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                if [ "$SYSTEMD_INIT" -eq 1 ]; then
+                if [ -n "$SYSTEMD_INIT" ]; then
                     chroot $TARGETDIR systemctl enable dhcpcd@${_dev}.service >$LOG 2>&1
                 else
                     ln -s /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
