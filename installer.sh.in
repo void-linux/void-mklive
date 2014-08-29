@@ -156,6 +156,7 @@ show_partitions() {
                 fstype=$(lsblk -nfr /dev/$part|awk '{print $2}'|head -1)
                 [ "$fstype" = "iso9660" ] && continue
                 [ "$fstype" = "crypto_LUKS" ] && continue
+                [ "$fstype" = "LVM2_member" ] && continue
                 fssize=$(lsblk -nr /dev/$part|awk '{print $4}'|head -1)
                 echo "/dev/$part"
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
