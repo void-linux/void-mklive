@@ -59,6 +59,9 @@ Options:
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
 
+ -C "cmdline args"  Add additional kernel command line arguments.
+ -T "title"         Modify the bootloader title.
+
 The $(basename $0) script generates a live image of the Void Linux distribution.
 This ISO image can be written to a CD/DVD-ROM or any USB stick.
 _EOF
@@ -141,7 +144,10 @@ generate_isolinux_boot() {
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
-        -e "s|@@LOCALE@@|${LOCALE}|" $ISOLINUX_DIR/isolinux.cfg
+        -e "s|@@LOCALE@@|${LOCALE}|" \
+        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
+        -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
+        $ISOLINUX_DIR/isolinux.cfg
 }
 
 generate_grub_efi_boot() {
@@ -151,6 +157,8 @@ generate_grub_efi_boot() {
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
         -e "s|@@ARCH@@|$(uname -m)|" \
+        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
+        -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
         -e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
 
     modprobe -q loop
@@ -212,7 +220,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "b:r:c:k:l:i:s:o:p:h" opt; do
+while getopts "b:r:c:C:T:k:l:i:s:o:p:h" opt; do
     case $opt in
         b) BASE_SYSTEM_PKG="$OPTARG";;
         r) XBPS_REPOSITORY+="--repository=$OPTARG ";;
@@ -223,6 +231,8 @@ while getopts "b:r:c:k:l:i:s:o:p:h" opt; do
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         p) PACKAGE_LIST="$OPTARG";;
+        C) BOOT_CMDLINE="$OPTARG";;
+        T) BOOT_TITLE="$OPTARG";;
         h) usage;;
     esac
 done
@@ -235,6 +245,7 @@ shift $(($OPTIND - 1))
 : ${INITRAMFS_COMPRESSION:=xz}
 : ${SQUASHFS_COMPRESSION:=xz}
 : ${BASE_SYSTEM_PKG:=base-system}
+: ${BOOT_TITLE:="Void Linux"}
 
 # Required packages in the image for a working system.
 PACKAGE_LIST="$BASE_SYSTEM_PKG dialog $PACKAGE_LIST"

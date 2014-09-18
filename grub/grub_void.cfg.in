@@ -25,12 +25,13 @@ if loadfont "(${voidlive})/boot/grub/fonts/unicode.pf2" ; then
 fi
 
 if [ cpuid -l ]; then
-    menuentry "Void GNU/Linux @@KERNVER@@ (@@ARCH@@)" {
+    menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" {
         set gfxpayload="keep"
         linux (${voidlive})/boot/vmlinuz \
 		root=live:CDLABEL=VOID_LIVE ro \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
-		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@
+		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
+		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@
         initrd (${voidlive})/boot/initrd
     }
 fi
