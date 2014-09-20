@@ -1,12 +1,10 @@
 ###############################################################################
 
-Welcome to the Void Linux Live system, you have been autologged in.
-This user has full sudo(8) permissions without any password, be careful
-executing commands through sudo(8).
+Welcome to the Void Linux Live system, the `root` password is `voidlinux`.
 
 To start the installation please type:
 
-    $ sudo void-installer
+    $ void-installer
 
 and follow the on-screen instructions. Thanks for using Void Linux.
 

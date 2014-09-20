@@ -314,11 +314,9 @@ install_prereqs
 info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
-#
-# Prepare /etc/motd.
-#
 mkdir -p "$ROOTFS"/etc
 [ -s data/motd ] && cp data/motd $ROOTFS/etc
+[ -s data/issue ] && cp data/issue $ROOTFS/etc
 
 export PATH=$VOIDHOSTDIR/usr/bin:$VOIDHOSTDIR/usr/sbin:$PATH
 export LD_LIBRARY_PATH=$VOIDHOSTDIR/usr/lib
