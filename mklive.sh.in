@@ -122,6 +122,8 @@ generate_initramfs() {
 
     if [ "$BASE_SYSTEM_PKG" = "base-system-systemd" ]; then
         _args="--add systemd"
+    else
+        _args="--omit systemd"
     fi
     xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
         --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
