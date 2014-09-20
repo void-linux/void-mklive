@@ -7,14 +7,20 @@ type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 echo void-live > ${NEWROOT}/etc/hostname
 
 USERNAME=$(getarg live.user)
+USERSHELL=$(getarg live.shell)
 [ -z "$USERNAME" ] && USERNAME=anon
+[ -z "$USERSHELL" ] && USERSHELL=/bin/sh
 
 # Create /etc/default/live.conf to store USER.
 echo "USERNAME=$USERNAME" >> ${NEWROOT}/etc/default/live.conf
 chmod 644 ${NEWROOT}/etc/default/live.conf
 
+if ! grep -q ${USERSHELL} ${NEWROOT}/etc/shells ; then
+    echo ${USERSHELL} >> ${NEWROOT}/etc/shells
+fi
+
 # Create new user and remove password. We'll use autologin by default.
-chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G wheel -s /bin/sh
+chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G wheel -s $USERSHELL
 chroot ${NEWROOT} passwd -d $USERNAME >/dev/null 2>&1
 
 # Setup default root password (voidlinux).
