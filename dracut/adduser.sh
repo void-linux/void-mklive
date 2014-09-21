@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # -*- mode: shell-script; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
 # ex: ts=8 sw=4 sts=4 et filetype=sh
 
@@ -20,11 +20,12 @@ if ! grep -q ${USERSHELL} ${NEWROOT}/etc/shells ; then
 fi
 
 # Create new user and remove password. We'll use autologin by default.
-chroot ${NEWROOT} useradd -c $USERNAME -m $USERNAME -G wheel -s $USERSHELL
+chroot ${NEWROOT} useradd -m -c $USERNAME -G wheel -s $USERSHELL $USERNAME
 chroot ${NEWROOT} passwd -d $USERNAME >/dev/null 2>&1
 
-# Setup default root password (voidlinux).
+# Setup default root/user password (voidlinux).
 chroot ${NEWROOT} sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'
+chroot ${NEWROOT} sh -c "echo "$USERNAME:voidlinux" | chpasswd -c SHA512"
 
 # Enable sudo permission by default.
 if [ -f ${NEWROOT}/etc/sudoers ]; then

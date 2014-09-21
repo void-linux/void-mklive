@@ -49,6 +49,7 @@ usage() {
 Usage: $(basename $0) [options]
 
 Options:
+ -a <xbps-arch>     Set XBPS_ARCH (do not use it unless you know what it is)
  -b <system-pkg>    Set an alternative base-system package (defaults to base-system).
  -r <repo-url>      Use this XBPS repository (may be specified multiple times).
  -c <cachedir>      Use this XBPS cache directory (/var/cache/xbps if unset).
@@ -84,6 +85,9 @@ install_prereqs() {
 }
 
 install_packages() {
+    if [ -n "$BASE_ARCH" ]; then
+        export XBPS_ARCH="$BASE_ARCH"
+    fi
     # Check that all pkgs are reachable.
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} >>$LOGFILE 2>&1
     if [ $? -ne 0 ]; then
@@ -107,6 +111,10 @@ install_packages() {
     fi
     # Cleanup and remove useless stuff.
     rm -rf $ROOTFS/var/cache/* $ROOTFS/run/* $ROOTFS/var/run/*
+
+    cp /home/juan/projects/runit-void/core-services/00-pseudofs.sh $ROOTFS/etc/runit/core-services/
+
+    unset XBPS_ARCH
 }
 
 copy_dracut_files() {
@@ -126,7 +134,7 @@ generate_initramfs() {
         _args="--omit systemd"
     fi
     xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
-        --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
+        --force-add "vmklive busybox" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $VOIDHOSTDIR/boot/initrd $BOOT_DIR
     cp $VOIDHOSTDIR/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
@@ -222,8 +230,9 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "b:r:c:C:T:k:l:i:s:o:p:h" opt; do
+while getopts "a:b:r:c:C:T:k:l:i:s:o:p:h" opt; do
     case $opt in
+        a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
         r) XBPS_REPOSITORY+="--repository=$OPTARG ";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
