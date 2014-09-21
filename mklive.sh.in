@@ -257,7 +257,7 @@ shift $(($OPTIND - 1))
 : ${BOOT_TITLE:="Void Linux"}
 
 # Required packages in the image for a working system.
-PACKAGE_LIST="$BASE_SYSTEM_PKG dialog $PACKAGE_LIST"
+PACKAGE_LIST="$BASE_SYSTEM_PKG $PACKAGE_LIST"
 
 LOGFILE="$(mktemp -t vmklive-XXXXXXXXXX.log)"
 
