@@ -112,8 +112,6 @@ install_packages() {
     # Cleanup and remove useless stuff.
     rm -rf $ROOTFS/var/cache/* $ROOTFS/run/* $ROOTFS/var/run/*
 
-    cp /home/juan/projects/runit-void/core-services/00-pseudofs.sh $ROOTFS/etc/runit/core-services/
-
     unset XBPS_ARCH
 }
 
