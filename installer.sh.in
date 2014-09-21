@@ -1000,6 +1000,10 @@ menu() {
     esac
 }
 
+if [ ! -x /bin/dialog ]; then
+    echo "ERROR: missing dialog command, exiting..."
+    exit 1
+fi
 #
 # main()
 #
