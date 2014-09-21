@@ -57,6 +57,7 @@ Options:
  -l <locale>        Default locale to use (en_US.UTF-8 if unset).
  -i <gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
  -s <gzip|bzip2|xz> Compression type for the squashfs image (xz if unset)
+ -S <freesize>      Allocate this free size (MB) for the rootfs.
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
 
@@ -193,10 +194,13 @@ generate_grub_efi_boot() {
 
 generate_squashfs() {
     # Find out required size for the rootfs and create an ext3fs image off it.
-    ROOTFS_SIZE=$(du -sk "$ROOTFS"|awk '{print $1}')
+    ROOTFS_SIZE=$(du -sm "$ROOTFS"|awk '{print $1}')
+    if [ -z "$ROOTFS_FREESIZE" ]; then
+        ROOTFS_FREESIZE="$((ROOTFS_SIZE/6))"
+    fi
     mkdir -p "$BUILDDIR/tmp/LiveOS"
     dd if=/dev/zero of="$BUILDDIR/tmp/LiveOS/ext3fs.img" \
-        bs="$((${ROOTFS_SIZE}+($ROOTFS_SIZE/6)))K" count=1 >>$LOGFILE 2>&1
+        bs="$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" count=1 >>$LOGFILE 2>&1
     mkdir -p "$BUILDDIR/tmp-rootfs"
     mkfs.ext3 -F -m1 "$BUILDDIR/tmp/LiveOS/ext3fs.img" >>$LOGFILE 2>&1
     mount -o loop "$BUILDDIR/tmp/LiveOS/ext3fs.img" "$BUILDDIR/tmp-rootfs"
@@ -228,7 +232,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:k:l:i:s:o:p:h" opt; do
+while getopts "a:b:r:c:C:T:k:l:i:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -238,6 +242,7 @@ while getopts "a:b:r:c:C:T:k:l:i:s:o:p:h" opt; do
         l) LOCALE="$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
+        S) ROOTFS_FREESIZE="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         p) PACKAGE_LIST="$OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
