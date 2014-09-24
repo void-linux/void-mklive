@@ -6,7 +6,7 @@ Welcome to the Void Linux Live system. Two users are available to log in:
 	- anon:voidlinux
 
 The `anon` user additionally has `sudo(8)` permissions to run any command
-without a password,
+without a password.
 
 To start the installation please type:
 
