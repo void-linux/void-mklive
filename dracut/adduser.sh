@@ -9,6 +9,7 @@ echo void-live > ${NEWROOT}/etc/hostname
 USERNAME=$(getarg live.user)
 USERSHELL=$(getarg live.shell)
 [ -z "$USERNAME" ] && USERNAME=anon
+[ -x $NEWROOT/bin/bash -a -z "$USERSHELL" ] && USERSHELL=/bin/bash
 [ -z "$USERSHELL" ] && USERSHELL=/bin/sh
 
 # Create /etc/default/live.conf to store USER.
