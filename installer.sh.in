@@ -840,6 +840,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # If source not set use defaults.
     if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
         copy_rootfs
+        . /etc/default/live.conf
         rm -f $TARGETDIR/etc/motd
         rm -f $TARGETDIR/etc/issue
         # Remove live user.
