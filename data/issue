@@ -1,12 +1,24 @@
 ###############################################################################
 
-Welcome to the Void Linux Live system, the `root` password is `voidlinux`.
+Welcome to the Void Linux Live system. Two users are available to log in:
+
+	- root:voidlinux
+	- anon:voidlinux
+
+The `anon` user additionally has `sudo(8)` permissions to run any command
+without a password,
 
 To start the installation please type:
 
-    $ void-installer
+    # void-installer
 
-and follow the on-screen instructions. Thanks for using Void Linux.
+and follow the on-screen instructions. To install additional software make
+sure to configure your network interface and then use:
+
+	- xbps-install(8) to install/update packages
+	- xbps-query(8) to query for package info
+
+Thanks for using Void Linux.
 
     http://www.voidlinux.eu
 
