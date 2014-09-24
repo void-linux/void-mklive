@@ -840,14 +840,8 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # If source not set use defaults.
     if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
         copy_rootfs
-        . /etc/default/live.conf
-        # Disable autologin and remove motd from live image.
-        if [ -n "$SYSTEMD_INIT" ]; then
-            rm -f $TARGETDIR/etc/systemd/system/getty@.service
-        else
-            sed -e "s,-a $USERNAME,,g" -i $TARGETDIR/etc/sv/agetty-tty1/run
-        fi
         rm -f $TARGETDIR/etc/motd
+        rm -f $TARGETDIR/etc/issue
         # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
