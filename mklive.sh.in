@@ -133,7 +133,7 @@ generate_initramfs() {
         _args="--omit systemd"
     fi
     xbps-uchroot $VOIDHOSTDIR /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
-        --force-add "vmklive busybox" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
+        --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION >>$LOGFILE 2>&1
 
     mv $VOIDHOSTDIR/boot/initrd $BOOT_DIR
     cp $VOIDHOSTDIR/boot/vmlinuz-$KERNELVERSION $BOOT_DIR/vmlinuz
