@@ -71,13 +71,15 @@ _EOF
 }
 
 copy_void_keys() {
-    if [ ! -d "$1"/var/db/xbps/keys ]; then
-        mkdir -p "$1"/var/db/xbps/keys
-        cp keys/*.plist "$1"/var/db/xbps/keys
-    fi
+    mkdir -p "$1"/var/db/xbps/keys
+    cp keys/*.plist "$1"/var/db/xbps/keys
+}
+copy_void_conf() {
+    install -Dm644 data/void-vpkgs.conf "$1"/etc/xbps/virtualpkg.d/void.conf
 }
 
 install_prereqs() {
+    copy_void_conf $VOIDHOSTDIR
     $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${REQUIRED_PKGS} >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then
         info_msg "Failed to install required software, exiting..."
@@ -89,12 +91,14 @@ install_packages() {
     if [ -n "$BASE_ARCH" ]; then
         export XBPS_ARCH="$BASE_ARCH"
     fi
+    copy_void_conf $ROOTFS
     # Check that all pkgs are reachable.
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} >>$LOGFILE 2>&1
     if [ $? -ne 0 ]; then
         info_msg "Missing required binary packages, exiting..."
         error_out
     fi
+
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} >>$LOGFILE 2>&1
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR  -yu >>$LOGFILE 2>&1
     ${XBPS_REMOVE_CMD} -r $ROOTFS $XBPS_CACHEDIR -o >>$LOGFILE 2>&1
@@ -125,6 +129,7 @@ generate_initramfs() {
     # Install required pkgs in a temporary rootdir to create
     # the initramfs and to copy required files.
     copy_dracut_files $VOIDHOSTDIR
+    copy_void_conf $VOIDHOSTDIR
     $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y base-system xz lz4 >>$LOGFILE 2>&1
 
     if [ "$BASE_SYSTEM_PKG" = "base-system-systemd" ]; then
@@ -323,12 +328,12 @@ install_prereqs
 #
 # Install live system and specified packages.
 #
-info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
-install_packages
-
 mkdir -p "$ROOTFS"/etc
 [ -s data/motd ] && cp data/motd $ROOTFS/etc
 [ -s data/issue ] && cp data/issue $ROOTFS/etc
+
+info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
+install_packages
 
 export PATH=$VOIDHOSTDIR/usr/bin:$VOIDHOSTDIR/usr/sbin:$PATH
 export LD_LIBRARY_PATH=$VOIDHOSTDIR/usr/lib
