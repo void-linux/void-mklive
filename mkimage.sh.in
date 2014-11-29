@@ -151,7 +151,11 @@ parted $FILENAME toggle 1 boot
 LOOPDEV=$(losetup --show --find $FILENAME)
 partx -a $LOOPDEV
 mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
-mkfs.${ROOT_FSTYPE} ${LOOPDEV}p2 >/dev/null 2>&1
+
+case "$ROOT_FSTYPE" in
+    ext[34]) disable_journal="-O ^has_journal";;
+esac
+mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
 
 info_msg "Unpacking rootfs tarball ..."
 ROOTFSDIR=$(mktemp -d)
