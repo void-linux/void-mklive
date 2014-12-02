@@ -6,8 +6,10 @@ type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 
 echo void-live > ${NEWROOT}/etc/hostname
 
+AUTOLOGIN=$(getarg live.autologin)
 USERNAME=$(getarg live.user)
 USERSHELL=$(getarg live.shell)
+
 [ -z "$USERNAME" ] && USERNAME=anon
 [ -x $NEWROOT/bin/bash -a -z "$USERSHELL" ] && USERSHELL=/bin/bash
 [ -z "$USERSHELL" ] && USERSHELL=/bin/sh
@@ -47,4 +49,8 @@ polkit.addRule(function(action, subject) {
 });
 _EOF
     chroot ${NEWROOT} chown polkitd:polkitd /etc/polkit-1/rules.d/void-live.rules
+fi
+
+if [ -n "$AUTOLOGIN" ]; then
+        sed -i "s,GETTY_ARGS=\"--noclear\",GETTY_ARGS=\"--noclear -a $USERNAME\",g" ${NEWROOT}/etc/sv/agetty-tty1/run
 fi
