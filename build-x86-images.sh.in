@@ -8,10 +8,10 @@ readonly XFCE_IMG=void-live-${ARCH}-${DATE}-xfce.iso
 readonly MATE_IMG=void-live-${ARCH}-${DATE}-mate.iso
 
 readonly BASE_PKGS="dialog"
-readonly X_PKGS="xorg-minimal lxdm setxkbmap xauth xorg-video-drivers"
+readonly X_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers lxdm setxkbmap xauth"
 readonly E_PKGS="$X_PKGS cantarell-fonts enlightenment terminology econnman udisks2 firefox"
-readonly XFCE_PKGS="$X_PKGS xfce4 cantarell-fonts midori network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly MATE_PKGS="$X_PKGS mate mate-extra cantarell-fonts midori network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly XFCE_PKGS="$X_PKGS xfce4 cantarell-fonts firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly MATE_PKGS="$X_PKGS mate mate-extra cantarell-fonts firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 
 [ ! -x mklive.sh ] && exit 0
 
