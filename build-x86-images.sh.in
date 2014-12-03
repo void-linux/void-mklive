@@ -1,0 +1,30 @@
+#!/bin/sh
+
+readonly ARCH=$(uname -m)
+readonly DATE=$(date +%Y%m%d)
+readonly BASE_IMG=void-live-${ARCH}-${DATE}.iso
+readonly E_IMG=void-live-${ARCH}-${DATE}-enlightenment.iso
+readonly XFCE_IMG=void-live-${ARCH}-${DATE}-xfce.iso
+readonly MATE_IMG=void-live-${ARCH}-${DATE}-mate.iso
+
+readonly BASE_PKGS="dialog"
+readonly X_PKGS="xorg-minimal lxdm setxkbmap xauth xorg-video-drivers"
+readonly E_PKGS="$X_PKGS cantarell-fonts enlightenment terminology econnman udisks2 firefox"
+readonly XFCE_PKGS="$X_PKGS xfce4 cantarell-fonts midori network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly MATE_PKGS="$X_PKGS mate mate-extra cantarell-fonts midori network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+
+[ ! -x mklive.sh ] && exit 0
+
+if [ ! -e $BASE_IMG ]; then
+	./mklive.sh -o $BASE_IMG -p "$BASE_PKGS"
+fi
+if [ ! -e $E_IMG ]; then
+	./mklive.sh -o $E_IMG -p "$E_PKGS"
+fi
+if [ ! -e $XFCE_IMG ]; then
+	./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS"
+fi
+if [ ! -e $MATE_IMG ]; then
+	./mklive.sh -o $MATE_IMG -p "$MATE_PKGS"
+fi
+
