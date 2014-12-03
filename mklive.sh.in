@@ -108,6 +108,8 @@ install_packages() {
         sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
         xbps-uchroot $ROOTFS xbps-reconfigure -f glibc-locales >>$LOGFILE 2>&1
     fi
+    # reconfigure util-linux just to be safe
+    xbps-uchroot $ROOTFS xbps-reconfigure -f util-linux >>$LOGFILE 2>&1
 
     if [ -x installer.sh ]; then
         install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
