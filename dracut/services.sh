@@ -4,11 +4,11 @@
 
 type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 
-SERVICEDIR=$NEWROOT/etc/sv/
+SERVICEDIR=$NEWROOT/etc/sv
 SERVICES="$(getarg live.services)"
 
 for f in ${SERVICES}; do
-        ln -s /etc/sv/$f $NEWROOT/etc/runit/runsvdir/default/
+        ln -sf /etc/sv/$f $NEWROOT/etc/runit/runsvdir/default/
 done
 
 dhcpcd=1
@@ -22,7 +22,7 @@ done
 for f in $SERVICEDIR/*; do
     _service=${f##*/}
     case "${_service}" in
-        agetty-console|sulogin|dhcpcd-*|iptables|ip6tables) ;; # ignored
+        agetty-console|agetty-generic|sulogin|dhcpcd-*|iptables|ip6tables) ;; # ignored
         dhcpcd) [ -n "$dhcpcd" ] && ln -sf ${f##$NEWROOT} $NEWROOT/etc/runit/runsvdir/default/;;
         *) ln -sf ${f##$NEWROOT} $NEWROOT/etc/runit/runsvdir/default/;;
     esac
