@@ -102,13 +102,7 @@ if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
-IMGSIZE="$2"
-if [ -z "$IMGSIZE" ]; then
-    IMGSIZE="2G"
-else
-    IMGSIZE="${2}G"
-fi
-
+: ${IMGSIZE:=2G}
 : ${BOOT_FSTYPE:=vfat}
 : ${BOOT_FSSIZE:=64M}
 : ${ROOT_FSTYPE:=ext4}
@@ -143,7 +137,7 @@ info_msg "Creating disk image partitions/filesystems ..."
 parted $FILENAME mktable msdos
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
-    _args="-I"
+    _args="-I -F16"
 fi
 parted $FILENAME mkpart primary ${_btype} 4096s ${BOOT_FSSIZE}
 parted $FILENAME mkpart primary ext2 ${BOOT_FSSIZE} 100%
@@ -163,12 +157,19 @@ mkdir -p ${ROOTFSDIR}/boot
 mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
 
 info_msg "Unpacking rootfs tarball ..."
+if [ "$PLATFORM" = "beaglebone" ]; then
+    fstab_args=",noauto"
+    tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR ./boot/MLO
+    tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR ./boot/u-boot.img
+    touch $ROOTFSDIR/boot/uEnv.txt
+    umount $ROOTFSDIR/boot
+fi
 tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
 
 BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
 ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 1" >> ${ROOTFSDIR}/etc/fstab
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> ${ROOTFSDIR}/etc/fstab
+echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
 
 if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
    sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
@@ -183,7 +184,7 @@ elif [ "$PLATFORM" = "odroid-u2" ]; then
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
 fi
 
-umount ${ROOTFSDIR}/boot
+mountpoint -q ${ROOTFSDIR}/boot || umount ${ROOTFSDIR}/boot
 umount $ROOTFSDIR
 partx -d $LOOPDEV
 losetup -d $LOOPDEV

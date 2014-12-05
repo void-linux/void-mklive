@@ -217,13 +217,7 @@ if [ -n "${_ARCH}" ]; then
 fi
 
 tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
-
-if [ "$PLATFORM" = "beaglebone" ]; then
-    # On Beaglebone make sure that boot/MLO is at the head.
-    run_cmd "tar -cp --posix -C $rootfs ./boot/MLO . | $XZ -9 > $tarball"
-else
-    run_cmd "tar -cp --posix -C $rootfs . | $XZ -9 > $tarball "
-fi
+run_cmd "tar -cp --posix -C $rootfs . | $XZ -9 > $tarball "
 
 rm -rf $rootfs
 
