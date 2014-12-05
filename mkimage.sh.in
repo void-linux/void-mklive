@@ -142,8 +142,7 @@ fi
 parted $FILENAME mkpart primary ${_btype} 4096s ${BOOT_FSSIZE}
 parted $FILENAME mkpart primary ext2 ${BOOT_FSSIZE} 100%
 parted $FILENAME toggle 1 boot
-LOOPDEV=$(losetup --show --find $FILENAME)
-partx -a $LOOPDEV
+LOOPDEV=$(losetup --show --find --partscan $FILENAME)
 mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
 
 case "$ROOT_FSTYPE" in
