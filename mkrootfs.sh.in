@@ -87,6 +87,7 @@ register_binfmt() {
     if [ "$ARCH" = "${_ARCH}" ]; then
         return 0
     fi
+    mountpoint -q /proc/sys/fs/binfmt_misc || modprobe -q binfmt_misc; mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
     case "${_ARCH}" in
         armv?l)
             echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
@@ -144,7 +145,11 @@ for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
         die "$f binary is missing in your system, exiting."
     fi
 done
-
+if type pixz >/dev/null 2>&1; then
+    XZ=pixz
+else
+    XZ=xz
+fi
 #
 # Check if package base-system is available.
 #
@@ -213,7 +218,7 @@ fi
 
 tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
 
-run_cmd "tar cp -C $rootfs . | xz -9 > $tarball"
+run_cmd "tar cp -C $rootfs . | $XZ -9 > $tarball"
 rm -rf $rootfs
 
 info_msg "Successfully created $tarball ($PLATFORM)"
