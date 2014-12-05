@@ -119,7 +119,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    cubieboard2|odroid-u2|rpi);;
+    beaglebone|cubieboard2|odroid-u2|rpi);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -157,24 +157,27 @@ case "$ROOT_FSTYPE" in
 esac
 mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
 
-info_msg "Unpacking rootfs tarball ..."
 ROOTFSDIR=$(mktemp -d)
 mount ${LOOPDEV}p2 $ROOTFSDIR
 mkdir -p ${ROOTFSDIR}/boot
 mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
 
+if [ "$PLATFORM" = "beaglebone" ]; then
+    dd if=${ROOTFSDIR}/boot/MLO of=${LOOPDEV}p1 >/dev/null 2>&1
+fi
+
+info_msg "Unpacking rootfs tarball ..."
 tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
 
 BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
 ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 0" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 1" >> ${ROOTFSDIR}/etc/fstab
+echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> ${ROOTFSDIR}/etc/fstab
 
 if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
    sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
 fi
 
-# For cubieboard we need to flash u-boot to the image.
 if [ "$PLATFORM" = "cubieboard2" ]; then
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
 elif [ "$PLATFORM" = "odroid-u2" ]; then
