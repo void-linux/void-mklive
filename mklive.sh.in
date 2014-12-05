@@ -177,7 +177,7 @@ generate_grub_efi_boot() {
         -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
         -e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
 
-    modprobe -q loop
+    modprobe -q loop || :
 
     # Create EFI vfat image.
     dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=4096  >>$LOGFILE 2>&1
