@@ -162,10 +162,6 @@ mount ${LOOPDEV}p2 $ROOTFSDIR
 mkdir -p ${ROOTFSDIR}/boot
 mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
 
-if [ "$PLATFORM" = "beaglebone" ]; then
-    dd if=${ROOTFSDIR}/boot/MLO of=${LOOPDEV}p1 >/dev/null 2>&1
-fi
-
 info_msg "Unpacking rootfs tarball ..."
 tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
 
