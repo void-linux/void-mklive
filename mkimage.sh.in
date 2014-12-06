@@ -183,9 +183,7 @@ elif [ "$PLATFORM" = "odroid-u2" ]; then
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
 fi
 
-if [ "$PLATFORM" != "beaglebone" ]; then
-    umount ${ROOTFSDIR}/boot
-fi
+umount ${ROOTFSDIR}/boot || :
 umount $ROOTFSDIR
 losetup -d $LOOPDEV
 rmdir $ROOTFSDIR
