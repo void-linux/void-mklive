@@ -187,7 +187,6 @@ if [ "$PLATFORM" != "beaglebone" ]; then
     umount ${ROOTFSDIR}/boot
 fi
 umount $ROOTFSDIR
-partx -d $LOOPDEV
 losetup -d $LOOPDEV
 rmdir $ROOTFSDIR
 
