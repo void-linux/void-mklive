@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+date=$(date '+%Y%m%d')
+
+for f in beaglebone cubieboard2 odroid-u2 rpi; do
+	./mkrootfs.sh $f
+	./mkimage.sh void-${f}-rootfs-${date}.tar.xz
+	pixz -9 void-${f}-${date}.img
+done
