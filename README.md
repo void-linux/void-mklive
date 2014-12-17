@@ -11,7 +11,6 @@ This repository contains utilities for Void Linux:
 #### Dependencies
 
  * xbps>=0.35
- * GNU bash
  * parted (for mkimage)
  * qemu-user-static binaries (for mkrootfs)
 
