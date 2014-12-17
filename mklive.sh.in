@@ -139,7 +139,12 @@ generate_initramfs() {
 
 cleanup_rootfs() {
     for f in ${INITRAMFS_PKGS}; do
-        xbps-remove -r $ROOTFS -Ry ${f} || die "Failed to remove $f from rootfs"
+        revdeps=$(xbps-query -r $ROOTFS -X $f)
+        if [ -n "$revdeps" ]; then
+            xbps-pkgdb -r $ROOTFS -m auto $f
+        else
+            xbps-remove -r $ROOTFS -Ry ${f} >/dev/null 2>&1
+        fi
     done
     rm -r $ROOTFS/usr/lib/dracut/modules.d/01vmklive
 }
