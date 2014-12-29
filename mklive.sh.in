@@ -92,9 +92,6 @@ install_prereqs() {
 }
 
 install_packages() {
-    if [ -n "$BASE_ARCH" ]; then
-        export XBPS_ARCH="$BASE_ARCH"
-    fi
     copy_void_conf $ROOTFS
     # Check that all pkgs are reachable.
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} ${INITRAMFS_PKGS}
@@ -118,11 +115,11 @@ install_packages() {
     fi
     # Cleanup and remove useless stuff.
     rm -rf $ROOTFS/var/cache/* $ROOTFS/run/* $ROOTFS/var/run/*
-
-    unset XBPS_ARCH
 }
 
 generate_initramfs() {
+    local _args
+
     copy_dracut_files $ROOTFS
     if [ "$BASE_SYSTEM_PKG" = "base-system-systemd" ]; then
         _args="--add systemd"
@@ -254,7 +251,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
-        r) XBPS_REPOSITORY+="--repository=$OPTARG ";;
+        r) XBPS_REPOSITORY="--repository=$OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         K) readonly KEEP_BUILDDIR=1;;
         k) KEYMAP="$OPTARG";;
@@ -318,6 +315,10 @@ ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
 mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
 
+if [ -n "$BASE_ARCH" ]; then
+    export XBPS_ARCH="$BASE_ARCH"
+fi
+
 info_msg "[1/8] Synchronizing XBPS repository data..."
 copy_void_keys $ROOTFS
 $XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
@@ -340,7 +341,7 @@ info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
 export PATH=$VOIDHOSTDIR/usr/bin:$VOIDHOSTDIR/usr/sbin:$ROOTFS/usr/bin:$ROOTFS/usr/sbin:$PATH
-export LD_LIBRARY_PATH=$ROOTFS/usr/lib
+export LD_LIBRARY_PATH=$ROOTFS/usr/lib:$VOIDHOSTDIR/usr/lib
 
 info_msg "[4/9] Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
