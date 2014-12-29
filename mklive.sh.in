@@ -104,8 +104,10 @@ install_packages() {
     if [ -f $ROOTFS/etc/default/libc-locales ]; then
         sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
         xbps-reconfigure -r $ROOTFS -f glibc-locales || die "Failed to reconfigure glibc-locales"
+    fi
+    if xbps-query -r $ROOTFS util-linux >/dev/null 2>&1; then
         # reconfigure util-linux just to be safe
-        xbps-reconfigure -r $ROOTFS -f util-linux || die "Failed to reconfigure util-linux"
+        xbps-reconfigure -r $ROOTFS -f util-linux
     fi
 
     if [ -x installer.sh ]; then
@@ -126,8 +128,8 @@ generate_initramfs() {
     else
         _args="--omit systemd"
     fi
-    xbps-uchroot $ROOTFS env -i /usr/bin/dracut --${INITRAMFS_COMPRESSION} \
-        --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION
+    xbps-uchroot $ROOTFS env -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
+        --add-drivers "ahci" --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION
     [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
     mv $ROOTFS/boot/initrd $BOOT_DIR
