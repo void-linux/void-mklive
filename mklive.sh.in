@@ -77,7 +77,7 @@ copy_void_keys() {
 }
 
 copy_void_conf() {
-    install -Dm644 data/void-vpkgs.conf "$1"/usr/share/xbps/virtualpkg.d/void.conf
+    install -Dm644 data/void-vpkgs.conf "$1"/usr/share/xbps.d/void-virtualpkgs.conf
 }
 
 copy_dracut_files() {
