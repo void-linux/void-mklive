@@ -167,7 +167,12 @@ tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
 
 BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
 ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 1" >> ${ROOTFSDIR}/etc/fstab
+
+fspassno="1"
+if [ "$ROOT_FSTYPE" = "f2fs" ]; then
+    fspassno="0"
+fi
+echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
 
 if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
