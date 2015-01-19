@@ -1,6 +1,6 @@
 #!/bin/sh
 #-
-# Copyright (c) 2013 Juan Romero Pardines.
+# Copyright (c) 2013-2015 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    beaglebone|cubieboard2|odroid-u2|rpi);;
+    bananapi|beaglebone|cubieboard2|odroid-u2|rpi);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -179,7 +179,7 @@ if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
    sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
 fi
 
-if [ "$PLATFORM" = "cubieboard2" ]; then
+if [ "$PLATFORM" = "cubieboard2" -o "$PLATFORM" = "bananapi" ]; then
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
 elif [ "$PLATFORM" = "odroid-u2" ]; then
     dd if=${ROOTFSDIR}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
