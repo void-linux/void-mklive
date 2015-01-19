@@ -1,6 +1,6 @@
 #!/bin/sh
 #-
-# Copyright (c) 2013-2014 Juan Romero Pardines.
+# Copyright (c) 2013-2015 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@ usage() {
     cat <<_EOF
 Usage: $PROGNAME [options] <platform>
 
-Supported platforms: beaglebone, cubieboard2, odroid-u2, rpi
+Supported platforms: bananapi, beaglebone, cubieboard2, odroid-u2, rpi
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -126,6 +126,7 @@ if [ -z "$PLATFORM" ]; then
 fi
 
 case "$PLATFORM" in
+    bananapi) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     beaglebone) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     cubieboard2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
