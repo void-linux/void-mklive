@@ -6,7 +6,7 @@ readonly BASE_IMG=void-live-${ARCH}-${DATE}.iso
 readonly E_IMG=void-live-${ARCH}-${DATE}-enlightenment.iso
 readonly XFCE_IMG=void-live-${ARCH}-${DATE}-xfce.iso
 readonly MATE_IMG=void-live-${ARCH}-${DATE}-mate.iso
-readonly MATE_IMG=void-live-${ARCH}-${DATE}-cinnamon.iso
+readonly CINNAMON_IMG=void-live-${ARCH}-${DATE}-cinnamon.iso
 
 case "$ARCH" in
 	i686) GRUB="grub";;
@@ -18,7 +18,7 @@ readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers l
 readonly E_PKGS="$X_PKGS enlightenment terminology econnman udisks2 firefox"
 readonly XFCE_PKGS="$X_PKGS xfce4 firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly MATE_PKGS="$X_PKGS mate mate-extra firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly CINNAMON_PKGS="$X_PKGS cinnamon firefox udisks2"
+readonly CINNAMON_PKGS="$X_PKGS cinnamon firefox gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
 
 [ ! -x mklive.sh ] && exit 0
 
