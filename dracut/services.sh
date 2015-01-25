@@ -22,7 +22,7 @@ done
 for f in $SERVICEDIR/*; do
     _service=${f##*/}
     case "${_service}" in
-        agetty-console|agetty-generic|sulogin|dhcpcd-*|iptables|ip6tables) ;; # ignored
+        agetty-console|agetty-generic|agetty-serial|sulogin|dhcpcd-*|iptables|ip6tables) ;; # ignored
         dhcpcd) [ -n "$dhcpcd" ] && ln -sf ${f##$NEWROOT} $NEWROOT/etc/runit/runsvdir/default/;;
         *) ln -sf ${f##$NEWROOT} $NEWROOT/etc/runit/runsvdir/default/;;
     esac
