@@ -38,5 +38,7 @@ if [ -r ${NEWROOT}/etc/lxdm/lxdm.conf ]; then
         sed -e "s,.*session.*=.*,session=/usr/bin/startxfce4," -i ${NEWROOT}/etc/lxdm/lxdm.conf
     elif [ -x ${NEWROOT}/usr/bin/mate-session ]; then
         sed -e "s,.*session.*=.*,session=/usr/bin/mate-session," -i ${NEWROOT}/etc/lxdm/lxdm.conf
+    elif [ -x ${NEWROOT}/usr/bin/cinnamon-session ]; then
+        sed -e "s,.*session.*=.*,session=/usr/bin/cinnamon-session," -i ${NEWROOT}/etc/lxdm/lxdm.conf
     fi
 fi
