@@ -149,7 +149,7 @@ done
 if type pixz >/dev/null 2>&1; then
     XZ=pixz
 else
-    XZ=xz
+    XZ="xz -T0"
 fi
 #
 # Check if package base-system is available.
