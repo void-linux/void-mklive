@@ -3,7 +3,7 @@
 # vim: set ts=4 sw=4 et:
 #
 #-
-# Copyright (c) 2009-2014 Juan Romero Pardines.
+# Copyright (c) 2009-2015 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -246,6 +246,7 @@ generate_iso_image() {
         -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 }
 
+XBPS_REPOSITORY=
 #
 # main()
 #
@@ -253,7 +254,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
-        r) XBPS_REPOSITORY="--repository=$OPTARG";;
+        r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG ";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         K) readonly KEEP_BUILDDIR=1;;
         k) KEYMAP="$OPTARG";;
