@@ -45,7 +45,8 @@ usage() {
     cat <<_EOF
 Usage: $PROGNAME [options] <platform>
 
-Supported platforms: bananapi, beaglebone, cubieboard2, odroid-u2, rpi
+Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
+                     bananapi, beaglebone, cubieboard2, odroid-u2, rpi
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -129,8 +130,12 @@ case "$PLATFORM" in
     bananapi) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     beaglebone) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     cubieboard2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    i686) _ARCH="i686"; QEMU_BIN=qemu-i386-static;;
+    i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
+    x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
+    x86_64-musl) _ARCH="x86_64-musl"; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
@@ -163,7 +168,10 @@ run_cmd_target "xbps-query -R -r $rootfs $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REP
 
 chmod 755 $rootfs
 
-PKGS="${PKGBASE} ${PLATFORM}-base"
+case "$PLATFORM" in
+    i686*|x86_64*) PKGS="${PKGBASE} grub" ;;
+    *) PKGS="${PKGBASE} ${PLATFORM}-base" ;;
+esac
 [ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
 
 mount_pseudofs
@@ -182,15 +190,22 @@ sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
 #
 if [ -n "${_ARCH}" ]; then
     info_msg "Reconfiguring packages for ${_ARCH} ..."
-    register_binfmt
-    run_cmd "xbps-reconfigure -r $rootfs base-directories"
+    case "$PLATFORM" in
+        i686*|x86_64*)
+            run_cmd "XBPS_ARCH=$_ARCH xbps-reconfigure -r $rootfs base-directories"
+            ;;
+        *)
+            register_binfmt
+            run_cmd "xbps-reconfigure -r $rootfs base-directories"
+            rmdir $rootfs/usr/lib32
+            rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
+            ;;
+    esac
     run_cmd "chroot $rootfs xbps-reconfigure shadow"
     if [ "$PKGBASE" = "base-system-systemd" ]; then
         run_cmd "chroot $rootfs xbps-reconfigure systemd"
     fi
     run_cmd "chroot $rootfs xbps-reconfigure -a"
-    rmdir $rootfs/usr/lib32
-    rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
 else
     if [ "$PKGBASE" = "base-system-systemd" ]; then
         run_cmd "chroot $rootfs xbps-reconfigure systemd"
