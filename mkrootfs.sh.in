@@ -135,7 +135,7 @@ case "$PLATFORM" in
     i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
-    rpi2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    rpi2) PLATFORM="rpi"; _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
     x86_64-musl) _ARCH="x86_64-musl"; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
