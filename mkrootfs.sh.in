@@ -46,7 +46,8 @@ usage() {
 Usage: $PROGNAME [options] <platform>
 
 Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
-                     bananapi, beaglebone, cubieboard2, odroid-u2, rpi
+                     bananapi, beaglebone, cubieboard2, odroid-u2,
+                     rpi, rpi2 (armv7)
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -134,6 +135,7 @@ case "$PLATFORM" in
     i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
+    rpi2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
     x86_64-musl) _ARCH="x86_64-musl"; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
