@@ -121,11 +121,13 @@ done
 shift $(($OPTIND - 1))
 
 PLATFORM="$1"
+SUBPLATFORM=$PLATFORM
 
 if [ -z "$PLATFORM" ]; then
     echo "$PROGNAME: platform was not set!"
     usage; exit 1
 fi
+
 
 case "$PLATFORM" in
     bananapi) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
@@ -135,7 +137,7 @@ case "$PLATFORM" in
     i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
-    rpi2) PLATFORM="rpi"; _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    rpi2) SUBPLATFORM="rpi"; _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
     x86_64-musl) _ARCH="x86_64-musl"; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
@@ -172,7 +174,7 @@ chmod 755 $rootfs
 
 case "$PLATFORM" in
     i686*|x86_64*) PKGS="${PKGBASE} grub" ;;
-    *) PKGS="${PKGBASE} ${PLATFORM}-base" ;;
+    *) PKGS="${PKGBASE} ${SUBPLATFORM}-base" ;;
 esac
 [ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
 
