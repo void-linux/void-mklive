@@ -175,10 +175,6 @@ fi
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
 
-if [ -s ${ROOTFSDIR}/boot/cmdline.txt ]; then
-   sed -e "s,rootfstype=ext4,rootfstype=${ROOT_FSTYPE}," -i ${ROOTFSDIR}/boot/cmdline.txt
-fi
-
 if [ "$PLATFORM" = "cubieboard2" -o "$PLATFORM" = "bananapi" ]; then
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
 elif [ "$PLATFORM" = "odroid-u2" ]; then
