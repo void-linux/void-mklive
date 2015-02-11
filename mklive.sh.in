@@ -97,7 +97,7 @@ install_packages() {
     ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
 
-    ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} ${INITRAMFS_PKGS}
+    LANG=C ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Failed to install $PACKAGE_LIST"
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
