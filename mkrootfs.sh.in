@@ -155,6 +155,9 @@ for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
         die "$f binary is missing in your system, exiting."
     fi
 done
+if ! $QEMU_BIN -version >/dev/null 2>&1; then
+    die "$QEMU_BIN binary is missing in your system, exiting."
+fi
 if type pixz >/dev/null 2>&1; then
     XZ=pixz
 else
