@@ -14,7 +14,7 @@ case "$ARCH" in
 esac
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
-readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers lxdm setxkbmap xauth cantarell-fonts"
+readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers lxdm setxkbmap xauth cantarell-fonts gnome-themes-standard"
 readonly E_PKGS="$X_PKGS enlightenment terminology econnman udisks2 firefox"
 readonly XFCE_PKGS="$X_PKGS xfce4 firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly MATE_PKGS="$X_PKGS mate mate-extra firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
