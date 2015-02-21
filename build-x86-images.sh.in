@@ -23,18 +23,18 @@ readonly CINNAMON_PKGS="$X_PKGS cinnamon firefox gnome-terminal gvfs-afc gvfs-mt
 [ ! -x mklive.sh ] && exit 0
 
 if [ ! -e $BASE_IMG ]; then
-	./mklive.sh -o $BASE_IMG -p "$BASE_PKGS"
+	./mklive.sh -o $BASE_IMG -p "$BASE_PKGS" $@
 fi
 if [ ! -e $E_IMG ]; then
-	./mklive.sh -o $E_IMG -p "$E_PKGS"
+	./mklive.sh -o $E_IMG -p "$E_PKGS" $@
 fi
 if [ ! -e $XFCE_IMG ]; then
-	./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS"
+	./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS" $@
 fi
 if [ ! -e $MATE_IMG ]; then
-	./mklive.sh -o $MATE_IMG -p "$MATE_PKGS"
+	./mklive.sh -o $MATE_IMG -p "$MATE_PKGS" $@
 fi
 if [ ! -e $CINNAMON_IMG ]; then
-	./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS"
+	./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
 fi
 
