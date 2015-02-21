@@ -419,7 +419,7 @@ set_rootpassword() {
 menu_bootloader() {
     while true; do
         DIALOG --title " Select the disk to install the bootloader" \
-            --menu "$MENULABEL" ${MENUSIZE} $(show_disks)
+            --menu "$MENULABEL" ${MENUSIZE} $(show_disks) none "Manage bootloader otherwise"
         if [ $? -eq 0 ]; then
             set_option BOOTLOADER "$(cat $ANSWER)"
             BOOTLOADER_DONE=1
@@ -432,6 +432,8 @@ menu_bootloader() {
 
 set_bootloader() {
     local dev=$(get_option BOOTLOADER) grub_args=
+
+    if [ "$dev" = "none" ]; then return; fi
 
     # Check if it's an EFI system via efivars module.
     if [ -n "$EFI_SYSTEM" ]; then
