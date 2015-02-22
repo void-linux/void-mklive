@@ -5,5 +5,5 @@ set -e
 PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2"
 
 for f in ${PLATFORMS}; do
-	./mkrootfs.sh $f $@
+	./mkrootfs.sh $@ $f
 done
