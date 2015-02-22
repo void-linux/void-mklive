@@ -41,7 +41,7 @@ cleanup() {
 }
 
 info_msg() {
-    printf "\033[1m$@\n\033[m"
+    printf "\033[1m[${PLATFORM}] $@\n\033[m"
 }
 
 die() {
@@ -184,12 +184,12 @@ elif [ "$PLATFORM" = "odroid-u2" ]; then
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
 fi
 
-umount ${ROOTFSDIR}/boot || :
+mountpoint -q ${ROOTFSDIR}/boot && umount ${ROOTFSDIR}/boot
 umount $ROOTFSDIR
 losetup -d $LOOPDEV
 rmdir $ROOTFSDIR
 
 chmod 644 $FILENAME
-info_msg "Successfully created $FILENAME ($PLATFORM) image."
+info_msg "Successfully created $FILENAME image."
 
 # vim: set ts=4 sw=4 et:
