@@ -2,10 +2,10 @@
 
 set -e
 
-date=$(date '+%Y%m%d')
+PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2"
+DATE=$(date '+%Y%m%d')
 
-for f in beaglebone cubieboard2 odroid-u2 rpi rpi2; do
-	./mkrootfs.sh $f
-	./mkimage.sh void-${f}-rootfs-${date}.tar.xz
-	pixz -9 void-${f}-${date}.img
+for f in ${PLATFORMS}; do
+	./mkimage.sh void-${f}-rootfs-${DATE}.tar.xz
+	xz -T0 void-${f}-${DATE}.img
 done
