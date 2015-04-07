@@ -107,7 +107,7 @@ install_packages() {
     fi
     if xbps-query -r $ROOTFS util-linux >/dev/null 2>&1; then
         # reconfigure util-linux just to be safe
-        xbps-reconfigure -r $ROOTFS -f util-linux
+        xbps-reconfigure -r $ROOTFS -f base-files util-linux
     fi
 
     if [ -x installer.sh ]; then
