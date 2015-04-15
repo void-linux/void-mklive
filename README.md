@@ -28,12 +28,16 @@ and then see the usage output:
 
 #### Examples
 
-Build an x86 live image with runit and keyboard set to 'fr':
+Build a native live image with runit and keyboard set to 'fr':
 
     # ./mklive.sh -k fr
 
-Build an x86 live image with systemd and some optional packages:
+Build an i686 (on x86\_64) live image with some additional packages:
 
-    # ./mklive.sh -b base-system-systemd -p 'vim rtorrent'
+    # ./mklive.sh -a i686 -p 'vim rtorrent'
+
+Build an x86\_64 musl live image with packages stored in a local repository:
+
+    # ./mklive.sh -a x86_64-musl -r /path/to/host/binpkgs
 
 See the usage output for more information :-)
