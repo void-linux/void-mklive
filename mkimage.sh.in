@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|odroid-u2|rpi|rpi2);;
+    bananapi|beaglebone|cubieboard2|odroid-u2|rpi|rpi2|usbarmory);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -182,6 +182,8 @@ elif [ "$PLATFORM" = "odroid-u2" ]; then
     dd if=${ROOTFSDIR}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
+elif [ "$PLATFORM" = "usbarmory" ]; then
+    dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync
 fi
 
 mountpoint -q ${ROOTFSDIR}/boot && umount ${ROOTFSDIR}/boot

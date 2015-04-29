@@ -2,7 +2,7 @@
 
 set -e
 
-PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2"
+PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2 usbarmory"
 
 for f in ${PLATFORMS}; do
 	./mkrootfs.sh $@ $f
