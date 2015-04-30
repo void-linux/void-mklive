@@ -1,5 +1,7 @@
 #!/bin/sh
 
+readonly TARGET="$1"
+
 readonly ARCH=$(uname -m)
 readonly DATE=$(date +%Y%m%d)
 readonly BASE_IMG=void-live-${ARCH}-${DATE}.iso
@@ -14,27 +16,36 @@ case "$ARCH" in
 esac
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
-readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers lxdm setxkbmap xauth font-misc-misc terminus-font cantarell-fonts gnome-themes-standard"
-readonly E_PKGS="$X_PKGS enlightenment terminology econnman udisks2 firefox"
-readonly XFCE_PKGS="$X_PKGS xfce4 firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly MATE_PKGS="$X_PKGS mate mate-extra firefox network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly CINNAMON_PKGS="$X_PKGS cinnamon firefox gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font cantarell-fonts gnome-themes-standard alsa-plugins-pulseaudio"
+readonly E_PKGS="$X_PKGS lxdm enlightenment terminology econnman udisks2"
+readonly XFCE_PKGS="$X_PKGS lxdm xfce4 network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
 
 [ ! -x mklive.sh ] && exit 0
 
-if [ ! -e $BASE_IMG ]; then
-	./mklive.sh -o $BASE_IMG -p "$BASE_PKGS" $@
+if [ -z "$TARGET" -o $TARGET = base ]; then
+	if [ ! -e $BASE_IMG ]; then
+		./mklive.sh -o $BASE_IMG -p "$BASE_PKGS" $@
+	fi
 fi
-if [ ! -e $E_IMG ]; then
-	./mklive.sh -o $E_IMG -p "$E_PKGS" $@
+if [ -z "$TARGET" -o $TARGET = e ]; then
+	if [ ! -e $E_IMG ]; then
+		./mklive.sh -o $E_IMG -p "$E_PKGS" $@
+	fi
 fi
-if [ ! -e $XFCE_IMG ]; then
-	./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS" $@
+if [ -z "$TARGET" -o $TARGET = xfce ]; then
+	if [ ! -e $XFCE_IMG ]; then
+		./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS" $@
+	fi
 fi
-if [ ! -e $MATE_IMG ]; then
-	./mklive.sh -o $MATE_IMG -p "$MATE_PKGS" $@
+if [ -z "$TARGET" -o $TARGET = mate ]; then
+	if [ ! -e $MATE_IMG ]; then
+		./mklive.sh -o $MATE_IMG -p "$MATE_PKGS" $@
+	fi
 fi
-if [ ! -e $CINNAMON_IMG ]; then
-	./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
+if [ -z "$TARGET" -o $TARGET = cinnamon ]; then
+	if [ ! -e $CINNAMON_IMG ]; then
+		./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
+	fi
 fi
-
