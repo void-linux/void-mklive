@@ -82,7 +82,7 @@ copy_void_conf() {
 
 copy_dracut_files() {
     mkdir -p $1/usr/lib/dracut/modules.d/01vmklive
-    cp dracut/*.sh $1/usr/lib/dracut/modules.d/01vmklive/
+    cp dracut/* $1/usr/lib/dracut/modules.d/01vmklive/
 }
 
 install_prereqs() {
