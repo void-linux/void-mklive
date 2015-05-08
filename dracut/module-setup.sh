@@ -15,11 +15,13 @@ install() {
     inst /usr/bin/chmod
     inst /usr/bin/sed
 
-    inst /usr/bin/memdiskfind
-    instmods mtdblock phram
-    inst_rules "$moddir/59-mtd.rules" "$moddir/61-mtd.rules"
-    prepare_udev_rules 59-mtd.rules 61-mtd.rules
-    inst_hook pre-udev 01 "$moddir/mtd.sh"
+    if [ -e /usr/bin/memdiskfind ]; then
+        inst /usr/bin/memdiskfind
+        instmods mtdblock phram
+        inst_rules "$moddir/59-mtd.rules" "$moddir/61-mtd.rules"
+        prepare_udev_rules 59-mtd.rules 61-mtd.rules
+        inst_hook pre-udev 01 "$moddir/mtd.sh"
+    fi
 
     inst_hook pre-pivot 01 "$moddir/adduser.sh"
     inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
