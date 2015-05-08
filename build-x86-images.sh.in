@@ -24,27 +24,27 @@ readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvf
 
 [ ! -x mklive.sh ] && exit 0
 
-if [ -z "$TARGET" -o $TARGET = base ]; then
+if [ -z "$TARGET" -o "$TARGET" = base ]; then
 	if [ ! -e $BASE_IMG ]; then
 		./mklive.sh -o $BASE_IMG -p "$BASE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o $TARGET = e ]; then
+if [ -z "$TARGET" -o "$TARGET" = e ]; then
 	if [ ! -e $E_IMG ]; then
 		./mklive.sh -o $E_IMG -p "$E_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o $TARGET = xfce ]; then
+if [ -z "$TARGET" -o "$TARGET" = xfce ]; then
 	if [ ! -e $XFCE_IMG ]; then
 		./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o $TARGET = mate ]; then
+if [ -z "$TARGET" -o "$TARGET" = mate ]; then
 	if [ ! -e $MATE_IMG ]; then
 		./mklive.sh -o $MATE_IMG -p "$MATE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o $TARGET = cinnamon ]; then
+if [ -z "$TARGET" -o "$TARGET" = cinnamon ]; then
 	if [ ! -e $CINNAMON_IMG ]; then
 		./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
 	fi
