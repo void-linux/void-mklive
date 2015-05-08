@@ -163,24 +163,25 @@ show_partitions() {
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
         done
-        # Software raid (md)
-        for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
-            if cat /proc/mdstat|grep -qw $(echo $p|sed -e 's|/dev/||g'); then
-                fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
-                fssize=$(lsblk -nr /dev/$p|awk '{print $4}')
-                echo "$p"
-                echo "size:${fssize:-unknown};fstype:${fstype:-none}"
-            fi
-        done
-        if [ ! -e /sbin/lvs ]; then
-            continue
+    done
+    # Software raid (md)
+    for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
+        if cat /proc/mdstat|grep -qw $(echo $p|sed -e 's|/dev/||g'); then
+            fstype=$(lsblk -nfr /dev/$p|awk '{print $2}')
+            [ "$fstype" = "crypto_LUKS" ] && continue
+            [ "$fstype" = "LVM2_member" ] && continue
+            fssize=$(lsblk -nr /dev/$p|awk '{print $4}')
+            echo "$p"
+            echo "size:${fssize:-unknown};fstype:${fstype:-none}"
         fi
+    done
+    if [ -e /sbin/lvs ]; then
         # LVM
         lvs --noheadings|while read lvname vgname perms size; do
             echo "/dev/mapper/${vgname}-${lvname}"
             echo "size:${size};fstype:lvm"
         done
-    done
+    fi
 }
 
 menu_filesystems() {
