@@ -166,11 +166,12 @@ show_partitions() {
     done
     # Software raid (md)
     for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
-        if cat /proc/mdstat|grep -qw $(echo $p|sed -e 's|/dev/||g'); then
-            fstype=$(lsblk -nfr /dev/$p|awk '{print $2}')
+        part=$(basename $p)
+        if cat /proc/mdstat|grep -qw $part; then
+            fstype=$(lsblk -nfr /dev/$part|awk '{print $2}')
             [ "$fstype" = "crypto_LUKS" ] && continue
             [ "$fstype" = "LVM2_member" ] && continue
-            fssize=$(lsblk -nr /dev/$p|awk '{print $4}')
+            fssize=$(lsblk -nr /dev/$part|awk '{print $4}')
             echo "$p"
             echo "size:${fssize:-unknown};fstype:${fstype:-none}"
         fi
