@@ -4,7 +4,7 @@ TARGET="$1"
 
 set -e
 
-PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2 usbarmory"
+PLATFORMS="beaglebone cubieboard2 cubietruck odroid-u2 rpi rpi2 usbarmory"
 DATE=$(date '+%Y%m%d')
 
 for f in ${PLATFORMS}; do
