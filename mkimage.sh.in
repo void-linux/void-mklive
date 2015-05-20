@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|odroid-u2|rpi|rpi2|usbarmory);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-u2|rpi|rpi2|usbarmory);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -175,16 +175,20 @@ fi
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFSDIR}/etc/fstab
 echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
 
-if [ "$PLATFORM" = "cubieboard2" -o "$PLATFORM" = "bananapi" ]; then
+case "$PLATFORM" in
+bananapi|cubieboard2|cubietruck)
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
-elif [ "$PLATFORM" = "odroid-u2" ]; then
+    ;;
+odroid-u2)
     dd if=${ROOTFSDIR}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
-elif [ "$PLATFORM" = "usbarmory" ]; then
+    ;;
+usbarmory)
     dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync
-fi
+    ;;
+esac
 
 mountpoint -q ${ROOTFSDIR}/boot && umount ${ROOTFSDIR}/boot
 umount $ROOTFSDIR

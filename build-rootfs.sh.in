@@ -4,7 +4,7 @@ set -e
 
 TARGET="$1"
 
-PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2 usbarmory"
+PLATFORMS="beaglebone cubieboard2 cubietruck odroid-u2 rpi rpi2 usbarmory"
 
 for f in ${PLATFORMS}; do
 	if [ -z "$TARGET" -o "$TARGET" = "$f" ]; then
