@@ -101,7 +101,6 @@ register_binfmt() {
     esac
 }
 
-: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current}
 : ${XBPS_CACHEDIR:=--cachedir=/var/cache/xbps}
 : ${PKGBASE:=base-system}
 #
@@ -114,7 +113,7 @@ while getopts "b:C:c:hp:r:V" opt; do
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         h) usage; exit 0;;
         p) EXTRA_PKGS="$OPTARG";;
-        r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY";;
+        r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
@@ -122,6 +121,7 @@ shift $(($OPTIND - 1))
 
 PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
+: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current}
 
 if [ -z "$PLATFORM" ]; then
     echo "$PROGNAME: platform was not set!"
