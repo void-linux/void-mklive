@@ -789,8 +789,8 @@ install_packages() {
 
     _syspkg="base-system"
 
-    mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share/xbps
-    cp -a /usr/share/xbps/repo.d $TARGETDIR/usr/share/xbps/
+    mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
+    cp -a /usr/share/xbps.d $TARGETDIR/usr/share/
     cp /var/db/xbps/keys/*.plist $TARGETDIR/var/db/xbps/keys
     mkdir -p $TARGETDIR/boot/grub
     stdbuf -oL xbps-install  -r $TARGETDIR -Sy ${_syspkg} ${_grub} 2>&1 | \
