@@ -142,7 +142,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 case "$PLATFORM" in
-bananapi|cubieboard2|cubietruck)
+cubieboard2|cubietruck)
     parted $FILENAME mkpart primary ext2 2048s ${ROOT_FSSIZE} 100%
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p1 >/dev/null 2>&1
