@@ -133,27 +133,39 @@ esac
 info_msg "Creating disk image ($IMGSIZE) ..."
 dd if=/dev/zero of=$FILENAME bs=$IMGSIZE count=1 ${DD_SPARSE} >/dev/null 2>&1
 
+ROOTFSDIR=$(mktemp -d)
+
 info_msg "Creating disk image partitions/filesystems ..."
 parted $FILENAME mktable msdos
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
     _args="-I -F16"
 fi
-parted $FILENAME mkpart primary ${_btype} 4096s ${BOOT_FSSIZE}
-parted $FILENAME mkpart primary ext2 ${BOOT_FSSIZE} 100%
-parted $FILENAME toggle 1 boot
-LOOPDEV=$(losetup --show --find --partscan $FILENAME)
-mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
-
-case "$ROOT_FSTYPE" in
-    ext[34]) disable_journal="-O ^has_journal";;
+case "$PLATFORM" in
+bananapi|cubieboard2|cubietruck)
+    parted $FILENAME mkpart primary ext2 2048s ${ROOT_FSSIZE} 100%
+    LOOPDEV=$(losetup --show --find --partscan $FILENAME)
+    mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p1 >/dev/null 2>&1
+    mount ${LOOPDEV}p1 $ROOTFSDIR
+    ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
+    ;;
+*)
+    parted $FILENAME mkpart primary ${_btype} 2048s ${BOOT_FSSIZE}
+    parted $FILENAME mkpart primary ext2 ${ROOT_FSSIZE} 100%
+    parted $FILENAME toggle 1 boot
+    LOOPDEV=$(losetup --show --find --partscan $FILENAME)
+    mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
+    case "$ROOT_FSTYPE" in
+        ext[34]) disable_journal="-O ^has_journal";;
+    esac
+    mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
+    mount ${LOOPDEV}p2 $ROOTFSDIR
+    mkdir -p ${ROOTFSDIR}/boot
+    mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
+    BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
+    ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
+    ;;
 esac
-mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
-
-ROOTFSDIR=$(mktemp -d)
-mount ${LOOPDEV}p2 $ROOTFSDIR
-mkdir -p ${ROOTFSDIR}/boot
-mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
 
 info_msg "Unpacking rootfs tarball ..."
 if [ "$PLATFORM" = "beaglebone" ]; then
@@ -165,15 +177,14 @@ if [ "$PLATFORM" = "beaglebone" ]; then
 fi
 tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
 
-BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
-ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
-
 fspassno="1"
 if [ "$ROOT_FSTYPE" = "f2fs" ]; then
     fspassno="0"
 fi
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFSDIR}/etc/fstab
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
+if [ -n "$BOOT_UUID" ]; then
+    echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
+fi
 
 case "$PLATFORM" in
 bananapi|cubieboard2|cubietruck)
