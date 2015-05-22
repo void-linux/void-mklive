@@ -847,6 +847,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         . /etc/default/live.conf
         rm -f $TARGETDIR/etc/motd
         rm -f $TARGETDIR/etc/issue
+        rm -f $TARGETDIR/usr/sbin/void-installer
         # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
