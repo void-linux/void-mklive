@@ -46,8 +46,8 @@ usage() {
 Usage: $PROGNAME [options] <platform>
 
 Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
-                     bananapi, beaglebone, cubieboard2, odroid-u2,
-                     rpi, rpi2 (armv7), usbarmory
+                     bananapi, beaglebone, cubieboard2, cubietruck,
+                     odroid-u2, rpi, rpi2 (armv7), usbarmory
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -132,7 +132,7 @@ fi
 case "$PLATFORM" in
     bananapi) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     beaglebone) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    cubieboard2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
+    cubieboard2|cubietruck) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     i686) _ARCH="i686"; QEMU_BIN=qemu-i386-static;;
     i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
