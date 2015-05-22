@@ -260,7 +260,7 @@ ${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
 ${RESET}\n" 18 80
         if [ $? -eq 0 ]; then
             while true; do
-                clear; cfdisk $device; PARTITIONS_DONE=1; partx -a $device; partx -u $device
+                clear; cfdisk $device; PARTITIONS_DONE=1
                 break
             done
         else
