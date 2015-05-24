@@ -21,6 +21,12 @@ if [ -d ${NEWROOT}/etc/gdm ]; then
     fi
 fi
 
+# Configure KDM autologin
+if [ -e ${NEWROOT}/etc/kdm/kdmrc ]; then
+    sed -i -e "s|^\#\(AutoLoginEnable=\).*|\1|" ${NEWROOT}/etc/kdm/kdmrc
+    sed -i -e "s|^\#\(AutoLoginUser=\).*|\1$USERNAME|" ${NEWROOT}/etc/kdm/kdmrc
+fi
+
 # Configure lightdm autologin.
 if [ -r ${NEWROOT}/etc/lightdm.conf ]; then
     sed -i -e "s|^\#\(default-user=\).*|\1$USERNAME|" \
