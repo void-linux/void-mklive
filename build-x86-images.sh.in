@@ -1,6 +1,7 @@
 #!/bin/sh
 
 readonly TARGET="$1"
+shift
 
 readonly ARCH=$(uname -m)
 readonly DATE=$(date +%Y%m%d)
@@ -9,6 +10,7 @@ readonly E_IMG=void-live-${ARCH}-${DATE}-enlightenment.iso
 readonly XFCE_IMG=void-live-${ARCH}-${DATE}-xfce.iso
 readonly MATE_IMG=void-live-${ARCH}-${DATE}-mate.iso
 readonly CINNAMON_IMG=void-live-${ARCH}-${DATE}-cinnamon.iso
+readonly KDE_IMG=void-live-${ARCH}-${DATE}-kde.iso
 
 case "$ARCH" in
 	i686) GRUB="grub";;
@@ -16,11 +18,12 @@ case "$ARCH" in
 esac
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
-readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font cantarell-fonts gnome-themes-standard alsa-plugins-pulseaudio"
+readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font cantarell-fonts gnome-themes-standard alsa-plugins-pulseaudio firefox"
 readonly E_PKGS="$X_PKGS lxdm enlightenment terminology econnman udisks2"
 readonly XFCE_PKGS="$X_PKGS lxdm xfce4 network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly KDE_PKGS="$X_PKGS kde"
 
 [ ! -x mklive.sh ] && exit 0
 
@@ -47,5 +50,10 @@ fi
 if [ -z "$TARGET" -o "$TARGET" = cinnamon ]; then
 	if [ ! -e $CINNAMON_IMG ]; then
 		./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
+	fi
+fi
+if [ "$TARGET" = kde ]; then
+	if [ ! -e $KDE_IMG ]; then
+		./mklive.sh -o $KDE_IMG -p "$KDE_PKGS" $@
 	fi
 fi
