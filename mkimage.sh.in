@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-u2|rpi|rpi2|usbarmory);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-u2|rpi|rpi2|usbarmory|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -143,7 +143,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
 fi
 case "$PLATFORM" in
 cubieboard2|cubietruck)
-    parted $FILENAME mkpart primary ext2 2048s ${ROOT_FSSIZE} 100%
+    parted $FILENAME mkpart primary ext2 2048s ${BOOT_FSSIZE} 100%
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p1 >/dev/null 2>&1
     mount ${LOOPDEV}p1 $ROOTFSDIR
@@ -151,7 +151,7 @@ cubieboard2|cubietruck)
     ;;
 *)
     parted $FILENAME mkpart primary ${_btype} 2048s ${BOOT_FSSIZE}
-    parted $FILENAME mkpart primary ext2 ${ROOT_FSSIZE} 100%
+    parted $FILENAME mkpart primary ext2 ${BOOT_FSSIZE} 100%
     parted $FILENAME toggle 1 boot
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null

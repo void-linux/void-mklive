@@ -91,7 +91,7 @@ register_binfmt() {
     fi
     mountpoint -q /proc/sys/fs/binfmt_misc || modprobe -q binfmt_misc; mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
     case "${_ARCH}" in
-        armv?l)
+        armv?l*)
             echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
             cp -f $(which qemu-arm-static) $rootfs/usr/bin || die "failed to copy qemu-arm-static to the rootfs"
             ;;
@@ -137,6 +137,7 @@ case "$PLATFORM" in
     i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
     odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
+    rpi-musl) _ARCH="armv6l-musl"; SUBPLATFORM="rpi"; QEMU_BIN=qemu-arm-static;;
     rpi2) SUBPLATFORM="rpi"; _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     usbarmory) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
     x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
@@ -189,8 +190,10 @@ mount_pseudofs
 run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $rootfs -y ${PKGS}"
 
 # Enable en_US.UTF-8 locale and generate it into the target rootfs.
-LOCALE=en_US.UTF-8
-sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
+if [ -e $rootfs/etc/default/libc-locales ]; then
+    LOCALE=en_US.UTF-8
+    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
+fi
 
 #
 # Reconfigure packages for target architecture: must be reconfigured
