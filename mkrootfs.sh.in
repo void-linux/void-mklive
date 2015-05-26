@@ -130,18 +130,15 @@ fi
 
 
 case "$PLATFORM" in
-    bananapi) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    beaglebone) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    cubieboard2|cubietruck) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    i686) _ARCH="i686"; QEMU_BIN=qemu-i386-static;;
-    i686-musl) _ARCH="i686-musl"; QEMU_BIN=qemu-i386-static;;
-    odroid-u2) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    rpi) _ARCH="armv6l"; QEMU_BIN=qemu-arm-static;;
-    rpi-musl) _ARCH="armv6l-musl"; SUBPLATFORM="rpi"; QEMU_BIN=qemu-arm-static;;
-    rpi2) SUBPLATFORM="rpi"; _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    usbarmory) _ARCH="armv7l"; QEMU_BIN=qemu-arm-static;;
-    x86_64) _ARCH="x86_64"; QEMU_BIN=qemu-x86_64-static;;
-    x86_64-musl) _ARCH="x86_64-musl"; QEMU_BIN=qemu-x86_64-static;;
+    bananapi) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    beaglebone) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    cubieboard2|cubietruck) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    odroid-u2) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    rpi*) _ARCH="armv6l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    rpi2*) _ARCH="armv7l"; SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
+    usbarmory*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    i686*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-i386-static;;
+    x86_64*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
