@@ -130,10 +130,10 @@ fi
 
 
 case "$PLATFORM" in
-    bananapi) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    beaglebone) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    cubieboard2|cubietruck) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    odroid-u2) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    bananapi*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    beaglebone*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    cubieboard2*|cubietruck*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    odroid-u2*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     rpi*) _ARCH="armv6l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     rpi2*) _ARCH="armv7l"; SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
     usbarmory*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
