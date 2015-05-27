@@ -115,11 +115,6 @@ install_packages() {
     else
         install -Dm755 /usr/sbin/void-installer $ROOTFS/usr/sbin/void-installer
     fi
-    case "$BASE_ARCH" in
-        *-musl) # XXX force modesetting with musl for now.
-            install -Dm644 data/xorg-modesetting.conf $ROOTFS/usr/share/X11/xorg.conf.d/99-modesetting.conf
-            ;;
-    esac
     # Cleanup and remove useless stuff.
     rm -rf $ROOTFS/var/cache/* $ROOTFS/run/* $ROOTFS/var/run/*
 }
