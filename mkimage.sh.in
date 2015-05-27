@@ -143,7 +143,8 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
 fi
 case "$PLATFORM" in
 cubieboard2|cubietruck)
-    parted $FILENAME mkpart primary ext2 2048s ${BOOT_FSSIZE} 100%
+    parted $FILENAME mkpart primary ext2 2048s ${ROOT_FSSIZE} 100%
+    parted $FILENAME toggle 1 boot
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p1 >/dev/null 2>&1
     mount ${LOOPDEV}p1 $ROOTFSDIR
