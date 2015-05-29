@@ -1,2 +1,4 @@
 *.sh
+*.img
+*.xz
 xbps-cachedir*
