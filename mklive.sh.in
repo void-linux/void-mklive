@@ -87,17 +87,20 @@ copy_dracut_files() {
 
 install_prereqs() {
     copy_void_conf $VOIDHOSTDIR
-    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${REQUIRED_PKGS}
+    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY \
+        $XBPS_HOST_CACHEDIR -y ${REQUIRED_PKGS}
     [ $? -ne 0 ] && die "Failed to install required software, exiting..."
 }
 
 install_packages() {
     copy_void_conf $ROOTFS
     # Check that all pkgs are reachable.
-    ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} ${INITRAMFS_PKGS}
+    XBPS_ARCH=$BASE_ARCH ${XBPS_INSTALL_CMD} -r $ROOTFS \
+        $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
 
-    LANG=C ${XBPS_INSTALL_CMD} -r $ROOTFS $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} ${INITRAMFS_PKGS}
+    LANG=C XBPS_ARCH=$BASE_ARCH ${XBPS_INSTALL_CMD} -r $ROOTFS \
+        $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Failed to install $PACKAGE_LIST"
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
@@ -128,7 +131,7 @@ generate_initramfs() {
     else
         _args="--omit systemd"
     fi
-    xbps-uchroot $ROOTFS env -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
+    xbps-uchroot $ROOTFS env -- -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
         --add-drivers "ahci" --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION
     [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
@@ -192,7 +195,7 @@ generate_grub_efi_boot() {
     mount -o rw,flush -t vfat "${LOOP_DEVICE}" "${GRUB_EFI_TMPDIR}" >/dev/null 2>&1
 
     cp -a $IMAGEDIR/boot $VOIDHOSTDIR
-    xbps-uchroot $VOIDHOSTDIR grub-mkstandalone \
+    xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
         --directory="/usr/lib/grub/x86_64-efi" \
         --format="x86_64-efi" \
         --compression="xz" --output="/tmp/bootx64.efi" \
@@ -225,7 +228,7 @@ generate_squashfs() {
     umount -f "$BUILDDIR/tmp-rootfs"
     mkdir -p "$IMAGEDIR/LiveOS"
 
-    mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
+    $VOIDHOSTDIR/usr/bin/mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
         -comp ${SQUASHFS_COMPRESSION} || die "Failed to generate squashfs image"
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
     # Remove rootfs and temporary dirs, we don't need them anymore.
@@ -233,7 +236,7 @@ generate_squashfs() {
 }
 
 generate_iso_image() {
-    xorriso -as mkisofs \
+    $VOIDHOSTDIR/usr/bin/xorriso -as mkisofs \
         -iso-level 3 -rock -joliet \
         -max-iso9660-filenames -omit-period \
         -omit-version-number -relaxed-filenames -allow-lowercase \
@@ -271,8 +274,12 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
 done
 shift $((OPTIND - 1))
 
+ARCH=$(uname -m)
+
 # Set defaults
-: ${XBPS_CACHEDIR:=--cachedir=/var/cache/xbps}
+: ${BASE_ARCH:=$(uname -m)}
+: ${XBPS_CACHEDIR:=-c $(pwd -P)/xbps-cachedir-${BASE_ARCH}}
+: ${XBPS_HOST_CACHEDIR:=-c $(pwd -P)/xbps-cachedir-${ARCH}}
 : ${KEYMAP:=us}
 : ${LOCALE:=en_US.UTF-8}
 : ${INITRAMFS_COMPRESSION:=xz}
@@ -305,7 +312,7 @@ ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
-: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current}
+: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current}
 : ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
 : ${GRUB_DATADIR:=$VOIDHOSTDIR/usr/share/grub}
 : ${SPLASH_IMAGE:=data/splash.png}
@@ -318,17 +325,14 @@ ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
 mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
 
-if [ -n "$BASE_ARCH" ]; then
-    export XBPS_ARCH="$BASE_ARCH"
-fi
-
 info_msg "[1/8] Synchronizing XBPS repository data..."
 copy_void_keys $ROOTFS
-$XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
-cp -a $ROOTFS/* $VOIDHOSTDIR
+copy_void_keys $VOIDHOSTDIR
+XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
+$XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY -S
 
-_linux_series=$($XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -x linux)
-KERNELVERSION=$($XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
+_linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -x linux)
+KERNELVERSION=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion $KERNELVERSION)
 
 : ${OUTPUT_FILE="void-live-${BASE_ARCH:=$(uname -m)}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
@@ -342,9 +346,6 @@ mkdir -p "$ROOTFS"/etc
 
 info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
-
-export PATH=$VOIDHOSTDIR/usr/bin:$VOIDHOSTDIR/usr/sbin:$ROOTFS/usr/bin:$ROOTFS/usr/sbin:$PATH
-export LD_LIBRARY_PATH=$ROOTFS/usr/lib:$VOIDHOSTDIR/usr/lib
 
 info_msg "[4/9] Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
