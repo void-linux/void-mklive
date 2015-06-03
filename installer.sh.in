@@ -799,16 +799,14 @@ install_packages() {
     _arch=$(xbps-uhelper arch)
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -Sy ${_syspkg} ${_grub} 2>&1 | \
+        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
         DIALOG --title "Installing base system packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
-    # If uname -m != _arch perform a reconfiguration.
-    if [ "$(uname -m)" != "${_arch}" ]; then
-        XBPS_ARCH=${_arch} xbps-reconfigure -r $TARGETDIR -a
-    fi
+    xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
+    chroot $TARGETDIR xbps-reconfigure -a
 }
 
 enable_dhcpd() {
