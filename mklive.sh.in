@@ -39,7 +39,19 @@ die() {
     info_msg "ERROR: $@"
     error_out 1
 }
+mount_pseudofs() {
+    for f in sys dev proc; do
+        mkdir -p $ROOTFS/$f
+        mount --bind /$f $ROOTFS/$f
+    done
+}
+umount_pseudofs() {
+    umount -f $ROOTFS/sys >/dev/null 2>&1
+    umount -f $ROOTFS/dev >/dev/null 2>&1
+    umount -f $ROOTFS/proc >/dev/null 2>&1
+}
 error_out() {
+    umount_pseudofs
     [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
     exit ${1:=0}
 }
@@ -94,24 +106,25 @@ install_prereqs() {
 
 install_packages() {
     copy_void_conf $ROOTFS
-    # Check that all pkgs are reachable.
+
     XBPS_ARCH=$BASE_ARCH ${XBPS_INSTALL_CMD} -r $ROOTFS \
         $XBPS_REPOSITORY $XBPS_CACHEDIR -yn ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
 
-    LANG=C XBPS_ARCH=$BASE_ARCH ${XBPS_INSTALL_CMD} -r $ROOTFS \
+    mount_pseudofs
+
+    LANG=C XBPS_ARCH=$BASE_ARCH ${XBPS_INSTALL_CMD} -U -r $ROOTFS \
         $XBPS_REPOSITORY $XBPS_CACHEDIR -y ${PACKAGE_LIST} ${INITRAMFS_PKGS}
     [ $? -ne 0 ] && die "Failed to install $PACKAGE_LIST"
+
+    xbps-reconfigure -r $ROOTFS -f base-files >/dev/null 2>&1
+    chroot $ROOTFS env -i xbps-reconfigure -f base-files
 
     # Enable choosen UTF-8 locale and generate it into the target rootfs.
     if [ -f $ROOTFS/etc/default/libc-locales ]; then
         sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
-        xbps-reconfigure -r $ROOTFS -f glibc-locales || die "Failed to reconfigure glibc-locales"
     fi
-    if xbps-query -r $ROOTFS util-linux >/dev/null 2>&1; then
-        # reconfigure util-linux just to be safe
-        xbps-reconfigure -r $ROOTFS -f base-files util-linux
-    fi
+    chroot $ROOTFS env -i xbps-reconfigure -a
 
     if [ -x installer.sh ]; then
         install -Dm755 installer.sh $ROOTFS/usr/sbin/void-installer
@@ -131,7 +144,7 @@ generate_initramfs() {
     else
         _args="--omit systemd"
     fi
-    xbps-uchroot $ROOTFS env -- -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
+    chroot $ROOTFS env -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
         --add-drivers "ahci" --force-add "vmklive" ${_args} "/boot/initrd" $KERNELVERSION
     [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
@@ -213,6 +226,8 @@ generate_grub_efi_boot() {
 }
 
 generate_squashfs() {
+    umount_pseudofs
+
     # Find out required size for the rootfs and create an ext3fs image off it.
     ROOTFS_SIZE=$(du -sm "$ROOTFS"|awk '{print $1}')
     if [ -z "$ROOTFS_FREESIZE" ]; then
@@ -231,6 +246,7 @@ generate_squashfs() {
     $VOIDHOSTDIR/usr/bin/mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
         -comp ${SQUASHFS_COMPRESSION} || die "Failed to generate squashfs image"
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
+
     # Remove rootfs and temporary dirs, we don't need them anymore.
     rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" "$BUILDDIR/tmp"
 }
