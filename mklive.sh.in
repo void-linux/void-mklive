@@ -177,7 +177,7 @@ generate_isolinux_boot() {
     sed -i  -e "s|@@SPLASHIMAGE@@|$(basename ${SPLASH_IMAGE})|" \
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
-        -e "s|@@ARCH@@|$(uname -m)|" \
+        -e "s|@@ARCH@@|$BASE_ARCH|" \
         -e "s|@@LOCALE@@|${LOCALE}|" \
         -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
         -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
@@ -190,7 +190,7 @@ generate_grub_efi_boot() {
     sed -i  -e "s|@@SPLASHIMAGE@@|$(basename ${SPLASH_IMAGE})|" \
         -e "s|@@KERNVER@@|${KERNELVERSION}|" \
         -e "s|@@KEYMAP@@|${KEYMAP}|" \
-        -e "s|@@ARCH@@|$(uname -m)|" \
+        -e "s|@@ARCH@@|$BASE_ARCH|" \
         -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
         -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
         -e "s|@@LOCALE@@|${LOCALE}|" $GRUB_DIR/grub_void.cfg
@@ -351,7 +351,7 @@ _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITOR
 KERNELVERSION=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion $KERNELVERSION)
 
-: ${OUTPUT_FILE="void-live-${BASE_ARCH:=$(uname -m)}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
+: ${OUTPUT_FILE="void-live-${BASE_ARCH}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
 info_msg "[2/9] Installing software to generate the image: ${REQUIRED_PKGS} ..."
 install_prereqs
