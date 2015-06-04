@@ -1,7 +1,7 @@
 #!/bin/sh
 
 readonly TARGET="$1"
-shift
+[ -n "$TARGET" ] && shift
 
 readonly ARCH=$(uname -m)
 readonly DATE=$(date +%Y%m%d)
@@ -21,7 +21,7 @@ esac
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
 readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font alsa-plugins-pulseaudio"
 readonly E_PKGS="$X_PKGS lxdm enlightenment terminology econnman udisks2"
-readonly XFCE_PKGS="$X_PKGS lxdm xfce4 network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly XFCE_PKGS="$X_PKGS lxdm xfce4 gnome-themes-standard network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
 readonly KDE_PKGS="$X_PKGS kde"
