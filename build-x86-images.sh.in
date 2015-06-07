@@ -1,9 +1,19 @@
 #!/bin/sh
 
-readonly TARGET="$1"
-[ -n "$TARGET" ] && shift
+ARCH=
+IMAGE=
 
-readonly ARCH=$(uname -m)
+while getopts "a:b:h" opt; do
+case $opt in
+	a) ARCH="$OPTARG";;
+	b) IMAGE="$OPTARG";;
+	h) echo "${0#/*}: [-a arch] [-b base|e|xfce|mate|cinnamon|kde|lxde]" >&2; exit 1;;
+esac
+done
+shift $((OPTIND - 1))
+
+: ${ARCH:=$(uname -m)}
+
 readonly DATE=$(date +%Y%m%d)
 readonly BASE_IMG=void-live-${ARCH}-${DATE}.iso
 readonly E_IMG=void-live-${ARCH}-${DATE}-enlightenment.iso
@@ -14,8 +24,8 @@ readonly KDE_IMG=void-live-${ARCH}-${DATE}-kde.iso
 readonly LXDE_IMG=void-live-${ARCH}-${DATE}-lxde.iso
 
 case "$ARCH" in
-	i686) GRUB="grub";;
-	x86_64) GRUB="grub-x86_64-efi";;
+	i686*) GRUB="grub";;
+	x86_64*) GRUB="grub-x86_64-efi";;
 esac
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
@@ -29,38 +39,38 @@ readonly LXDE_PKGS="$X_PKGS lxdm lxde gvfs-afc gvfs-mtp gvfs-smb udisks2"
 
 [ ! -x mklive.sh ] && exit 0
 
-if [ -z "$TARGET" -o "$TARGET" = base ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = base ]; then
 	if [ ! -e $BASE_IMG ]; then
-		./mklive.sh -o $BASE_IMG -p "$BASE_PKGS" $@
+		./mklive.sh -a $ARCH -o $BASE_IMG -p "$BASE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o "$TARGET" = e ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = e ]; then
 	if [ ! -e $E_IMG ]; then
-		./mklive.sh -o $E_IMG -p "$E_PKGS" $@
+		./mklive.sh -a $ARCH -o $E_IMG -p "$E_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o "$TARGET" = xfce ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = xfce ]; then
 	if [ ! -e $XFCE_IMG ]; then
-		./mklive.sh -o $XFCE_IMG -p "$XFCE_PKGS" $@
+		./mklive.sh -a $ARCH -o $XFCE_IMG -p "$XFCE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o "$TARGET" = mate ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = mate ]; then
 	if [ ! -e $MATE_IMG ]; then
-		./mklive.sh -o $MATE_IMG -p "$MATE_PKGS" $@
+		./mklive.sh -a $ARCH -o $MATE_IMG -p "$MATE_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o "$TARGET" = cinnamon ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = cinnamon ]; then
 	if [ ! -e $CINNAMON_IMG ]; then
-		./mklive.sh -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
+		./mklive.sh -a $ARCH -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
 	fi
 fi
-if [ -z "$TARGET" -o "$TARGET" = lxde ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = lxde ]; then
 	if [ ! -e $LXDE_IMG ]; then
-		./mklive.sh -o $LXDE_IMG -p "$LXDE_PKGS" $@
+		./mklive.sh -a $ARCH -o $LXDE_IMG -p "$LXDE_PKGS" $@
 	fi
 fi
-if [ "$TARGET" = kde ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = kde ]; then
 	if [ ! -e $KDE_IMG ]; then
-		./mklive.sh -o $KDE_IMG -p "$KDE_PKGS" $@
+		./mklive.sh -a $ARCH -o $KDE_IMG -p "$KDE_PKGS" $@
 	fi
 fi
