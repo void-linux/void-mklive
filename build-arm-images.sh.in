@@ -1,6 +1,7 @@
 #!/bin/sh
 
 TARGET="$1"
+[ -n "$TARGET" ] && shift
 
 set -e
 
@@ -8,7 +9,8 @@ PLATFORMS="beaglebone cubieboard2 cubietruck odroid-u2 rpi rpi2 usbarmory"
 DATE=$(date '+%Y%m%d')
 
 for f in ${PLATFORMS}; do
-	if [ -z "$TARGET" -o "$TARGET" = "$f" ]; then
+        if [ -z "$TARGET" -o "$TARGET" = "$f" ]; then
+		./mkrootfs.sh $@ $f
 		./mkimage.sh void-${f}-rootfs-${DATE}.tar.xz
 		xz -T0 void-${f}-${DATE}.img
 	fi
