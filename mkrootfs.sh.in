@@ -134,8 +134,8 @@ case "$PLATFORM" in
     beaglebone*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     cubieboard2*|cubietruck*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     odroid-u2*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    rpi*) _ARCH="armv6l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     rpi2*) _ARCH="armv7l"; SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
+    rpi*) _ARCH="armv6l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     usbarmory*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     i686*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-i386-static;;
     x86_64*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-x86_64-static;;
