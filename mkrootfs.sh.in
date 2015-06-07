@@ -200,24 +200,17 @@ if [ -n "${_ARCH}" ]; then
     info_msg "Reconfiguring packages for ${_ARCH} ..."
     case "$PLATFORM" in
         i686*|x86_64*)
-            run_cmd "XBPS_ARCH=$_ARCH xbps-reconfigure -r $rootfs base-directories"
+            run_cmd "XBPS_ARCH=$_ARCH xbps-reconfigure -r $rootfs base-files"
             ;;
         *)
             register_binfmt
-            run_cmd "xbps-reconfigure -r $rootfs base-directories"
+            run_cmd "xbps-reconfigure -r $rootfs base-files"
+            run_cmd "chroot $rootfs env -i xbps-reconfigure -f base-files"
             rmdir $rootfs/usr/lib32
             rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
             ;;
     esac
-    run_cmd "chroot $rootfs xbps-reconfigure shadow"
-    if [ "$PKGBASE" = "base-system-systemd" ]; then
-        run_cmd "chroot $rootfs xbps-reconfigure systemd"
-    fi
     run_cmd "chroot $rootfs xbps-reconfigure -a"
-else
-    if [ "$PKGBASE" = "base-system-systemd" ]; then
-        run_cmd "chroot $rootfs xbps-reconfigure systemd"
-    fi
 fi
 
 #
