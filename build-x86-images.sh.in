@@ -69,7 +69,7 @@ if [ -z "$IMAGE" -o "$IMAGE" = lxde ]; then
 		./mklive.sh -a $ARCH -o $LXDE_IMG -p "$LXDE_PKGS" $@
 	fi
 fi
-if [ -z "$IMAGE" -o "$IMAGE" = kde ]; then
+if [ "$IMAGE" = kde ]; then
 	if [ ! -e $KDE_IMG ]; then
 		./mklive.sh -a $ARCH -o $KDE_IMG -p "$KDE_PKGS" $@
 	fi
