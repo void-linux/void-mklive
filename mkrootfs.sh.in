@@ -75,7 +75,7 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $@ for target $_ARCH ..."
-    eval XBPS_TARGET_ARCH=${_ARCH} "$@"
+    eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@"
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
@@ -121,13 +121,18 @@ shift $(($OPTIND - 1))
 
 PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
-: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current}
+: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current}
 
 if [ -z "$PLATFORM" ]; then
     echo "$PROGNAME: platform was not set!"
     usage; exit 1
 fi
 
+
+case "$PLATFORM" in
+    i686-musl|x86_64-musl) _TARGET_ARCH="$PLATFORM";;
+    *-musl) _TARGET_ARCH="armv7l-musl";;
+esac
 
 case "$PLATFORM" in
     bananapi*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
