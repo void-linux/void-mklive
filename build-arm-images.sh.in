@@ -16,6 +16,6 @@ for f in ${PLATFORMS} x ${PLATFORMS} ; do
 		target=${f}-musl
 	fi
         if [ -z "$ARGET" -o "$TARGET" = "$target" ]; then
-		./mkrootfs.sh $@ $target && ./mkimage.sh void-${f}-rootfs-${DATE}.tar.xz && xz -T0 -9 void-${f}-${DATE}.img
+		./mkrootfs.sh $@ $target && ./mkimage.sh void-${target}-rootfs-${DATE}.tar.xz && xz -T0 -9 void-${target}-${DATE}.img
 	fi
 done
