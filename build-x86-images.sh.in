@@ -30,12 +30,12 @@ esac
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
 readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font alsa-plugins-pulseaudio"
-readonly E_PKGS="$X_PKGS lxdm enlightenment terminology econnman udisks2"
-readonly XFCE_PKGS="$X_PKGS lxdm xfce4 gnome-themes-standard network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2"
-readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly E_PKGS="$X_PKGS lxdm enlightenment terminology econnman udisks2 firefox"
+readonly XFCE_PKGS="$X_PKGS lxdm xfce4 gnome-themes-standard network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
+readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
+readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
 readonly KDE_PKGS="$X_PKGS kde"
-readonly LXDE_PKGS="$X_PKGS lxdm lxde gvfs-afc gvfs-mtp gvfs-smb udisks2"
+readonly LXDE_PKGS="$X_PKGS lxdm lxde gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
 
 [ ! -x mklive.sh ] && exit 0
 
