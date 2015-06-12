@@ -51,7 +51,7 @@ Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
-    -c <dir>    Set XBPS cache directory (defaults to /var/cache/xbps)
+    -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
     -p <pkgs>   Additional packages to install into the rootfs (separated by blanks)
@@ -101,8 +101,6 @@ register_binfmt() {
     esac
 }
 
-: ${XBPS_CACHEDIR:=--cachedir=/var/cache/xbps}
-: ${PKGBASE:=base-system}
 #
 # main()
 #
@@ -121,7 +119,21 @@ shift $(($OPTIND - 1))
 
 PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
+
+case "$PLATFORM" in
+    i686-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="i386";;
+    i686) _TARGET_ARCH="$PLATFORM"; _ARCH="i386";;
+    x86_64-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
+    x86_64) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
+    rpi-musl) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
+    rpi) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
+    *-musl) _TARGET_ARCH="armv7l-musl"; _ARCH="armv7l";;
+    *) _TARGET_ARCH="armv7l"; _ARCH="armv7l";;
+esac
+
 : ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current}
+: ${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cachedir-${_TARGET_ARCH}}
+: ${PKGBASE:=base-system}
 
 if [ -z "$PLATFORM" ]; then
     echo "$PROGNAME: platform was not set!"
@@ -130,20 +142,15 @@ fi
 
 
 case "$PLATFORM" in
-    i686-musl|x86_64-musl) _TARGET_ARCH="$PLATFORM";;
-    *-musl) _TARGET_ARCH="armv7l-musl";;
-esac
-
-case "$PLATFORM" in
-    bananapi*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    beaglebone*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    cubieboard2*|cubietruck*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    odroid-u2*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    rpi2*) _ARCH="armv7l"; SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
-    rpi*) _ARCH="armv6l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    usbarmory*) _ARCH="armv7l"; SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    i686*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-i386-static;;
-    x86_64*) _ARCH="$PLATFORM"; QEMU_BIN=qemu-x86_64-static;;
+    bananapi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    beaglebone*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    cubieboard2*|cubietruck*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    odroid-u2*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    rpi2*) SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
+    rpi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    usbarmory*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
+    i686*) QEMU_BIN=qemu-i386-static;;
+    x86_64*) QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
