@@ -3,7 +3,7 @@
 TARGET="$1"
 [ -n "$TARGET" ] && shift
 
-PLATFORMS="beaglebone cubieboard2 cubietruck odroid-u2 rpi rpi2 usbarmory"
+PLATFORMS="beaglebone cubieboard2 odroid-u2 rpi rpi2 usbarmory"
 DATE=$(date '+%Y%m%d')
 
 for f in ${PLATFORMS} x ${PLATFORMS} ; do
