@@ -198,7 +198,7 @@ odroid-u2)
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
     ;;
 usbarmory)
-    dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync
+    dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 esac
 
