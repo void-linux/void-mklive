@@ -3,15 +3,19 @@
 TARGET="$1"
 [ -n "$TARGET" ] && shift
 
-set -e
-
 PLATFORMS="beaglebone cubieboard2 cubietruck odroid-u2 rpi rpi2 usbarmory"
 DATE=$(date '+%Y%m%d')
 
-for f in ${PLATFORMS}; do
-        if [ -z "$TARGET" -o "$TARGET" = "$f" ]; then
-		./mkrootfs.sh $@ $f
-		./mkimage.sh void-${f}-rootfs-${DATE}.tar.xz
-		xz -T0 void-${f}-${DATE}.img
+for f in ${PLATFORMS} x ${PLATFORMS} ; do
+	if [ "$f" = "x" ]; then
+		musl=1
+		continue
+	fi
+	target=$f
+	if [ -n "$musl" ]; then
+		target=${f}-musl
+	fi
+        if [ -z "$ARGET" -o "$TARGET" = "$target" ]; then
+		./mkrootfs.sh $@ $target && ./mkimage.sh void-${f}-rootfs-${DATE}.tar.xz && xz -T0 -9 void-${f}-${DATE}.img
 	fi
 done
