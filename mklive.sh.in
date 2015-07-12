@@ -218,8 +218,8 @@ generate_grub_efi_boot() {
         losetup --detach "${LOOP_DEVICE}"
         die "Failed to generate EFI loader"
     fi
-    mkdir -p ${GRUB_EFI_TMPDIR}/EFI/boot
-    cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/boot/
+    mkdir -p ${GRUB_EFI_TMPDIR}/EFI/BOOT
+    cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/BOOT/BOOTX64.EFI
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
     rm -rf $GRUB_EFI_TMPDIR
