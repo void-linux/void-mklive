@@ -50,5 +50,7 @@ if [ -r ${NEWROOT}/etc/lxdm/lxdm.conf ]; then
         sed -e "s,.*session.*=.*,session=/usr/bin/i3," -i ${NEWROOT}/etc/lxdm/lxdm.conf
     elif [ -x ${NEWROOT}/usr/bin/startlxde ]; then
         sed -e "s,.*session.*=.*,session=/usr/bin/startlxde," -i ${NEWROOT}/etc/lxdm/lxdm.conf
+    elif [ -x ${NEWROOT}/usr/bin/startlxqt ]; then
+        sed -e "s,.*session.*=.*,session=/usr/bin/startlxqt," -i ${NEWROOT}/etc/lxdm/lxdm.conf
     fi
 fi
