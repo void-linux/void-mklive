@@ -22,6 +22,7 @@ readonly MATE_IMG=void-live-${ARCH}-${DATE}-mate.iso
 readonly CINNAMON_IMG=void-live-${ARCH}-${DATE}-cinnamon.iso
 readonly KDE_IMG=void-live-${ARCH}-${DATE}-kde.iso
 readonly LXDE_IMG=void-live-${ARCH}-${DATE}-lxde.iso
+readonly LXQT_IMG=void-live-${ARCH}-${DATE}-lxqt.iso
 
 case "$ARCH" in
 	i686*) GRUB="grub";;
@@ -36,6 +37,7 @@ readonly MATE_PKGS="$X_PKGS lxdm mate mate-extra gnome-keyring network-manager-a
 readonly CINNAMON_PKGS="$X_PKGS lxdm cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
 readonly KDE_PKGS="$X_PKGS kde"
 readonly LXDE_PKGS="$X_PKGS lxdm lxde gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
+readonly LXQT_PKGS="$X_PKGS lxdm lxqt gvfs-afc gvfs-mtp gvfs-smb udisks2 qupzilla"
 
 [ ! -x mklive.sh ] && exit 0
 
@@ -67,6 +69,11 @@ fi
 if [ -z "$IMAGE" -o "$IMAGE" = lxde ]; then
 	if [ ! -e $LXDE_IMG ]; then
 		./mklive.sh -a $ARCH -o $LXDE_IMG -p "$LXDE_PKGS" $@
+	fi
+fi
+if [ "$IMAGE" = lxqt ]; then
+	if [ ! -e $LXQT_IMG ]; then
+		./mklive.sh -a $ARCH -o $LXQT_IMG -p "$LXQT_PKGS" $@
 	fi
 fi
 if [ "$IMAGE" = kde ]; then
