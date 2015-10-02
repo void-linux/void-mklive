@@ -913,7 +913,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             else
                 enable_dhcpd
             fi
-        elif [ -n "$dev" -a -n "$type" = "static" ]; then
+        elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhdpcd.conf.orig
             echo "# Static IP configuration set by the void-installer for $_dev." \
