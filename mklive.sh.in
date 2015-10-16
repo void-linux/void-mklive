@@ -265,7 +265,7 @@ generate_iso_image() {
         -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 }
 
-XBPS_REPOSITORY=
+XBPS_REPOSITORY="--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current"
 #
 # main()
 #
@@ -273,7 +273,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
-        r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG ";;
+        r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         K) readonly KEEP_BUILDDIR=1;;
         k) KEYMAP="$OPTARG";;
@@ -328,7 +328,6 @@ ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
-: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current}
 : ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
 : ${GRUB_DATADIR:=$VOIDHOSTDIR/usr/share/grub}
 : ${SPLASH_IMAGE:=data/splash.png}
