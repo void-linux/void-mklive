@@ -248,7 +248,10 @@ menu_filesystems() {
         set -- "$fstype" "$fssize" "$mntpoint" "$reformat"
         if [ -n "$1" -a -n "$2" -a -n "$3" -a -n "$4" ]; then
             local bdev=$(basename $dev)
-            if grep -Eq "^MOUNTPOINT \/dev\/${bdev}.*" $CONF_FILE; then
+            local ddev=$(basename $(dirname $dev))
+            if [ "$ddev" != "dev" ]; then
+                sed -i -e "/^MOUNTPOINT \/dev\/${ddev}\/${bdev}.*/d" $CONF_FILE
+            else
                 sed -i -e "/^MOUNTPOINT \/dev\/${bdev}.*/d" $CONF_FILE
             fi
             echo "MOUNTPOINT $dev $1 $2 $3 $4" >>$CONF_FILE
