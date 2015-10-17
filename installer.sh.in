@@ -1,6 +1,6 @@
 #!/bin/sh
 #-
-# Copyright (c) 2012-2014 Juan Romero Pardines <xtraeme@gmail.com>.
+# Copyright (c) 2012-2015 Juan Romero Pardines <xtraeme@voidlinux.eu>.
 #               2012 Dave Elusive <davehome@redthumb.info.tm>.
 # All rights reserved.
 #
@@ -36,7 +36,6 @@ BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
 FILESYSTEMS_DONE=
-SYSTEMD_INIT=
 
 TARGETDIR=/mnt/target
 LOG=/dev/tty8
@@ -57,11 +56,6 @@ fi
 # Detect if this is an EFI system.
 if [ -e /sys/firmware/efi/systab ]; then
     EFI_SYSTEM=1
-fi
-
-# Detect if systemd is installed
-if [ "$(cat /proc/1/comm)" = "systemd" ]; then
-    SYSTEMD_INIT=1
 fi
 
 # dialog colors
@@ -290,11 +284,7 @@ ${RESET}\n" 18 80
 }
 
 menu_keymap() {
-    if [ -n "$SYSTEMD_INIT" ]; then
-        local _keymaps="$(localectl --no-pager list-keymaps)"
-    else
-        local _keymaps="$(find /usr/share/kbd/keymaps/ -type f -iname "*.map.gz" -printf "%f\n" | sed 's|.map.gz||g' | sort)"
-    fi
+    local _keymaps="$(find /usr/share/kbd/keymaps/ -type f -iname "*.map.gz" -printf "%f\n" | sed 's|.map.gz||g' | sort)"
     local _KEYMAPS=
 
     for f in ${_keymaps}; do
@@ -354,11 +344,7 @@ set_locale() {
 }
 
 menu_timezone() {
-    if [ -n "$SYSTEMD_INIT" ]; then
-        local _tzones="$(timedatectl --no-pager list-timezones)"
-    else
-        local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
-    fi
+    local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
     local _TIMEZONES=
 
     for f in ${_tzones}; do
@@ -379,11 +365,7 @@ menu_timezone() {
 set_timezone() {
     local TIMEZONE="$(get_option TIMEZONE)"
 
-    if [ -z "$SYSTEMD_INIT" ]; then
-        sed -i -e "s|#TIMEZONE=.*|TIMEZONE=$TIMEZONE|g" $TARGETDIR/etc/rc.conf
-    else
-        ln -sf /usr/share/zoneinfo/${TIMEZONE} $TARGETDIR/etc/localtime
-    fi
+    sed -i -e "s|#TIMEZONE=.*|TIMEZONE=$TIMEZONE|g" $TARGETDIR/etc/rc.conf
 }
 
 menu_hostname() {
@@ -830,11 +812,7 @@ install_packages() {
 }
 
 enable_dhcpd() {
-    if [ -n "$SYSTEMD_INIT" ]; then
-        chroot $TARGETDIR systemctl enable dhcpcd.service >$LOG 2>&1
-    else
-        ln -s /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
-    fi
+    ln -sf /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
 }
 
 menu_install() {
@@ -925,11 +903,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ "$_type" = "dhcp" ]; then
             if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
                 cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                if [ -n "$SYSTEMD_INIT" ]; then
-                    chroot $TARGETDIR systemctl enable dhcpcd@${_dev}.service >$LOG 2>&1
-                else
-                    ln -s /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
-                fi
+                ln -sf /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
             else
                 enable_dhcpd
             fi
