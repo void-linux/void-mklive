@@ -190,7 +190,7 @@ show_partitions() {
         [ "$fstype" = "crypto_LUKS" ] && continue
         [ "$fstype" = "LVM2_member" ] && continue
         fssize=$(lsblk -nr /dev/cciss/$part|awk '{print $4}')
-        echo "$part"
+        echo "/dev/cciss/$part"
         echo "size:${fssize:-unknown};fstype:${fstype:-none}"
     done
     if [ -e /sbin/lvs ]; then
