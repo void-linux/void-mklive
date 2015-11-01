@@ -344,7 +344,7 @@ set_locale() {
 }
 
 menu_timezone() {
-    local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ -type f | sort)"
+    local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ posix/ -type f | sort)"
     local _TIMEZONES=
 
     for f in ${_tzones}; do
