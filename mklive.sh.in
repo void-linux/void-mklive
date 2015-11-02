@@ -265,7 +265,6 @@ generate_iso_image() {
         -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 }
 
-XBPS_REPOSITORY="--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current"
 #
 # main()
 #
@@ -289,6 +288,8 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
     esac
 done
 shift $((OPTIND - 1))
+
+XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current"
 
 ARCH=$(uname -m)
 
