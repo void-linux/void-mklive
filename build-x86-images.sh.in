@@ -3,11 +3,12 @@
 ARCH=
 IMAGE=
 
-while getopts "a:b:h" opt; do
+while getopts "a:b:hr:" opt; do
 case $opt in
 	a) ARCH="$OPTARG";;
 	b) IMAGE="$OPTARG";;
-	h) echo "${0#/*}: [-a arch] [-b base|e|xfce|mate|cinnamon|kde|lxde]" >&2; exit 1;;
+	h) echo "${0#/*}: [-a arch] [-b base|e|xfce|mate|cinnamon|kde|lxde] [-r repo]" >&2; exit 1;;
+	r) REPO="-r $OPTARG $REPO";;
 esac
 done
 shift $((OPTIND - 1))
@@ -43,7 +44,7 @@ readonly LXQT_PKGS="$X_PKGS lxdm lxqt gvfs-afc gvfs-mtp gvfs-smb udisks2 qupzill
 
 if [ -z "$IMAGE" -o "$IMAGE" = base ]; then
 	if [ ! -e $BASE_IMG ]; then
-		./mklive.sh -a $ARCH -o $BASE_IMG -p "$BASE_PKGS" $@
+		./mklive.sh -a $ARCH -o $BASE_IMG -p "$BASE_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = e ]; then
