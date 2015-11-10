@@ -136,7 +136,7 @@ show_disks() {
         echo "size:${gbytes}GB;sector_size:$sectorsize"
     done
     # cciss(4) devices
-    for dev in $(ls /dev/cciss|grep -E 'c[0-9]d[0-9]$'); do
+    for dev in $(ls /dev/cciss 2>/dev/null|grep -E 'c[0-9]d[0-9]$'); do
         echo "/dev/cciss/$dev"
         size=$(cat /sys/block/cciss\!$dev/size)
         sectorsize=$(cat /sys/block/cciss\!$dev/queue/hw_sector_size)
@@ -179,7 +179,7 @@ show_partitions() {
         fi
     done
     # cciss(4) devices
-    for part in $(ls /dev/cciss|grep -E 'c[0-9]d[0-9]p[0-9]+'); do
+    for part in $(ls /dev/cciss 2>/dev/null|grep -E 'c[0-9]d[0-9]p[0-9]+'); do
         fstype=$(lsblk -nfr /dev/cciss/$part|awk '{print $2}')
         [ "$fstype" = "crypto_LUKS" ] && continue
         [ "$fstype" = "LVM2_member" ] && continue
