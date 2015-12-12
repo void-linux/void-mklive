@@ -99,7 +99,7 @@ copy_dracut_files() {
 
 install_prereqs() {
     copy_void_conf $VOIDHOSTDIR
-    $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY \
+    XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY \
         $XBPS_HOST_CACHEDIR -y ${REQUIRED_PKGS}
     [ $? -ne 0 ] && die "Failed to install required software, exiting..."
 }
@@ -306,7 +306,7 @@ shift $((OPTIND - 1))
 
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current"
 
-ARCH=$(uname -m)
+ARCH=$(xbps-uhelper arch)
 
 # Set defaults
 : ${BASE_ARCH:=$(uname -m)}
@@ -360,7 +360,7 @@ info_msg "[1/8] Synchronizing XBPS repository data..."
 copy_void_keys $ROOTFS
 copy_void_keys $VOIDHOSTDIR
 XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
-$XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY -S
+XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r $VOIDHOSTDIR $XBPS_REPOSITORY -S
 
 _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -x linux|head -1)
 _kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r $ROOTFS ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
