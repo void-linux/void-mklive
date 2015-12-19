@@ -200,7 +200,7 @@ generate_grub_efi_boot() {
     modprobe -q loop || :
 
     # Create EFI vfat image.
-    dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=4096  >/dev/null 2>&1
+    dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=16384  >/dev/null 2>&1
     mkfs.vfat -F12 -S 512 -n "grub_uefi" "$GRUB_DIR/efiboot.img" >/dev/null 2>&1
 
     GRUB_EFI_TMPDIR="$(mktemp --tmpdir=$HOME -d)"
@@ -212,7 +212,7 @@ generate_grub_efi_boot() {
 	xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
 		     --directory="/usr/lib/grub/i386-efi" \
 		     --format="i386-efi" \
-		     --compression="xz" --output="/tmp/bootia32.efi" \
+		     --output="/tmp/bootia32.efi" \
 		     "boot/grub/grub.cfg"
 	if [ $? -ne 0 ]; then
             umount "$GRUB_EFI_TMPDIR"
@@ -225,7 +225,7 @@ generate_grub_efi_boot() {
 	xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
 		     --directory="/usr/lib/grub/x86_64-efi" \
 		     --format="x86_64-efi" \
-		     --compression="xz" --output="/tmp/bootx64.efi" \
+		     --output="/tmp/bootx64.efi" \
 		     "boot/grub/grub.cfg"
 	if [ $? -ne 0 ]; then
             umount "$GRUB_EFI_TMPDIR"
