@@ -200,7 +200,7 @@ generate_grub_efi_boot() {
     modprobe -q loop || :
 
     # Create EFI vfat image.
-    dd if=/dev/zero of=$GRUB_DIR/efiboot.img bs=1024 count=16384  >/dev/null 2>&1
+    truncate -s 16M $GRUB_DIR/efiboot.img >/dev/null 2>&1
     mkfs.vfat -F12 -S 512 -n "grub_uefi" "$GRUB_DIR/efiboot.img" >/dev/null 2>&1
 
     GRUB_EFI_TMPDIR="$(mktemp --tmpdir=$HOME -d)"
@@ -249,8 +249,8 @@ generate_squashfs() {
         ROOTFS_FREESIZE="$((ROOTFS_SIZE/6))"
     fi
     mkdir -p "$BUILDDIR/tmp/LiveOS"
-    dd if=/dev/zero of="$BUILDDIR/tmp/LiveOS/ext3fs.img" \
-        bs="$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" count=1 >/dev/null 2>&1
+    truncate -s "$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" \
+	    $BUILDDIR/tmp/LiveOS/ext3fs.img >/dev/null 2>&1
     mkdir -p "$BUILDDIR/tmp-rootfs"
     mkfs.ext3 -F -m1 "$BUILDDIR/tmp/LiveOS/ext3fs.img" >/dev/null 2>&1
     mount -o loop "$BUILDDIR/tmp/LiveOS/ext3fs.img" "$BUILDDIR/tmp-rootfs"
