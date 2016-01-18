@@ -56,6 +56,7 @@ Options
     -h          Show this help
     -p <pkgs>   Additional packages to install into the rootfs (separated by blanks)
     -r <repo>   Set XBPS repository (may be set multiple times)
+    -k <cmd>    Call "cmd <ROOTFSPATH>" after building the rootfs
     -V          Show version
 _EOF
 }
@@ -104,7 +105,7 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "b:C:c:hp:r:V" opt; do
+while getopts "b:C:c:hp:r:k:V" opt; do
     case $opt in
         b) PKGBASE="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
@@ -112,6 +113,7 @@ while getopts "b:C:c:hp:r:V" opt; do
         h) usage; exit 0;;
         p) EXTRA_PKGS="$OPTARG";;
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
+        k) POST_HOOK="$OPTARG";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
@@ -226,6 +228,9 @@ fi
 # Setup default root password.
 #
 run_cmd "chroot $rootfs sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'"
+if [ -n "$POST_HOOK" ]; then
+    run_cmd "$POST_HOOK $rootfs"
+fi
 umount_pseudofs
 #
 # Cleanup rootfs.
