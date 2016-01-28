@@ -39,6 +39,10 @@ die() {
     info_msg "ERROR: $@"
     error_out 1
 }
+print_step() {
+    ((CURRENT_STEP=CURRENT_STEP+1))
+    info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
+}
 mount_pseudofs() {
     for f in sys dev proc; do
         mkdir -p $ROOTFS/$f
@@ -72,6 +76,7 @@ Options:
  -S <freesize>      Allocate this free size (MB) for the rootfs.
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
+ -I <includedir>    Include directory structure under given path into rootfs
 
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
@@ -133,6 +138,10 @@ install_packages() {
     fi
     # Cleanup and remove useless stuff.
     rm -rf $ROOTFS/var/cache/* $ROOTFS/run/* $ROOTFS/var/run/*
+}
+
+copy_include_directory() {
+    find $INCLUDE_DIRECTORY -mindepth 1 -maxdepth 1 -exec cp -rfpPv {} $ROOTFS/ \;
 }
 
 generate_initramfs() {
@@ -283,7 +292,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -293,6 +302,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:s:S:o:p:h" opt; do
         k) KEYMAP="$OPTARG";;
         l) LOCALE="$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
+        I) INCLUDE_DIRECTORY="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         S) ROOTFS_FREESIZE="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
@@ -343,6 +353,9 @@ BOOT_DIR="$IMAGEDIR/boot"
 ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
+CURRENT_STEP=0
+STEP_COUNT=9
+[ -n "${INCLUDE_DIRECTORY}" ] && ((STEP_COUNT=STEP_COUNT+1))
 
 : ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
 : ${GRUB_DATADIR:=$VOIDHOSTDIR/usr/share/grub}
@@ -356,7 +369,7 @@ ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 
 mkdir -p $ROOTFS $VOIDHOSTDIR $ISOLINUX_DIR $GRUB_DIR
 
-info_msg "[1/8] Synchronizing XBPS repository data..."
+print_step "Synchronizing XBPS repository data..."
 copy_void_keys $ROOTFS
 copy_void_keys $VOIDHOSTDIR
 XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r $ROOTFS ${XBPS_REPOSITORY} -S
@@ -368,32 +381,37 @@ KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
 
 : ${OUTPUT_FILE="void-live-${BASE_ARCH}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
-info_msg "[2/9] Installing software to generate the image: ${REQUIRED_PKGS} ..."
+print_step "Installing software to generate the image: ${REQUIRED_PKGS} ..."
 install_prereqs
 
 mkdir -p "$ROOTFS"/etc
 [ -s data/motd ] && cp data/motd $ROOTFS/etc
 [ -s data/issue ] && cp data/issue $ROOTFS/etc
 
-info_msg "[3/9] Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
+print_step "Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
-info_msg "[4/9] Generating initramfs image ($INITRAMFS_COMPRESSION)..."
+if [ -n "${INCLUDE_DIRECTORY}" ];then
+    print_step "Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
+    copy_include_directory
+fi
+
+print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
 
-info_msg "[5/9] Generating isolinux support for PC-BIOS systems..."
+print_step "Generating isolinux support for PC-BIOS systems..."
 generate_isolinux_boot
 
-info_msg "[6/9] Generating GRUB support for EFI systems..."
+print_step "Generating GRUB support for EFI systems..."
 generate_grub_efi_boot
 
-info_msg "[7/9] Cleaning up rootfs..."
+print_step "Cleaning up rootfs..."
 cleanup_rootfs
 
-info_msg "[8/9] Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
+print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
 
-info_msg "[9/9] Generating ISO image..."
+print_step "Generating ISO image..."
 generate_iso_image
 
 hsize=$(du -sh "$CURDIR/$OUTPUT_FILE"|awk '{print $1}')
