@@ -947,7 +947,10 @@ menu_source() {
         "Network" "Packages from official remote reposity"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
-        "Network") src="net"; menu_network;;
+        "Network") src="net";
+            if [ -z "$NETWORK_DONE" ]; then
+                menu_network;
+            fi;;
         *) return 1;;
     esac
     SOURCE_DONE=1
