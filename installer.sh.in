@@ -32,6 +32,8 @@ KEYBOARD_DONE=
 LOCALE_DONE=
 TIMEZONE_DONE=
 ROOTPASSWORD_DONE=
+USERNAME_DONE=
+USERPASSWORD_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
@@ -421,6 +423,55 @@ set_rootpassword() {
     echo "root:$(get_option ROOTPASSWORD)" | chpasswd -R $TARGETDIR -c SHA512
 }
 
+menu_useraccount() {
+    local _firstpass= _secondpass= _desc=
+
+    while true; do
+        DIALOG --inputbox "Select primary user name:" ${INPUTSIZE} "void"
+        if [ $? -eq 0 ]; then
+            set_option USERNAME "$(cat $ANSWER)"
+            USERNAME_DONE=1
+            break
+        else
+            return
+        fi
+    done
+
+    while true; do
+        if [ -n "${_firstpass}" ]; then
+            _desc="Enter the password for '$(get_option USERNAME)' again (password won't be displayed)"
+        else
+            _desc="Enter the password for '$(get_option USERNAME)' (password won't be displayed)"
+        fi
+        DIALOG --passwordbox "${_desc}" ${MSGBOXSIZE}
+        if [ $? -eq 0 ]; then
+            if [ -z "${_firstpass}" ]; then
+                _firstpass="$(cat $ANSWER)"
+            else
+                _secondpass="$(cat $ANSWER)"
+            fi
+            if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
+                if [ "${_firstpass}" != "${_secondpass}" ]; then
+                    DIALOG --infobox "Passwords do not match! please reenter it again" 6 80
+                    unset _firstpass _secondpass
+                    sleep 2 && continue
+                fi
+                set_option USERPASSWORD "${_firstpass}"
+                USERPASSWORD_DONE=1
+                break
+            fi
+        else
+            return
+        fi
+    done
+}
+
+set_useraccount() {
+    useradd -R $TARGETDIR -m -G wheel,audio,video,floppy,cdrom,optical,kvm,xbuilder \
+         "$(get_option USERNAME)"
+    echo "$(get_option USERNAME):$(get_option USERPASSWORD)" | chpasswd -R $TARGETDIR -c SHA512
+}
+
 menu_bootloader() {
     while true; do
         DIALOG --title " Select the disk to install the bootloader" \
@@ -476,7 +527,7 @@ configure_wifi() {
 
     DIALOG --form "Wireless configuration for ${dev}\n(encryption type: wep or wpa)" 0 0 0 \
         "SSID:" 1 1 "" 1 16 30 0 \
-        "Encryption:" 2 1 "" 2 16 3 0 \
+        "Encryption:" 2 1 "" 2 16 4 3 \
         "Password:" 3 1 "" 3 16 50 0 || return 1
     set -- $(cat $ANSWER)
     ssid="$1"; enc="$2"; pass="$3";
@@ -889,6 +940,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     set_timezone
     set_hostname
     set_rootpassword
+    set_useraccount
 
     # Copy /etc/skel files for root.
     cp $TARGETDIR/etc/skel/.[bix]* $TARGETDIR/root
@@ -973,6 +1025,7 @@ menu() {
         "Locale" "Set system locale" \
         "Timezone" "Set system time zone" \
         "RootPassword" "Set system root password" \
+        "UserAccount" "Set primary user name and password" \
         "BootLoader" "Set disk to install bootloader" \
         "Partition" "Partition disk(s)" \
         "Filesystems" "Configure filesystems and mount points" \
@@ -995,7 +1048,9 @@ menu() {
         "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="Locale";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
-        "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="BootLoader";;
+        "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
+        "UserAccount") menu_useraccount && [ -n "$USERNAME_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
+		&& DEFITEM="BootLoader";;
         "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
         "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
