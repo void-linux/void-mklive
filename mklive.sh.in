@@ -40,7 +40,7 @@ die() {
     error_out 1
 }
 print_step() {
-    ((CURRENT_STEP=CURRENT_STEP+1))
+    CURRENT_STEP=$((CURRENT_STEP+1))
     info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
 }
 mount_pseudofs() {
