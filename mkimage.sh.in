@@ -131,7 +131,7 @@ case "$DD_VERSION" in
 esac
 
 info_msg "Creating disk image ($IMGSIZE) ..."
-truncate -s "${IMGSIZE}M" $FILENAME >/dev/null 2>&1
+truncate -s "${IMGSIZE}" $FILENAME >/dev/null 2>&1
 
 ROOTFSDIR=$(mktemp -d)
 
