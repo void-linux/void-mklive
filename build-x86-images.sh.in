@@ -49,36 +49,36 @@ if [ -z "$IMAGE" -o "$IMAGE" = base ]; then
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = e ]; then
 	if [ ! -e $E_IMG ]; then
-		./mklive.sh -a $ARCH -o $E_IMG -p "$E_PKGS" $@
+		./mklive.sh -a $ARCH -o $E_IMG -p "$E_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = xfce ]; then
 	if [ ! -e $XFCE_IMG ]; then
-		./mklive.sh -a $ARCH -o $XFCE_IMG -p "$XFCE_PKGS" $@
+		./mklive.sh -a $ARCH -o $XFCE_IMG -p "$XFCE_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = mate ]; then
 	if [ ! -e $MATE_IMG ]; then
-		./mklive.sh -a $ARCH -o $MATE_IMG -p "$MATE_PKGS" $@
+		./mklive.sh -a $ARCH -o $MATE_IMG -p "$MATE_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = cinnamon ]; then
 	if [ ! -e $CINNAMON_IMG ]; then
-		./mklive.sh -a $ARCH -o $CINNAMON_IMG -p "$CINNAMON_PKGS" $@
+		./mklive.sh -a $ARCH -o $CINNAMON_IMG -p "$CINNAMON_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = lxde ]; then
 	if [ ! -e $LXDE_IMG ]; then
-		./mklive.sh -a $ARCH -o $LXDE_IMG -p "$LXDE_PKGS" $@
+		./mklive.sh -a $ARCH -o $LXDE_IMG -p "$LXDE_PKGS" ${REPO} $@
 	fi
 fi
 if [ -z "$IMAGE" -o "$IMAGE" = lxqt ]; then
 	if [ ! -e $LXQT_IMG ]; then
-		./mklive.sh -a $ARCH -o $LXQT_IMG -p "$LXQT_PKGS" $@
+		./mklive.sh -a $ARCH -o $LXQT_IMG -p "$LXQT_PKGS" ${REPO} $@
 	fi
 fi
 if [ "$IMAGE" = kde ]; then
 	if [ ! -e $KDE_IMG ]; then
-		./mklive.sh -a $ARCH -o $KDE_IMG -p "$KDE_PKGS" $@
+		./mklive.sh -a $ARCH -o $KDE_IMG -p "$KDE_PKGS" ${REPO} $@
 	fi
 fi
