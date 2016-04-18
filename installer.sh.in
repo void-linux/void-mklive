@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #-
 # Copyright (c) 2012-2015 Juan Romero Pardines <xtraeme@voidlinux.eu>.
 #               2012 Dave Elusive <davehome@redthumb.info.tm>.
@@ -32,8 +32,10 @@ KEYBOARD_DONE=
 LOCALE_DONE=
 TIMEZONE_DONE=
 ROOTPASSWORD_DONE=
-USERNAME_DONE=
+USERLOGIN_DONE=
 USERPASSWORD_DONE=
+USERNAME_DONE=
+USERGROUPS_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
@@ -388,15 +390,15 @@ set_hostname() {
 }
 
 menu_rootpassword() {
-    local _firstpass= _secondpass= _desc=
+    local _firstpass _secondpass _desc
 
     while true; do
         if [ -n "${_firstpass}" ]; then
-            _desc="Enter the root password again (password won't be displayed)"
+            _desc="Enter the root password again"
         else
-            _desc="Enter the root password (password won't be displayed)"
+            _desc="Enter the root password"
         fi
-        DIALOG --passwordbox "${_desc}" ${MSGBOXSIZE}
+        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
@@ -405,7 +407,7 @@ menu_rootpassword() {
             fi
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
-                    DIALOG --infobox "Passwords do not match! please reenter it again" 6 80
+                    DIALOG --infobox "Passwords do not match! Please enter again." 6 80
                     unset _firstpass _secondpass
                     sleep 2 && continue
                 fi
@@ -424,10 +426,23 @@ set_rootpassword() {
 }
 
 menu_useraccount() {
-    local _firstpass= _secondpass= _desc=
+    local _firstpass _secondpass _desc
+    local _groups _status _group _checklist
 
     while true; do
-        DIALOG --inputbox "Select primary user name:" ${INPUTSIZE} "void"
+        DIALOG --inputbox "Enter a primary login name:" ${INPUTSIZE} "void"
+        if [ $? -eq 0 ]; then
+            set_option USERLOGIN "$(cat $ANSWER)"
+            USERLOGIN_DONE=1
+            break
+        else
+            return
+        fi
+    done
+
+    while true; do
+        DIALOG --inputbox "Enter a user name for login '$(get_option USERLOGIN)' :" \
+            ${INPUTSIZE} "$(get_option USERLOGIN)"
         if [ $? -eq 0 ]; then
             set_option USERNAME "$(cat $ANSWER)"
             USERNAME_DONE=1
@@ -439,11 +454,11 @@ menu_useraccount() {
 
     while true; do
         if [ -n "${_firstpass}" ]; then
-            _desc="Enter the password for '$(get_option USERNAME)' again (password won't be displayed)"
+            _desc="Enter the password for login '$(get_option USERLOGIN)' again"
         else
-            _desc="Enter the password for '$(get_option USERNAME)' (password won't be displayed)"
+            _desc="Enter the password for login '$(get_option USERLOGIN)'"
         fi
-        DIALOG --passwordbox "${_desc}" ${MSGBOXSIZE}
+        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
@@ -452,7 +467,7 @@ menu_useraccount() {
             fi
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
-                    DIALOG --infobox "Passwords do not match! please reenter it again" 6 80
+                    DIALOG --infobox "Passwords do not match! Please enter again." 6 80
                     unset _firstpass _secondpass
                     sleep 2 && continue
                 fi
@@ -464,12 +479,45 @@ menu_useraccount() {
             return
         fi
     done
+
+    _groups="wheel,audio,video,floppy,cdrom,optical,kvm,xbuilder"
+    while true; do
+        _desc="Select group membership for login '$(get_option USERLOGIN)':"
+        for _group in $(cat /etc/group); do
+            _gid="$(echo ${_group} | cut -d: -f3)"
+            _group="$(echo ${_group} | cut -d: -f1)"
+            _status="$(echo ${_groups} | grep -w ${_group})"
+            if [ -z "${_status}" ]; then
+                _status=off
+            else
+                _status=on
+            fi
+            if [ -z "${_checklist}" ]; then
+                _checklist="${_group} ${_group}:${_gid} ${_status}"
+            else
+                _checklist="${_checklist} ${_group} ${_group}:${_gid} ${_status}"
+            fi
+        done
+        DIALOG --no-tags --checklist "${_desc}" 20 60 18 ${_checklist}
+        if [ $? -eq 0 ]; then
+            set_option USERGROUPS $(cat $ANSWER | sed -e's| |,|g')
+            USERGROUPS_DONE=1
+            break
+        else
+            return
+        fi
+    done
 }
 
 set_useraccount() {
-    useradd -R $TARGETDIR -m -G wheel,audio,video,floppy,cdrom,optical,kvm,xbuilder \
-         "$(get_option USERNAME)"
-    echo "$(get_option USERNAME):$(get_option USERPASSWORD)" | chpasswd -R $TARGETDIR -c SHA512
+    [ -z "$USERLOGIN_DONE" ] && return
+    [ -z "$USERPASSWORD_DONE" ] && return
+    [ -z "$USERNAME_DONE" ] && return
+    [ -z "$USERGROUPS_DONE" ] && return
+    useradd -R $TARGETDIR -m -G $(get_option USERGROUPS) \
+        -c "$(get_option USERNAME)" $(get_option USERLOGIN)
+    echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
+        chpasswd -R $TARGETDIR -c SHA512
 }
 
 menu_bootloader() {
@@ -479,6 +527,18 @@ menu_bootloader() {
         if [ $? -eq 0 ]; then
             set_option BOOTLOADER "$(cat $ANSWER)"
             BOOTLOADER_DONE=1
+            break
+        else
+            return
+        fi
+    done
+    while true; do
+        DIALOG --yesno "Use a graphical terminal for the boot loader?" ${YESNOSIZE}
+        if [ $? -eq 0 ]; then
+            set_option TEXTCONSOLE 0
+            break
+        elif [ $? -eq 1 ]; then
+            set_option TEXTCONSOLE 1
             break
         else
             return
@@ -934,7 +994,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     echo "tmpfs /tmp tmpfs defaults,nosuid,nodev 0 0" >> $TARGETDIR/etc/fstab
 
 
-    # set up keymap, locale, timezone, hostname and root passwd.
+    # set up keymap, locale, timezone, hostname, root passwd and user account.
     set_keymap
     set_locale
     set_timezone
@@ -971,6 +1031,25 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             echo "static domain_name_servers=$_dns1 $_dns2" >>$TARGETDIR/etc/dhcpcd.conf
             enable_dhcpd
         fi
+    fi
+
+    if [ -f $TARGETDIR/etc/sudoers ]; then
+        if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" ]; then
+            # enable sudo for primary user USERLOGIN
+            echo "# Enable sudo for login '$(get_option USERLOGIN)'" >> $TARGETDIR/etc/sudoers
+            echo "$(get_option USERLOGIN) ALL=(ALL) ALL" >> $TARGETDIR/etc/sudoers
+        else
+            # enable sudoers entry for members of group wheel for primary user
+            sed -i $TARGETDIR/etc/sudoers \
+                -e "s;#.*%wheel ALL=(ALL) ALL;%wheel ALL=(ALL) ALL;"
+        fi
+    fi
+
+    # enable text console for grub if chosen
+    if [ "$(get_option TEXTCONSOLE)" = "1" ]; then
+        sed -i $TARGETDIR/etc/default/grub \
+            -e 's|#\(GRUB_TERMINAL_INPUT\).*|\1=console|' \
+            -e 's|#\(GRUB_TERMINAL_OUTPUT\).*|\1=console|'
     fi
 
     # install bootloader.
@@ -1071,8 +1150,8 @@ DIALOG --title "${BOLD}${RED} Enter the void ... ${RESET}" --msgbox "\n
 Welcome to the Void Linux installation. A simple and minimal \
 Linux distribution made from scratch and built from the source package tree \
 available for XBPS, a new alternative binary package system.\n\n
-The installation should be pretty straightforward, if you are in trouble \
-please join us at ${BOLD}#xbps on irc.freenode.org${RESET}.\n\n
+The installation should be pretty straightforward. If you are in trouble \
+please join us at ${BOLD}#xbps${RESET} on ${BOLD}irc.freenode.org${RESET}.\n\n
 ${BOLD}http://www.voidlinux.eu${RESET}\n\n" 16 80
 
 while true; do
