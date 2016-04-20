@@ -76,11 +76,10 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $@ for target $_ARCH ..."
-    if [ "${_TARGET_ARCH}" != "${_ARCH}" ]; then
-        eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@"
-    else
-        eval XBPS_ARCH=${_ARCH} "$@"
-    fi
+    case "${_TARGET_ARCH}" in
+        i686*|x86_64*) eval XBPS_ARCH=${_TARGET_ARCH} "$@";;
+        *) eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@";;
+    esac
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
@@ -127,10 +126,8 @@ PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
 
 case "$PLATFORM" in
-    i686-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="i686-musl";;
-    i686) _TARGET_ARCH="$PLATFORM"; _ARCH="i686";;
-    x86_64-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64-musl";;
-    x86_64) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
+    i686*) _TARGET_ARCH="$PLATFORM"; _ARCH="i686";;
+    x86_64*) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
     dockstar) _TARGET_ARCH="armv5tel"; _ARCH="armv5tel";;
     rpi-musl) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
     rpi) _TARGET_ARCH="armv6l"; _ARCH="armv6l";;
@@ -218,7 +215,7 @@ if [ -n "${_ARCH}" ]; then
     info_msg "Reconfiguring packages for ${_ARCH} ..."
     case "$PLATFORM" in
         i686*|x86_64*)
-            run_cmd "XBPS_ARCH=$_ARCH xbps-reconfigure -r $rootfs base-files"
+            run_cmd "XBPS_ARCH=${PLATFORM} xbps-reconfigure -r $rootfs base-files"
             ;;
         *)
             register_binfmt
