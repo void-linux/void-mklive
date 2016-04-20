@@ -76,7 +76,11 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $@ for target $_ARCH ..."
-    eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@"
+    if [ "${_TARGET_ARCH}" != "${_ARCH}" ]; then
+        eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@"
+    else
+        eval XBPS_ARCH=${_ARCH} "$@"
+    fi
     [ $? -ne 0 ] && die "Failed to run $@"
 }
 
@@ -123,9 +127,9 @@ PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
 
 case "$PLATFORM" in
-    i686-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="i386";;
-    i686) _TARGET_ARCH="$PLATFORM"; _ARCH="i386";;
-    x86_64-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
+    i686-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="i686-musl";;
+    i686) _TARGET_ARCH="$PLATFORM"; _ARCH="i686";;
+    x86_64-musl) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64-musl";;
     x86_64) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
     dockstar) _TARGET_ARCH="armv5tel"; _ARCH="armv5tel";;
     rpi-musl) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
@@ -136,7 +140,10 @@ esac
 
 : ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current}
 : ${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cachedir-${_TARGET_ARCH}}
-: ${PKGBASE:=base-system}
+case "$PLATFORM" in
+    i686*|x86_64*) PKGBASE="base-voidstrap";;
+    *) PKGBASE="base-system";;
+esac
 
 if [ -z "$PLATFORM" ]; then
     echo "$PROGNAME: platform was not set!"
@@ -186,7 +193,7 @@ run_cmd_target "xbps-query -R -r $rootfs $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REP
 chmod 755 $rootfs
 
 case "$PLATFORM" in
-    i686*|x86_64*) PKGS="${PKGBASE} grub" ;;
+    i686*|x86_64*) PKGS="${PKGBASE}" ;;
     *) PKGS="${PKGBASE} ${SUBPLATFORM}-base" ;;
 esac
 [ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
