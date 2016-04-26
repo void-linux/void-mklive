@@ -142,7 +142,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 case "$PLATFORM" in
-cubieboard2|cubietruck)
+cubieboard2|cubietruck|ci20*)
     parted $FILENAME mkpart primary ext2 2048s ${ROOT_FSSIZE} 100%
     parted $FILENAME toggle 1 boot
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
@@ -201,6 +201,7 @@ usbarmory)
     dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 ci20)
+    ln -sf /boot/uImage ${ROOTFSDIR}/vmlinux.img
     dd if=${ROOTFSDIR}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
     ;;
