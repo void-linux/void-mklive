@@ -190,19 +190,19 @@ if [ -n "$BOOT_UUID" ]; then
 fi
 
 case "$PLATFORM" in
-bananapi|cubieboard2|cubietruck)
+bananapi*|cubieboard2*|cubietruck*)
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
     ;;
-odroid-u2)
+odroid-u2*)
     dd if=${ROOTFSDIR}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
     ;;
-usbarmory)
+usbarmory*)
     dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
-ci20)
+ci20*)
     cp -f ${ROOTFSDIR}/boot/uImage ${ROOTFSDIR}/boot/vmlinux.img
     dd if=${ROOTFSDIR}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
