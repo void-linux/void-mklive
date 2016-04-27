@@ -203,7 +203,6 @@ usbarmory*)
     dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 ci20*)
-    cp -f ${ROOTFSDIR}/boot/uImage ${ROOTFSDIR}/boot/vmlinux.img
     dd if=${ROOTFSDIR}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
     dd if=${ROOTFSDIR}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
     ;;
