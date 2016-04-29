@@ -227,7 +227,7 @@ if [ -n "${_ARCH}" ]; then
             register_binfmt
             run_cmd "xbps-reconfigure -r $rootfs base-files"
             run_cmd "chroot $rootfs env -i xbps-reconfigure -f base-files"
-            rmdir $rootfs/usr/lib32
+            rmdir $rootfs/usr/lib32 2>/dev/null
             rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
             ;;
     esac
