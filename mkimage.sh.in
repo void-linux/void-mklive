@@ -136,7 +136,6 @@ truncate -s "${IMGSIZE}" $FILENAME >/dev/null 2>&1
 ROOTFSDIR=$(mktemp -d)
 
 info_msg "Creating disk image partitions/filesystems ..."
-parted $FILENAME mktable msdos
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _btype="fat32"
     _args="-I -F16"
@@ -144,6 +143,7 @@ fi
 case "$PLATFORM" in
 cubieboard2|cubietruck|ci20*)
     sfdisk ${FILENAME} <<_EOF
+label: dos
 2048,,L
 _EOF
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
@@ -153,6 +153,7 @@ _EOF
     ;;
 *)
     sfdisk ${FILENAME} <<_EOF
+label: dos
 2048,${BOOT_FSSIZE},b
 ${BOOT_SIZE},+,L,*
 _EOF
