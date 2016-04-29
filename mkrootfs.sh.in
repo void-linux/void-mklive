@@ -47,7 +47,7 @@ Usage: $PROGNAME [options] <platform>
 
 Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
                      dockstar, bananapi, beaglebone, cubieboard2, cubietruck,
-                     odroid-u2, rpi, rpi2 (armv7), usbarmory, ci20
+                     odroid-c2, odroid-u2, rpi, rpi2 (armv7), usbarmory, ci20
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -98,6 +98,9 @@ register_binfmt() {
         armv*)
             echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
             ;;
+        aarch*)
+            echo ':qemu-arm64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/bin/qemu-aarch64-static:' > /proc/sys/fs/binfmt_misc/register
+            ;;
         mipsel*)
             echo ':mipsel:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-mipsel-static:' > /proc/sys/fs/binfmt_misc/register
             ;;
@@ -136,6 +139,8 @@ case "$PLATFORM" in
     rpi) _TARGET_ARCH="armv6l"; _ARCH="armv6l";;
     ci20-musl) _TARGET_ARCH="mipselhf-musl"; _ARCH="mipsel-musl";;
     ci20) _TARGET_ARCH="mipselhf"; _ARCH="mipsel";;
+    odroid-c2-musl) _TARGET_ARCH="aarch64-musl"; _ARCH="aarch64";;
+    odroid-c2) _TARGET_ARCH="aarch64"; _ARCH="aarch64";;
     *-musl) _TARGET_ARCH="armv7l-musl"; _ARCH="armv7l";;
     *) _TARGET_ARCH="armv7l"; _ARCH="armv7l";;
 esac
@@ -163,6 +168,7 @@ case "$PLATFORM" in
     rpi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     usbarmory*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     ci20*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-mipsel-static;;
+    odroid-c2*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-aarch64-static;;
     i686*) QEMU_BIN=qemu-i386-static;;
     x86_64*) QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
