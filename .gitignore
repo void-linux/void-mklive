@@ -1,4 +1,5 @@
 *.sh
 *.img
 *.xz
+*.iso
 xbps-cachedir*
