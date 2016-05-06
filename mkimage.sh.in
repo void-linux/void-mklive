@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-u2|rpi|rpi2|usbarmory|*-musl);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|usbarmory|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -141,7 +141,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 case "$PLATFORM" in
-cubieboard2|cubietruck|ci20*)
+cubieboard2|cubietruck|ci20*|odroid-c2*)
     sfdisk ${FILENAME} <<_EOF
 label: dos
 2048,,L
@@ -193,6 +193,11 @@ fi
 case "$PLATFORM" in
 bananapi*|cubieboard2*|cubietruck*)
     dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
+    ;;
+odroid-c2*)
+    dd if=${ROOTFSDIR}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=1 count=442 >/dev/null 2>&1
+    dd if=${ROOTFSDIR}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=512 skip=1 seek=1 >/dev/null 2>&1
+    dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} bs=512 seek=97 >/dev/null 2>&1
     ;;
 odroid-u2*)
     dd if=${ROOTFSDIR}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
