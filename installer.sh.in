@@ -117,6 +117,202 @@ get_option() {
     echo $(grep -E "^${1}.*" $CONF_FILE|sed -e "s|${1}||")
 }
 
+# ISO-639 language names for locales
+iso639_language() {
+    case "$1" in
+    aa)  echo "Afar" ;;
+    af)  echo "Afrikaans" ;;
+    an)  echo "Aragonese" ;;
+    ar)  echo "Arabic" ;;
+    ast) echo "Asturian" ;;
+    be)  echo "Belgian" ;;
+    bg)  echo "Bulgarian" ;;
+    bhb) echo "Bhili" ;;
+    br)  echo "Breton" ;;
+    bs)  echo "Bosnian" ;;
+    ca)  echo "Catalan" ;;
+    cs)  echo "Czech" ;;
+    cy)  echo "Welsh" ;;
+    da)  echo "Danish" ;;
+    de)  echo "German" ;;
+    el)  echo "Greek" ;;
+    en)  echo "English" ;;
+    es)  echo "Spanish" ;;
+    et)  echo "Estonian" ;;
+    eu)  echo "Basque" ;;
+    fi)  echo "Finnish" ;;
+    fo)  echo "Faroese" ;;
+    fr)  echo "French" ;;
+    ga)  echo "Irish" ;;
+    gd)  echo "Scottish Gaelic" ;;
+    gl)  echo "Galician" ;;
+    gv)  echo "Manx" ;;
+    he)  echo "Hebrew" ;;
+    hr)  echo "Croatian" ;;
+    hsb) echo "Upper Sorbian" ;;
+    hu)  echo "Hungarian" ;;
+    id)  echo "Indonesian" ;;
+    is)  echo "Icelandic" ;;
+    it)  echo "Italian" ;;
+    iw)  echo "Hebrew" ;;
+    ja)  echo "Japanese" ;;
+    ka)  echo "Georgian" ;;
+    kk)  echo "Kazakh" ;;
+    kl)  echo "Kalaallisut" ;;
+    ko)  echo "Korean" ;;
+    ku)  echo "Kurdish" ;;
+    kw)  echo "Cornish" ;;
+    lg)  echo "Ganda" ;;
+    lt)  echo "Lithuanian" ;;
+    lv)  echo "Latvian" ;;
+    mg)  echo "Malagasy" ;;
+    mi)  echo "Maori" ;;
+    mk)  echo "Macedonian" ;;
+    ms)  echo "Malay" ;;
+    mt)  echo "Maltese" ;;
+    nb)  echo "Norwegian Bokmål" ;;
+    nl)  echo "Dutch" ;;
+    nn)  echo "Norwegian Nynorsk" ;;
+    oc)  echo "Occitan" ;;
+    om)  echo "Oromo" ;;
+    pl)  echo "Polish" ;;
+    pt)  echo "Portugese" ;;
+    ro)  echo "Romanian" ;;
+    ru)  echo "Russian" ;;
+    sk)  echo "Slovak" ;;
+    sl)  echo "Slovenian" ;;
+    so)  echo "Somali" ;;
+    sq)  echo "Albanian" ;;
+    st)  echo "Southern Sotho" ;;
+    sv)  echo "Swedish" ;;
+    tcy) echo "Tulu" ;;
+    tg)  echo "Tajik" ;;
+    th)  echo "Thai" ;;
+    tl)  echo "Tagalog" ;;
+    tr)  echo "Turkish" ;;
+    uk)  echo "Ukrainian" ;;
+    uz)  echo "Uzbek" ;;
+    wa)  echo "Walloon" ;;
+    xh)  echo "Xhosa" ;;
+    yi)  echo "Yiddish" ;;
+    zh)  echo "Chinese" ;;
+    zu)  echo "Zulu" ;;
+    *)   echo "$1" ;;
+    esac
+}
+
+# ISO-3166 country codes for locales
+iso3166_country() {
+    case "$1" in
+    AD) echo "Andorra" ;;
+    AE) echo "United Arab Emirates" ;;
+    AL) echo "Albania" ;;
+    AR) echo "Argentina" ;;
+    AT) echo "Austria" ;;
+    AU) echo "Australia" ;;
+    BA) echo "Bonsia and Herzegovina" ;;
+    BE) echo "Belgium" ;;
+    BG) echo "Bulgaria" ;;
+    BH) echo "Bahrain" ;;
+    BO) echo "Bolivia" ;;
+    BR) echo "Brazil" ;;
+    BW) echo "Botswana" ;;
+    BY) echo "Belarus" ;;
+    CA) echo "Canada" ;;
+    CH) echo "Switzerland" ;;
+    CL) echo "Chile" ;;
+    CN) echo "China" ;;
+    CO) echo "Colombia" ;;
+    CR) echo "Costa Rica" ;;
+    CY) echo "Cyprus" ;;
+    CZ) echo "Czech Republic" ;;
+    DE) echo "Germany" ;;
+    DJ) echo "Djibouti" ;;
+    DK) echo "Denmark" ;;
+    DO) echo "Dominican Republic" ;;
+    DZ) echo "Algeria" ;;
+    EC) echo "Ecuador" ;;
+    EE) echo "Estonia" ;;
+    EG) echo "Egypt" ;;
+    ES) echo "Spain" ;;
+    FI) echo "Finland" ;;
+    FO) echo "Faroe Islands" ;;
+    FR) echo "France" ;;
+    GB) echo "Great Britain" ;;
+    GE) echo "Georgia" ;;
+    GL) echo "Greenland" ;;
+    GR) echo "Greece" ;;
+    GT) echo "Guatemala" ;;
+    HK) echo "Hong Kong" ;;
+    HN) echo "Honduras" ;;
+    HR) echo "Croatia" ;;
+    HU) echo "Hungary" ;;
+    ID) echo "Indonesia" ;;
+    IE) echo "Ireland" ;;
+    IL) echo "Israel" ;;
+    IN) echo "India" ;;
+    IQ) echo "Iraq" ;;
+    IS) echo "Iceland" ;;
+    IT) echo "Italy" ;;
+    JO) echo "Jordan" ;;
+    JP) echo "Japan" ;;
+    KE) echo "Kenya" ;;
+    KR) echo "Korea, Republic of" ;;
+    KW) echo "Kuwait" ;;
+    KZ) echo "Kazakhstan" ;;
+    LB) echo "Lebanon" ;;
+    LT) echo "Lithuania" ;;
+    LU) echo "Luxembourg" ;;
+    LV) echo "Latvia" ;;
+    LY) echo "Libya" ;;
+    MA) echo "Morocco" ;;
+    MG) echo "Madagascar" ;;
+    MK) echo "Macedonia" ;;
+    MT) echo "Malta" ;;
+    MX) echo "Mexico" ;;
+    MY) echo "Malaysia" ;;
+    NI) echo "Nicaragua" ;;
+    NL) echo "Netherlands" ;;
+    NO) echo "Norway" ;;
+    NZ) echo "New Zealand" ;;
+    OM) echo "Oman" ;;
+    PA) echo "Panama" ;;
+    PE) echo "Peru" ;;
+    PH) echo "Philippines" ;;
+    PL) echo "Poland" ;;
+    PR) echo "Puerto Rico" ;;
+    PT) echo "Portugal" ;;
+    PY) echo "Paraguay" ;;
+    QA) echo "Qatar" ;;
+    RO) echo "Romania" ;;
+    RU) echo "Russian Federation" ;;
+    SA) echo "Saudi Arabia" ;;
+    SD) echo "Sudan" ;;
+    SE) echo "Sweden" ;;
+    SG) echo "Singapore" ;;
+    SI) echo "Slovenia" ;;
+    SK) echo "Slovakia" ;;
+    SO) echo "Somalia" ;;
+    SV) echo "El Salvador" ;;
+    SY) echo "Syria" ;;
+    TH) echo "Thailand" ;;
+    TJ) echo "Tajikistan" ;;
+    TN) echo "Tunisia" ;;
+    TR) echo "Turkey" ;;
+    TW) echo "Taiwan" ;;
+    UA) echo "Ukraine" ;;
+    UG) echo "Uganda" ;;
+    US) echo "United States of America" ;;
+    UY) echo "Uruguay" ;;
+    UZ) echo "Uzbekistan" ;;
+    VE) echo "Venezuela" ;;
+    YE) echo "Yemen" ;;
+    ZA) echo "South Africa" ;;
+    ZW) echo "Zimbabwe" ;;
+    *)  echo "$1" ;;
+    esac
+}
+
 show_disks() {
     local dev size sectorsize gbytes
 
@@ -319,13 +515,20 @@ set_keymap() {
 
 menu_locale() {
     local _locales="$(grep -E '\.UTF-8' /etc/default/libc-locales|awk '{print $1}'|sed -e 's/^#//')"
-    local _LOCALES=
+    local LOCALES ISO639 ISO3166
+    local TMPFILE=$(mktemp -t vinstall-XXXXXXXX || exit 1)
 
+    echo "Scanning locales..."
     for f in ${_locales}; do
-        _LOCALES="${_LOCALES} ${f} -"
+        eval $(echo $f | awk 'BEGIN { FS="." } \
+            { FS="_"; split($1, a); printf "ISO639=%s ISO3166=%s\n", a[1], a[2] }')
+        echo "$f|$(iso639_language $ISO639) ($(iso3166_country $ISO3166))|" >> $TMPFILE
     done
+    # Sort by ISO-639 language names
+    LOCALES=$(sort -t '|' -k 2 < $TMPFILE | xargs | sed -e's/| /|/g')
+    rm -f $TMPFILE
     while true; do
-        DIALOG --title " Select your locale " --menu "$MENULABEL" 14 70 14 ${_LOCALES}
+        (IFS="|"; DIALOG --title " Select your locale " --menu "$MENULABEL" 18 70 18 ${LOCALES})
         if [ $? -eq 0 ]; then
             set_option LOCALE "$(cat $ANSWER)"
             LOCALE_DONE=1
@@ -1129,7 +1332,7 @@ menu() {
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
         "UserAccount") menu_useraccount && [ -n "$USERNAME_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
-		&& DEFITEM="BootLoader";;
+               && DEFITEM="BootLoader";;
         "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
         "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
