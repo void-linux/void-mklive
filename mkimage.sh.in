@@ -155,7 +155,7 @@ _EOF
     sfdisk ${FILENAME} <<_EOF
 label: dos
 2048,${BOOT_FSSIZE},b,*
-${BOOT_SIZE},+,L
+${BOOT_FSSIZE},+,L
 _EOF
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
