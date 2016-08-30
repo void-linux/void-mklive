@@ -26,7 +26,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
-trap "error_out $LINENO $?" INT TERM 0
+trap 'error_out $? $LINENO' INT TERM 0
 
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper"
@@ -37,7 +37,7 @@ info_msg() {
 }
 die() {
     info_msg "ERROR: $@"
-    error_out 1
+    error_out 1 $LINENO
 }
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
