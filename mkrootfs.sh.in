@@ -168,7 +168,7 @@ case "$PLATFORM" in
     rpi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     usbarmory*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
     ci20*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-mipsel-static;;
-    odroid-c2*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-aarch64-static;;
+    odroid-c2*) SUBPLATFORM=${PLATFORM%-musl}; QEMU_BIN=qemu-aarch64-static;;
     i686*) QEMU_BIN=qemu-i386-static;;
     x86_64*) QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
