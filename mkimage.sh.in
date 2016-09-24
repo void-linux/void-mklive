@@ -147,7 +147,7 @@ label: dos
 2048,,L
 _EOF
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
-    mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p1 >/dev/null 2>&1
+    mkfs.${ROOT_FSTYPE} -O '^64bit,^extra_isize,^has_journal' ${LOOPDEV}p1 >/dev/null 2>&1
     mount ${LOOPDEV}p1 $ROOTFSDIR
     ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
     ;;
