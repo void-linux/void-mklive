@@ -179,7 +179,7 @@ if [ "$PLATFORM" = "beaglebone" ]; then
     touch $ROOTFSDIR/boot/uEnv.txt
     umount $ROOTFSDIR/boot
 fi
-tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR
+tar xfp $ROOTFS_TARBALL --xattrs --xattrs-include='*' -C $ROOTFSDIR
 
 fspassno="1"
 if [ "$ROOT_FSTYPE" = "f2fs" ]; then

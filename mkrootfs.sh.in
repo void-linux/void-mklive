@@ -69,9 +69,11 @@ mount_pseudofs() {
 }
 
 umount_pseudofs() {
-    for f in dev proc sys; do
-        umount -f $rootfs/$f >/dev/null 2>&1
-    done
+    if [ -d "${rootfs}" ]; then
+        for f in dev proc sys; do
+            umount -f $rootfs/$f >/dev/null 2>&1
+        done
+    fi
 }
 
 run_cmd_target() {
@@ -192,7 +194,7 @@ fi
 #
 # Check if package base-system is available.
 #
-rootfs=$(mktemp -d || die "FATAL: failed to create tempdir, exiting...")
+rootfs=$(mktemp -d) || die "failed to create tempdir, exiting..."
 mkdir -p $rootfs/var/db/xbps/keys
 cp keys/*.plist $rootfs/var/db/xbps/keys
 
@@ -264,7 +266,7 @@ if [ -n "${_ARCH}" ]; then
 fi
 
 tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
-run_cmd "tar -cp --posix -C $rootfs . | xz -T0 -9 > $tarball "
+run_cmd "tar -cp --posix --xattrs -C $rootfs . | xz -T0 -9 > $tarball "
 
 rm -rf $rootfs
 

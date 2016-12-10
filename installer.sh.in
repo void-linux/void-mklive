@@ -1116,15 +1116,14 @@ log_and_count() {
 }
 
 copy_rootfs() {
-    local tar_in="--create --one-file-system"
-    local tar_out="--extract --preserve-permissions"
+    local tar_in="--create --one-file-system --xattrs"
     TITLE="Check $LOG for details ..."
     INFOBOX "Counting files, please be patient ..." 4 60
     copy_total=$(tar ${tar_in} -v -f /dev/null / 2>/dev/null | wc -l)
     export copy_total copy_count=0 copy_progress=
     clear
     tar ${tar_in} -f - / 2>/dev/null | \
-        tar ${tar_out} -v -f - -C $TARGETDIR | \
+        tar --extract --xattrs --xattrs-include='*' --preserve-permissions -v -f - -C $TARGETDIR | \
         log_and_count | \
         DIALOG --title "${TITLE}" \
             --progressbox "Copying live image to target rootfs." 5 60
