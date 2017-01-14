@@ -113,7 +113,7 @@ fi
 
 # double check PLATFORM is supported...
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|usbarmory|*-musl);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|usbarmory|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
