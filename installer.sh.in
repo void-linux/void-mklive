@@ -794,7 +794,7 @@ test_network() {
         NETWORK_DONE=1
         return 1
     fi
-    DIALOG --msgbox "Network is unaccessible, please setup it properly." ${MSGBOXSIZE}
+    DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
 }
 
 configure_wifi() {
