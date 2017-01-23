@@ -1382,6 +1382,12 @@ if [ ! -x /bin/dialog ]; then
     echo "ERROR: missing dialog command, exiting..."
     exit 1
 fi
+
+if [ "$(id -u)" != "0" ]; then
+   echo "void-installer must run as root" 1>&2
+   exit 1
+fi
+
 #
 # main()
 #
