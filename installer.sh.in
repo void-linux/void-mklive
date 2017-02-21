@@ -60,6 +60,12 @@ fi
 # Detect if this is an EFI system.
 if [ -e /sys/firmware/efi/systab ]; then
     EFI_SYSTEM=1
+    EFI_FW_BITS=$(cat /sys/firmware/efi/fw_platform_size)
+    if [ $EFI_FW_BITS -eq 32 ]; then
+        EFI_TARGET=i386-efi
+    else
+        EFI_TARGET=x86_64-efi
+    fi
 fi
 
 # dialog colors
@@ -768,7 +774,7 @@ set_bootloader() {
 
     # Check if it's an EFI system via efivars module.
     if [ -n "$EFI_SYSTEM" ]; then
-        grub_args="--target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=void_grub --recheck"
+        grub_args="--target=$EFI_TARGET --efi-directory=/boot/efi --bootloader-id=void_grub --recheck"
     fi
     echo "Running grub-install $grub_args $dev..." >$LOG
     chroot $TARGETDIR grub-install $grub_args $dev >$LOG 2>&1
@@ -1137,7 +1143,11 @@ install_packages() {
     local _grub= _syspkg=
 
     if [ -n "$EFI_SYSTEM" ]; then
-        _grub="grub-x86_64-efi"
+        if [ $EFI_FW_BITS -eq 32 ]; then
+            _grub="grub-i386-efi"
+        else
+            _grub="grub-x86_64-efi"
+        fi
     else
         _grub="grub"
     fi

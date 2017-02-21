@@ -210,7 +210,7 @@ generate_grub_efi_boot() {
     modprobe -q loop || :
 
     # Create EFI vfat image.
-    truncate -s 16M $GRUB_DIR/efiboot.img >/dev/null 2>&1
+    truncate -s 32M $GRUB_DIR/efiboot.img >/dev/null 2>&1
     mkfs.vfat -F12 -S 512 -n "grub_uefi" "$GRUB_DIR/efiboot.img" >/dev/null 2>&1
 
     GRUB_EFI_TMPDIR="$(mktemp --tmpdir=$HOME -d)"
@@ -218,33 +218,29 @@ generate_grub_efi_boot() {
     mount -o rw,flush -t vfat "${LOOP_DEVICE}" "${GRUB_EFI_TMPDIR}" >/dev/null 2>&1
 
     cp -a $IMAGEDIR/boot $VOIDHOSTDIR
-    if [ $BASE_ARCH = "i686" ]; then
-	xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
-		     --directory="/usr/lib/grub/i386-efi" \
-		     --format="i386-efi" \
-		     --output="/tmp/bootia32.efi" \
-		     "boot/grub/grub.cfg"
-	if [ $? -ne 0 ]; then
-            umount "$GRUB_EFI_TMPDIR"
-            losetup --detach "${LOOP_DEVICE}"
-            die "Failed to generate EFI loader"
-	fi
-	mkdir -p ${GRUB_EFI_TMPDIR}/EFI/BOOT
-	cp -f $VOIDHOSTDIR/tmp/bootia32.efi ${GRUB_EFI_TMPDIR}/EFI/BOOT/BOOTIA32.EFI
-    else
-	xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
-		     --directory="/usr/lib/grub/x86_64-efi" \
-		     --format="x86_64-efi" \
-		     --output="/tmp/bootx64.efi" \
-		     "boot/grub/grub.cfg"
-	if [ $? -ne 0 ]; then
-            umount "$GRUB_EFI_TMPDIR"
-            losetup --detach "${LOOP_DEVICE}"
-            die "Failed to generate EFI loader"
-	fi
-	mkdir -p ${GRUB_EFI_TMPDIR}/EFI/BOOT
-	cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/BOOT/BOOTX64.EFI
+    xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
+		 --directory="/usr/lib/grub/i386-efi" \
+		 --format="i386-efi" \
+		 --output="/tmp/bootia32.efi" \
+		 "boot/grub/grub.cfg"
+    if [ $? -ne 0 ]; then
+        umount "$GRUB_EFI_TMPDIR"
+        losetup --detach "${LOOP_DEVICE}"
+        die "Failed to generate EFI loader"
     fi
+    mkdir -p ${GRUB_EFI_TMPDIR}/EFI/BOOT
+    cp -f $VOIDHOSTDIR/tmp/bootia32.efi ${GRUB_EFI_TMPDIR}/EFI/BOOT/BOOTIA32.EFI
+    xbps-uchroot $VOIDHOSTDIR grub-mkstandalone -- \
+		 --directory="/usr/lib/grub/x86_64-efi" \
+		 --format="x86_64-efi" \
+		 --output="/tmp/bootx64.efi" \
+		 "boot/grub/grub.cfg"
+    if [ $? -ne 0 ]; then
+        umount "$GRUB_EFI_TMPDIR"
+        losetup --detach "${LOOP_DEVICE}"
+        die "Failed to generate EFI loader"
+    fi
+    cp -f $VOIDHOSTDIR/tmp/bootx64.efi ${GRUB_EFI_TMPDIR}/EFI/BOOT/BOOTX64.EFI
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
     rm -rf $GRUB_EFI_TMPDIR

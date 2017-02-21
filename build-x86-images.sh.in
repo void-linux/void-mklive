@@ -25,10 +25,7 @@ readonly KDE_IMG=void-live-${ARCH}-${DATE}-kde.iso
 readonly LXDE_IMG=void-live-${ARCH}-${DATE}-lxde.iso
 readonly LXQT_IMG=void-live-${ARCH}-${DATE}-lxqt.iso
 
-case "$ARCH" in
-	i686*) GRUB="grub";;
-	x86_64*) GRUB="grub-x86_64-efi";;
-esac
+readonly GRUB="grub-i386-efi grub-x86_64-efi"
 
 readonly BASE_PKGS="dialog cryptsetup lvm2 mdadm $GRUB"
 readonly X_PKGS="$BASE_PKGS xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
