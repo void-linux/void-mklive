@@ -335,7 +335,7 @@ show_disks() {
         fi
     done
     # SATA/SCSI and Virtual disks (virtio)
-    for dev in $(ls /sys/block|grep -E '^([sv]|xv)d|mmcblk'); do
+    for dev in $(ls /sys/block|grep -E '^([sv]|xv)d|mmcblk|nvme'); do
         echo "/dev/$dev"
         size=$(cat /sys/block/$dev/size)
         sectorsize=$(cat /sys/block/$dev/queue/hw_sector_size)
