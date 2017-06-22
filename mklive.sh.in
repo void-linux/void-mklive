@@ -319,7 +319,7 @@ XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://repo.voidlinux.eu/current 
 ARCH=$(xbps-uhelper arch)
 
 # Set defaults
-: ${BASE_ARCH:=$(uname -m)}
+: ${BASE_ARCH:=$(xbps-uhelper arch 2>/dev/null || uname -m)}
 : ${XBPS_CACHEDIR:=-c $(pwd -P)/xbps-cachedir-${BASE_ARCH}}
 : ${XBPS_HOST_CACHEDIR:=-c $(pwd -P)/xbps-cachedir-${ARCH}}
 : ${KEYMAP:=us}
