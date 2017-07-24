@@ -1,6 +1,7 @@
 #!/bin/sh
 #-
 # Copyright (c) 2013-2015 Juan Romero Pardines.
+# Copyright (c) 2017 Google
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,7 +46,7 @@ usage() {
     cat <<_EOF
 Usage: $PROGNAME [options] <platform>
 
-Supported platforms: i686, i686-musl, x86_64, x86_64-musl,
+Supported platforms: i686, i686-musl, x86_64, x86_64-musl, GCP, GCP-musl
                      dockstar, bananapi, beaglebone, cubieboard2, cubietruck,
                      odroid-c2, odroid-u2, rpi, rpi2 (armv7), rpi3 (aarch64),
                      usbarmory, ci20
@@ -138,6 +139,8 @@ SUBPLATFORM=$PLATFORM
 case "$PLATFORM" in
     i686*) _TARGET_ARCH="$PLATFORM"; _ARCH="i686";;
     x86_64*) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
+    GCP) _TARGET_ARCH="x86_64"; _ARCH="x86_64";;
+    GCP-musl) _TARGET_ARCH="x86_64-musl"; _ARCH="x86_64";;
     dockstar) _TARGET_ARCH="armv5tel"; _ARCH="armv5tel";;
     rpi-musl) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
     rpi) _TARGET_ARCH="armv6l"; _ARCH="armv6l";;
@@ -178,6 +181,7 @@ case "$PLATFORM" in
     odroid-c2*) SUBPLATFORM=${PLATFORM%-musl}; QEMU_BIN=qemu-aarch64-static;;
     i686*) QEMU_BIN=qemu-i386-static;;
     x86_64*) QEMU_BIN=qemu-x86_64-static;;
+    GCP*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-x86_64-static;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
@@ -233,7 +237,7 @@ fi
 if [ -n "${_ARCH}" ]; then
     info_msg "Reconfiguring packages for ${_ARCH} ..."
     case "$PLATFORM" in
-        i686*|x86_64*)
+        i686*|x86_64*|GCP*)
             run_cmd "XBPS_ARCH=${PLATFORM} xbps-reconfigure -r $rootfs base-files"
             ;;
         *)

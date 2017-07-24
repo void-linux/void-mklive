@@ -2,4 +2,6 @@
 *.img
 *.xz
 *.iso
+*.raw
+*.tar.gz
 xbps-cachedir*
