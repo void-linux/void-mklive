@@ -78,8 +78,7 @@ Options:
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
  -I <includedir>    Include directory structure under given path into rootfs
- -H <hooksdir>      Add scripts in given directory as startup hooks to the init
-                    procedure.
+
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
  -K                 Do not remove builddir.
@@ -180,13 +179,6 @@ cleanup_rootfs() {
     done
     rm -r $ROOTFS/usr/lib/dracut/modules.d/01vmklive
     rm -r $ROOTFS/usr/lib/dracut/modules.d/01autoinstaller
-}
-
-setup_init_hooks() {
-    hooks_dir=/usr/local/custom-scripts/
-    mkdir -p ${ROOTFS}${hooks_dir}
-    find $HOOKS_DIRECTORY -mindepth 1 -maxdepth 1 -exec cp -rfpPv {} ${ROOTFS}${hooks_dir} \;
-    echo 'find '${hooks_dir}' -type f -executable -exec {} \;' >> $ROOTFS/etc/rc.local
 }
 
 generate_isolinux_boot() {
@@ -304,7 +296,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:H:s:S:o:p:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -314,8 +306,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:H:s:S:o:p:h" opt; do
         k) KEYMAP="$OPTARG";;
         l) LOCALE="$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
-        I) INCLUDE_DIRECTORY=$(cd "$OPTARG" && pwd);;
-        H) HOOKS_DIRECTORY=$(cd "$OPTARG" && pwd);;
+        I) INCLUDE_DIRECTORY="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         S) ROOTFS_FREESIZE="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
@@ -368,8 +359,7 @@ GRUB_DIR="$BOOT_DIR/grub"
 ISOLINUX_CFG="$ISOLINUX_DIR/isolinux.cfg"
 CURRENT_STEP=0
 STEP_COUNT=9
-[ -n "${INCLUDE_DIRECTORY}" ] && STEP_COUNT=$((STEP_COUNT+1))
-[ -n "${HOOKS_DIRECTORY}" ] && STEP_COUNT=$((STEP_COUNT+1))
+[ -n "${INCLUDE_DIRECTORY}" ] && ((STEP_COUNT=STEP_COUNT+1))
 
 : ${SYSLINUX_DATADIR:=$VOIDHOSTDIR/usr/share/syslinux}
 : ${GRUB_DATADIR:=$VOIDHOSTDIR/usr/share/grub}
@@ -421,9 +411,6 @@ generate_grub_efi_boot
 
 print_step "Cleaning up rootfs..."
 cleanup_rootfs
-
-print_step "Creating startup hooks..."
-setup_init_hooks
 
 print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
