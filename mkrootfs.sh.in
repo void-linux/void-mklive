@@ -38,7 +38,7 @@ info_msg() {
 die() {
     echo "FATAL: $@"
     umount_pseudofs
-    [ -d "$rootfs" ] && rm -rf $rootfs
+    [ -d "$ROOTFS" ] && rm -rf $ROOTFS
     exit 1
 }
 
@@ -57,24 +57,24 @@ Options
     -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
-    -p <pkgs>   Additional packages to install into the rootfs (separated by blanks)
+    -p <pkgs>   Additional packages to install into the ROOTFS (separated by blanks)
     -r <repo>   Set XBPS repository (may be set multiple times)
-    -k <cmd>    Call "cmd <ROOTFSPATH>" after building the rootfs
+    -k <cmd>    Call "cmd <ROOTFSPATH>" after building the ROOTFS
     -V          Show version
 _EOF
 }
 
 mount_pseudofs() {
     for f in dev proc sys; do
-        [ ! -d $rootfs/$f ] && mkdir -p $rootfs/$f
-        mount -r --bind /$f $rootfs/$f
+        [ ! -d $ROOTFS/$f ] && mkdir -p $ROOTFS/$f
+        mount -r --bind /$f $ROOTFS/$f
     done
 }
 
 umount_pseudofs() {
-    if [ -d "${rootfs}" ]; then
+    if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
-            umount -f $rootfs/$f >/dev/null 2>&1
+            umount -f $ROOTFS/$f >/dev/null 2>&1
         done
     fi
 }
@@ -113,7 +113,7 @@ register_binfmt() {
             die "Unknown target architecture!"
             ;;
     esac
-    cp -f $(which $QEMU_BIN) $rootfs/usr/bin || die "failed to copy $QEMU_BIN to the rootfs"
+    cp -f $(which $QEMU_BIN) $ROOTFS/usr/bin || die "failed to copy $QEMU_BIN to the ROOTFS"
 }
 
 #
@@ -203,14 +203,14 @@ fi
 #
 # Check if package base-system is available.
 #
-rootfs=$(mktemp -d) || die "failed to create tempdir, exiting..."
-mkdir -p $rootfs/var/db/xbps/keys
-cp keys/*.plist $rootfs/var/db/xbps/keys
+ROOTFS=$(mktemp -d) || die "failed to create tempdir, exiting..."
+mkdir -p $ROOTFS/var/db/xbps/keys
+cp keys/*.plist $ROOTFS/var/db/xbps/keys
 
-run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $rootfs"
-run_cmd_target "xbps-query -R -r $rootfs $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -ppkgver $PKGBASE"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS"
+run_cmd_target "xbps-query -R -r $ROOTFS $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -ppkgver $PKGBASE"
 
-chmod 755 $rootfs
+chmod 755 $ROOTFS
 
 case "$PLATFORM" in
     i686*|x86_64*) PKGS="${PKGBASE}" ;;
@@ -220,14 +220,14 @@ esac
 
 mount_pseudofs
 #
-# Install base-system to the rootfs directory.
+# Install base-system to the ROOTFS directory.
 #
-run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $rootfs -y ${PKGS}"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y ${PKGS}"
 
-# Enable en_US.UTF-8 locale and generate it into the target rootfs.
-if [ -e $rootfs/etc/default/libc-locales ]; then
+# Enable en_US.UTF-8 locale and generate it into the target ROOTFS.
+if [ -e $ROOTFS/etc/default/libc-locales ]; then
     LOCALE=en_US.UTF-8
-    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $rootfs/etc/default/libc-locales
+    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
 fi
 
 #
@@ -238,46 +238,46 @@ if [ -n "${_ARCH}" ]; then
     info_msg "Reconfiguring packages for ${_ARCH} ..."
     case "$PLATFORM" in
         i686*|x86_64*|GCP*)
-            run_cmd "XBPS_ARCH=${PLATFORM} xbps-reconfigure -r $rootfs base-files"
+            run_cmd "XBPS_ARCH=${PLATFORM} xbps-reconfigure -r $ROOTFS base-files"
             ;;
         *)
             register_binfmt
-            run_cmd "xbps-reconfigure -r $rootfs base-files"
-            run_cmd "chroot $rootfs env -i xbps-reconfigure -f base-files"
-            rmdir $rootfs/usr/lib32 2>/dev/null
-            rm -f $rootfs/lib32 $rootfs/lib64 $rootfs/usr/lib64
+            run_cmd "xbps-reconfigure -r $ROOTFS base-files"
+            run_cmd "chroot $ROOTFS env -i xbps-reconfigure -f base-files"
+            rmdir $ROOTFS/usr/lib32 2>/dev/null
+            rm -f $ROOTFS/lib32 $ROOTFS/lib64 $ROOTFS/usr/lib64
             ;;
     esac
-    run_cmd "chroot $rootfs xbps-reconfigure -a"
+    run_cmd "chroot $ROOTFS xbps-reconfigure -a"
 fi
 
 #
 # Setup default root password.
 #
-run_cmd "chroot $rootfs sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'"
+run_cmd "chroot $ROOTFS sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'"
 if [ -n "$POST_HOOK" ]; then
-    run_cmd "$POST_HOOK $rootfs"
+    run_cmd "$POST_HOOK $ROOTFS"
 fi
 umount_pseudofs
 #
-# Cleanup rootfs.
+# Cleanup ROOTFS.
 #
-rm -f $rootfs/etc/.pwd.lock 2>/dev/null
-rm -rf $rootfs/var/cache/* 2>/dev/null
+rm -f $ROOTFS/etc/.pwd.lock 2>/dev/null
+rm -rf $ROOTFS/var/cache/* 2>/dev/null
 
 #
 # Generate final tarball.
 #
 arch=$ARCH
 if [ -n "${_ARCH}" ]; then
-    rm -f $rootfs/usr/bin/$QEMU_BIN
+    rm -f $ROOTFS/usr/bin/$QEMU_BIN
     arch=${_ARCH}
 fi
 
-tarball=void-${PLATFORM}-rootfs-$(date '+%Y%m%d').tar.xz
-run_cmd "tar -cp --posix --xattrs -C $rootfs . | xz -T0 -9 > $tarball "
+tarball=void-${PLATFORM}-ROOTFS-$(date '+%Y%m%d').tar.xz
+run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T0 -9 > $tarball "
 
-rm -rf $rootfs
+rm -rf $ROOTFS
 
 info_msg "Successfully created $tarball ($PLATFORM)"
 

@@ -32,26 +32,26 @@ trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 
 mount_pseudofs() {
     for f in sys dev proc; do
-        mkdir -p $ROOTFSDIR/$f
-        mount --bind /$f $ROOTFSDIR/$f
+        mkdir -p $ROOTFS/$f
+        mount --bind /$f $ROOTFS/$f
     done
 }
 umount_pseudofs() {
-    umount -f $ROOTFSDIR/sys >/dev/null 2>&1
-    umount -f $ROOTFSDIR/dev >/dev/null 2>&1
-    umount -f $ROOTFSDIR/proc >/dev/null 2>&1
+    umount -f $ROOTFS/sys >/dev/null 2>&1
+    umount -f $ROOTFS/dev >/dev/null 2>&1
+    umount -f $ROOTFS/proc >/dev/null 2>&1
 }
 
 cleanup() {
     unmount_pseudofs
-    umount -f ${ROOTFSDIR}/boot 2>/dev/null
-    umount -f ${ROOTFSDIR} 2>/dev/null
+    umount -f ${ROOTFS}/boot 2>/dev/null
+    umount -f ${ROOTFS} 2>/dev/null
     if [ -e "$LOOPDEV" ]; then
         partx -d $LOOPDEV 2>/dev/null
         losetup -d $LOOPDEV 2>/dev/null
     fi
 	
-    [ -d "$ROOTFSDIR" ] && rmdir $ROOTFSDIR
+    [ -d "$ROOTFS" ] && rmdir $ROOTFS
 }
 
 info_msg() {
@@ -147,7 +147,7 @@ esac
 info_msg "Creating disk image ($IMGSIZE) ..."
 truncate -s "${IMGSIZE}" $FILENAME >/dev/null 2>&1
 
-ROOTFSDIR=$(mktemp -d)
+ROOTFS=$(mktemp -d)
 
 info_msg "Creating disk image partitions/filesystems ..."
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
@@ -162,7 +162,7 @@ label: dos
 _EOF
     LOOPDEV=$(losetup --show --find --partscan $FILENAME)
     mkfs.${ROOT_FSTYPE} -O '^64bit,^extra_isize,^has_journal' ${LOOPDEV}p1 >/dev/null 2>&1
-    mount ${LOOPDEV}p1 $ROOTFSDIR
+    mount ${LOOPDEV}p1 $ROOTFS
     ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
     ;;
 *)
@@ -177,9 +177,9 @@ _EOF
         ext[34]) disable_journal="-O ^has_journal";;
     esac
     mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
-    mount ${LOOPDEV}p2 $ROOTFSDIR
-    mkdir -p ${ROOTFSDIR}/boot
-    mount ${LOOPDEV}p1 ${ROOTFSDIR}/boot
+    mount ${LOOPDEV}p2 $ROOTFS
+    mkdir -p ${ROOTFS}/boot
+    mount ${LOOPDEV}p1 ${ROOTFS}/boot
     BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
     ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
     ;;
@@ -188,85 +188,85 @@ esac
 info_msg "Unpacking rootfs tarball ..."
 if [ "$PLATFORM" = "beaglebone" ]; then
     fstab_args=",noauto"
-    tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR ./boot/MLO
-    tar xfp $ROOTFS_TARBALL -C $ROOTFSDIR ./boot/u-boot.img
-    touch $ROOTFSDIR/boot/uEnv.txt
-    umount $ROOTFSDIR/boot
+    tar xfp $ROOTFS_TARBALL -C $ROOTFS ./boot/MLO
+    tar xfp $ROOTFS_TARBALL -C $ROOTFS ./boot/u-boot.img
+    touch $ROOTFS/boot/uEnv.txt
+    umount $ROOTFS/boot
 fi
-tar xfp $ROOTFS_TARBALL --xattrs --xattrs-include='*' -C $ROOTFSDIR
+tar xfp $ROOTFS_TARBALL --xattrs --xattrs-include='*' -C $ROOTFS
 
 fspassno="1"
 if [ "$ROOT_FSTYPE" = "f2fs" ]; then
     fspassno="0"
 fi
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFSDIR}/etc/fstab
+echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFS}/etc/fstab
 if [ -n "$BOOT_UUID" ]; then
-    echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFSDIR}/etc/fstab
+    echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFS}/etc/fstab
 fi
 
 case "$PLATFORM" in
 bananapi*|cubieboard2*|cubietruck*)
-    dd if=${ROOTFSDIR}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
     ;;
 odroid-c2*)
-    dd if=${ROOTFSDIR}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=1 count=442 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=512 skip=1 seek=1 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} bs=512 seek=97 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=1 count=442 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=512 skip=1 seek=1 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot.bin of=${LOOPDEV} bs=512 seek=97 >/dev/null 2>&1
     ;;
 odroid-u2*)
-    dd if=${ROOTFSDIR}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
     ;;
 usbarmory*)
-    dd if=${ROOTFSDIR}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 ci20*)
-    dd if=${ROOTFSDIR}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
-    dd if=${ROOTFSDIR}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
+    dd if=${ROOTFS}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
     ;;
 GCP*)
     # Setup GRUB
     mount_pseudofs
-    chroot ${ROOTFSDIR} grub-install ${LOOPDEV}
-    sed -i "s:page_poison=1:page_poison=1 console=ttyS0,38400n8d:" ${ROOTFSDIR}/etc/default/grub
-    chroot ${ROOTFSDIR} update-grub
+    chroot ${ROOTFS} grub-install ${LOOPDEV}
+    sed -i "s:page_poison=1:page_poison=1 console=ttyS0,38400n8d:" ${ROOTFS}/etc/default/grub
+    chroot ${ROOTFS} update-grub
     umount_pseudofs
 
     # Setup the GCP Guest services
     for _service in dhcpcd sshd agetty-console nanoklogd socklog-unix GCP-Guest-Initialization GCP-accounts GCP-clock-skew GCP-ip-forwarding ; do
-        chroot ${ROOTFSDIR} ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service
+        chroot ${ROOTFS} ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service
     done
 
     # Turn off the agetty's since we can't use them anyway
-    rm -v ${ROOTFSDIR}/etc/runit/runsvdir/default/agetty-tty*
+    rm -v ${ROOTFS}/etc/runit/runsvdir/default/agetty-tty*
 
     # Disable root login over ssh and lock account
-    sed -i "s:PermitRootLogin yes:PermitRootLogin no:" ${ROOTFSDIR}/etc/ssh/sshd_config
-    chroot ${ROOTFSDIR} passwd -l root
+    sed -i "s:PermitRootLogin yes:PermitRootLogin no:" ${ROOTFS}/etc/ssh/sshd_config
+    chroot ${ROOTFS} passwd -l root
 
     # Set the Timezone
-    chroot ${ROOTFSDIR} ln -svf /usr/share/zoneinfo/UTC /etc/localtime
+    chroot ${ROOTFS} ln -svf /usr/share/zoneinfo/UTC /etc/localtime
 
     # Generate glibc-locales if necessary (this is a noop on musl)
     if [ "$PLATFORM" = GCP ] ; then
-        chroot ${ROOTFSDIR} xbps-reconfigure -f glibc-locales
+        chroot ${ROOTFS} xbps-reconfigure -f glibc-locales
     fi
 
     # Remove SSH host keys (these will get rebuilt on first boot)
-    rm -v ${ROOTFSDIR}/etc/ssh/*key*
-    rm -v ${ROOTFSDIR}/etc/ssh/moduli
+    rm -v ${ROOTFS}/etc/ssh/*key*
+    rm -v ${ROOTFS}/etc/ssh/moduli
 
     # Force hte hostname since this isn't read from DHCP
-    echo "void-GCE" > ${ROOTFSDIR}/etc/hostname
+    echo "void-GCE" > ${ROOTFS}/etc/hostname
     ;;
 esac
 
-mountpoint -q ${ROOTFSDIR}/boot && umount ${ROOTFSDIR}/boot
-umount $ROOTFSDIR
+mountpoint -q ${ROOTFS}/boot && umount ${ROOTFS}/boot
+umount $ROOTFS
 losetup -d $LOOPDEV
-rmdir $ROOTFSDIR
+rmdir $ROOTFS
 
 chmod 644 $FILENAME
 case "$PLATFORM" in
