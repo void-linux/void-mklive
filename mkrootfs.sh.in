@@ -42,14 +42,20 @@ die() {
     exit 1
 }
 
+
+# Even though we only support really one target for most of these
+# architectures this lets us refer to these quickly and easily by
+# XBPS_ARCH.  This makes it a lot more obvious what is happening later
+# in the script, and it makes it easier to consume the contents of
+# these down the road in later scripts.
 usage() {
     cat <<_EOF
-Usage: $PROGNAME [options] <platform>
+Usage: $PROGNAME [options] <arch>
 
-Supported platforms: i686, i686-musl, x86_64, x86_64-musl, GCP, GCP-musl
-                     dockstar, bananapi, beaglebone, cubieboard2, cubietruck,
-                     odroid-c2, odroid-u2, rpi, rpi2 (armv7), rpi3 (aarch64),
-                     usbarmory, ci20
+Supported architectures: i686, i686-musl, x86_64, x86_64-musl,
+                         armv5tel, armv5tel-musl, armv6l, armv6l-musl, armv7l, armv7l-musl
+                         aarch64, aarch64-musl,
+                         mipsel, mipsel-musl
 
 
 Options
@@ -57,9 +63,7 @@ Options
     -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
-    -p <pkgs>   Additional packages to install into the ROOTFS (separated by blanks)
     -r <repo>   Set XBPS repository (may be set multiple times)
-    -k <cmd>    Call "cmd <ROOTFSPATH>" after building the ROOTFS
     -V          Show version
 _EOF
 }
@@ -72,6 +76,7 @@ mount_pseudofs() {
 }
 
 umount_pseudofs() {
+    umount -f /proc/sys/fs/binfmt_misc >/dev/null 2>&1
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
             umount -f "$ROOTFS/$f" >/dev/null 2>&1
@@ -80,34 +85,41 @@ umount_pseudofs() {
 }
 
 run_cmd_target() {
-    info_msg "Running $* for target $_ARCH ..."
-    case "${_TARGET_ARCH}" in
-        i686*|x86_64*) eval XBPS_ARCH="${_TARGET_ARCH}" "$@";;
-        *) eval XBPS_TARGET_ARCH="${_TARGET_ARCH:=${_ARCH}}" "$@";;
-    esac
-    [ $? -ne 0 ] && die "Failed to run $*"
+    info_msg "Running $* for target $XBPS_TARGET_ARCH ..."
+    if [ "$XBPS_TARGET_ARCH" = "$(xbps-uhelper arch)" ] ; then
+        # This is being run on the same architecture as the host,
+        # therefore we should set XBPS_ARCH.
+        if ! eval XBPS_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
+            die "Could not run command $*"
+        fi
+    else
+        # This is being run on a foriegn arch, therefore we should set
+        # XBPS_TARGET_ARCH.  In this case XBPS will not attempt
+        # certain actions and will require reconfiguration later.
+        if ! eval XBPS_TARGET_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
+            die "Could not run command $*"
+        fi
+    fi
 }
 
 run_cmd() {
-    info_msg "Running $* ..."
+    info_msg "Running $*"
     eval "$@"
-    [ $? -ne 0 ] && die "Failed to run $*"
 }
 
+# TODO: Figure out how to register the binfmt for x86_64 and for i686
+# to facilitate building on alien build systems.
 register_binfmt() {
-    if [ "$ARCH" = "${_ARCH}" ]; then
-        return 0
-    fi
-    mountpoint -q /proc/sys/fs/binfmt_misc || modprobe -q binfmt_misc; mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
-    case "${_ARCH}" in
-        armv*)
-            echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
+    mountpoint -q /proc/sys/fs/binfmt_misc || modprobe -q binfmt_misc; mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null
+    case "${QEMU_BIN}" in
+        qemu-arm-static)
+            echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
             ;;
-        aarch*)
-            echo ':qemu-arm64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/bin/qemu-aarch64-static:' > /proc/sys/fs/binfmt_misc/register
+        qemu-aarch64-static)
+            echo ':arm64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/bin/qemu-aarch64-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
             ;;
-        mipsel*)
-            echo ':mipsel:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-mipsel-static:' > /proc/sys/fs/binfmt_misc/register
+        qemu-mipsel-static)
+            echo ':mipsel:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-mipsel-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
             ;;
         *)
             die "Unknown target architecture!"
@@ -119,166 +131,187 @@ register_binfmt() {
 #
 # main()
 #
-while getopts "b:C:c:hp:r:k:V" opt; do
+while getopts "C:c:h:r:V" opt; do
     case $opt in
-        b) PKGBASE="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         h) usage; exit 0;;
-        p) EXTRA_PKGS="$OPTARG";;
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
-        k) POST_HOOK="$OPTARG";;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
 shift $((OPTIND - 1))
+XBPS_TARGET_ARCH="$1"
 
-PLATFORM="$1"
-SUBPLATFORM=$PLATFORM
-
-case "$PLATFORM" in
-    i686*) _TARGET_ARCH="$PLATFORM"; _ARCH="i686";;
-    x86_64*) _TARGET_ARCH="$PLATFORM"; _ARCH="x86_64";;
-    GCP) _TARGET_ARCH="x86_64"; _ARCH="x86_64";;
-    GCP-musl) _TARGET_ARCH="x86_64-musl"; _ARCH="x86_64";;
-    dockstar) _TARGET_ARCH="armv5tel"; _ARCH="armv5tel";;
-    rpi-musl) _TARGET_ARCH="armv6l-musl"; _ARCH="armv6l";;
-    rpi) _TARGET_ARCH="armv6l"; _ARCH="armv6l";;
-    rpi3-musl) _TARGET_ARCH="aarch64-musl"; _ARCH="aarch64";;
-    rpi3) _TARGET_ARCH="aarch64"; _ARCH="aarch64";;
-    ci20-musl) _TARGET_ARCH="mipselhf-musl"; _ARCH="mipsel-musl";;
-    ci20) _TARGET_ARCH="mipselhf"; _ARCH="mipsel";;
-    odroid-c2-musl) _TARGET_ARCH="aarch64-musl"; _ARCH="aarch64";;
-    odroid-c2) _TARGET_ARCH="aarch64"; _ARCH="aarch64";;
-    *-musl) _TARGET_ARCH="armv7l-musl"; _ARCH="armv7l";;
-    *) _TARGET_ARCH="armv7l"; _ARCH="armv7l";;
-esac
-
-: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
-                      --repository=http://repo.voidlinux.eu/current/musl \
-                      --repository=http://repo.voidlinux.eu/current/aarch64}"
-: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cachedir-${_TARGET_ARCH}}"
-case "$PLATFORM" in
-    i686*|x86_64*) PKGBASE="base-voidstrap";;
-    *) PKGBASE="base-system";;
-esac
-
-if [ -z "$PLATFORM" ]; then
-    echo "$PROGNAME: platform was not set!"
-    usage; exit 1
-fi
-
-
-case "$PLATFORM" in
-    bananapi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    beaglebone*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    cubieboard2*|cubietruck*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    dockstar*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    odroid-u2*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    rpi3*) SUBPLATFORM=rpi3; QEMU_BIN=qemu-aarch64-static;;
-    rpi2*) SUBPLATFORM=rpi; QEMU_BIN=qemu-arm-static;;
-    rpi*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    usbarmory*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-arm-static;;
-    ci20*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-mipsel-static;;
-    odroid-c2*) SUBPLATFORM=${PLATFORM%-musl}; QEMU_BIN=qemu-aarch64-static;;
-    i686*) QEMU_BIN=qemu-i386-static;;
-    x86_64*) QEMU_BIN=qemu-x86_64-static;;
-    GCP*) SUBPLATFORM=${PLATFORM%-*}; QEMU_BIN=qemu-x86_64-static;;
-    *) die "$PROGNAME: invalid platform!";;
-esac
-
+# This is an aweful hack since the script isn't using privesc
+# mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
-#
-# Check for required binaries.
-#
+# If the arch wasn't set let's bail out now, nothing else in this
+# script will work without knowing what we're trying to build for.
+if [ -z "$XBPS_TARGET_ARCH" ]; then
+    echo "$PROGNAME: arch was not set!"
+    usage; exit 1
+fi
+
+# This select maps the architectures to the appropriate QEMU binaries
+# since this mapping isn't something that can just be subbed in for
+# easily.
+case "$XBPS_TARGET_ARCH" in
+    i686*) QEMU_BIN=qemu-i386-static ;;
+    x86_64*) QEMU_BIN=qemu-x86_64-static ;;
+    armv*) QEMU_BIN=qemu-arm-static ;;
+    aarch64*) QEMU_BIN=qemu-aarch64-static ;;
+    mipsel*) QEMU_BIN=qemu-mipsel-static ;;
+    *) die "Unknown target architecture" ;;
+esac
+
+# If the repository hasn't already been set, we set it to a sane value
+# here.  These should all resolve even if they won't have the
+# appropriate repodata files for the selected architecture.
+: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
+                      --repository=http://repo.voidlinux.eu/current/musl \
+                      --repository=http://repo.voidlinux.eu/current/aarch64}"
+
+# The package artifacts are cacheable, but they need to be isolated
+# from the host cache.
+: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
+
+# The following binaries are required to proceed
 for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
-    if ! $f --version >/dev/null 2>&1; then
+    if ! which $f >/dev/null ; then
         die "$f binary is missing in your system, exiting."
     fi
 done
+
+# For builds that do not match the host architecture, the correct qemu
+# binary will also be required.
 if ! $QEMU_BIN -version >/dev/null 2>&1; then
     die "$QEMU_BIN binary is missing in your system, exiting."
 fi
-#
-# Check if package base-system is available.
-#
+
+# We need to operate on a tempdir, if this fails to create, it is
+# absolutely crucial to bail out so that we don't hose the system that
+# is running the script.
 ROOTFS=$(mktemp -d) || die "failed to create tempdir, exiting..."
+
+# This maintains the chain of trust, the keys in the repo are known to
+# be good and so we copy those.  Why don't we just use the ones on the
+# host system?  That's a good point, but there's no promise that the
+# system running the script is Void, or that those keys haven't been
+# tampered with.  Its much easier to use these since the will always
+# exist.
 mkdir -p "$ROOTFS/var/db/xbps/keys"
 cp keys/*.plist "$ROOTFS/var/db/xbps/keys"
 
+# This sets up files that are important for XBPS to work on the new
+# filesystem.  It does not actually install anything.
 run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS"
-run_cmd_target "xbps-query -R -r $ROOTFS $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -ppkgver $PKGBASE"
 
+# Later scripts expect the permissions on / to be the canonical 755,
+# so we set this here.
 chmod 755 "$ROOTFS"
 
-case "$PLATFORM" in
-    i686*|x86_64*) PKGS="${PKGBASE}" ;;
-    *) PKGS="${PKGBASE} ${SUBPLATFORM}-base" ;;
-esac
-[ -n "$EXTRA_PKGS" ] && PKGS="${PKGS} ${EXTRA_PKGS}"
-
+# The pseudofs mountpoints are needed for the qemu support in cases
+# where we are running things that aren't natively executable.
 mount_pseudofs
-#
-# Install base-system to the ROOTFS directory.
-#
-run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y ${PKGS}"
+
+# With everything setup, we can now run the install to load the
+# base-voidstrap package into the rootfs.  This will not produce a
+# bootable system but will instead produce a base component that can
+# be quickly expanded to perform other actions on.
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y base-voidstrap"
 
 # Enable en_US.UTF-8 locale and generate it into the target ROOTFS.
+# This is a bit of a hack since some glibc stuff doesn't really work
+# correctly without a locale being generated.  While some could argue
+# that this is an arbitrary or naive choice to enable the en_US
+# locale, most people using Void are able to work with the English
+# language at least enough to enable thier preferred locale.  If this
+# truly becomes an issue in the future this hack can be revisited.
 if [ -e "$ROOTFS/etc/default/libc-locales" ]; then
     LOCALE=en_US.UTF-8
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i "$ROOTFS/etc/default/libc-locales"
 fi
 
-#
-# Reconfigure packages for target architecture: must be reconfigured
-# thru the qemu user mode binary.
-#
-if [ -n "${_ARCH}" ]; then
-    info_msg "Reconfiguring packages for ${_ARCH} ..."
-    case "$PLATFORM" in
-        i686*|x86_64*|GCP*)
-            run_cmd "XBPS_ARCH=${PLATFORM} xbps-reconfigure -r $ROOTFS base-files"
-            ;;
-        *)
-            register_binfmt
-            run_cmd "xbps-reconfigure -r $ROOTFS base-files"
-            run_cmd "chroot $ROOTFS env -i xbps-reconfigure -f base-files"
-            rmdir "$ROOTFS/usr/lib32" 2>/dev/null
-            rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
-            ;;
-    esac
-    run_cmd "chroot $ROOTFS xbps-reconfigure -a"
-fi
+# The reconfigure step needs to execute code that's been compiled for
+# the target architecture.  Since the target isn't garanteed to be the
+# same as the host, this needs to be done via qemu.
+info_msg "Reconfiguring packages for ${XBPS_TARGET_ARCH} ..."
+case "$XBPS_TARGET_ARCH" in
+    # TODO: Rather than asserting that x86 code will work, check
+    # instead if the system that is hosting this script is the same as
+    # the target, using binfmt if it is not.
+    i686*|x86_64*)
+        run_cmd "XBPS_ARCH=${XBPS_TARGET_ARCH} xbps-reconfigure -r $ROOTFS base-files"
+        ;;
+    *)
+        # This case handles configuration of the system when it won't
+        # work directly with the host ELF infrastructure.  Before
+        # continuing its necessary to determine the correct magic
+        # numbers and load them into the kernel so that it will defer
+        # to the appropriate interpreter as defined by $QEMU_BIN
+        register_binfmt
 
-#
-# Setup default root password.
-#
-run_cmd "chroot $ROOTFS sh -c 'echo root:voidlinux | chpasswd -c SHA512'"
-if [ -n "$POST_HOOK" ]; then
-    run_cmd "$POST_HOOK $ROOTFS"
-fi
+        # This step sets up enough of the base-files that the chroot
+        # will work and they can be reconfigured natively.  Without
+        # this step there isn't enough configured for ld to work.
+        run_cmd "xbps-reconfigure -r $ROOTFS base-files"
+        
+        # Now running as the target system, this step reconfigures the
+        # base-files completely.  Certain things just won't work in
+        # the first pass, so this cleans up any issues that linger.
+        run_cmd "chroot $ROOTFS env -i xbps-reconfigure -f base-files"
+
+        # TODO: determine why these lines are here.  What is the harm
+        # in having them and what do they remove.  Do they interact
+        # adversely with the alien build support discussed above.
+        rmdir "$ROOTFS/usr/lib32" 2>/dev/null
+        rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
+        ;;
+esac
+
+# Once base-files is configured and functional its possible to
+# configure the rest of the system.
+run_cmd "chroot $ROOTFS xbps-reconfigure -a"
+
+# At this point we're done running things that needed to be done with
+# the pseudo filesystems to be mounted, so we can clean that up.
 umount_pseudofs
-#
-# Cleanup ROOTFS.
-#
-rm -f "$ROOTFS/etc/.pwd.lock" 2>/dev/null
+
+# Set the default password.  Previous versions of this script used a
+# chroot to do this, but that is unnecessary since chpasswd
+# understands how to operate on chroots without actually needing to be
+# chrooted.  We also remove the lock file in this step to clean up the
+# lock on the passwd database, lest it be left in the system and
+# propogated to other points.
+echo root:voidlinux | chpasswd -c SHA512 --root "$ROOTFS" || die "Could not set default credentials"
+rm -f "$ROOTFS/etc/.pwd.lock"
+
+# The cache isn't that useful since by the time the ROOTFS will be
+# used it is likely to be out of date.  Rather than shipping it around
+# only for it to be out of date, we remove it now.
 rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
-#
-# Generate final tarball.
-#
-if [ -n "${_ARCH}" ]; then
-    rm -f "$ROOTFS/usr/bin/$QEMU_BIN"
-fi
+# If we needed to copy in a QEMU_BIN executable, that needs to be
+# removed before packaging up the shiny new ROOTFS.  This could be
+# wrapped in a conditional, but its much easier to just remove the
+# binary location on the off chance its there.
+rm -f "$ROOTFS/usr/bin/$QEMU_BIN"
 
-tarball=void-${PLATFORM}-ROOTFS-$(date '+%Y%m%d').tar.xz
+# Finally we can compress the tarball, the name will include the
+# architecture and the date on which the tarball was built.
+tarball=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date '+%Y%m%d').tar.xz
 run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T0 -9 > $tarball "
 
+# Now that we have the tarball we don't need the rootfs anymore, so we
+# can get rid of it.
 rm -rf "$ROOTFS"
 
-info_msg "Successfully created $tarball ($PLATFORM)"
-
-# vim: set ts=4 sw=4 et:
+# Last thing to do before closing out is to let the user know that
+# this succeeded.  This also ensures that there's something visible
+# that the user can look for at the end of the script, which can make
+# it easier to see what's going on if something above failed.
+info_msg "Successfully created $tarball ($XBPS_TARGET_ARCH)"

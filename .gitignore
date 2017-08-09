@@ -4,5 +4,6 @@
 *.iso
 *.raw
 *.tar.gz
+xbps-cache
 xbps-cachedir*
 !dracut/*/*.sh
