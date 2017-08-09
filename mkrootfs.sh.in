@@ -25,20 +25,20 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
-readonly PROGNAME=$(basename $0)
+readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
 
 trap 'die "Interrupted! exiting..."' INT TERM HUP
 
 
 info_msg() {
-    printf "\033[1m$@\n\033[m"
+    printf "\033[1m%s\n\033[m" "$@"
 }
 
 die() {
-    echo "FATAL: $@"
+    printf "FATAL: %s\n" "$@"
     umount_pseudofs
-    [ -d "$ROOTFS" ] && rm -rf $ROOTFS
+    [ -d "$ROOTFS" ] && rm -rf "$ROOTFS"
     exit 1
 }
 
@@ -66,32 +66,32 @@ _EOF
 
 mount_pseudofs() {
     for f in dev proc sys; do
-        [ ! -d $ROOTFS/$f ] && mkdir -p $ROOTFS/$f
-        mount -r --bind /$f $ROOTFS/$f
+        [ ! -d "$ROOTFS/$f" ] && mkdir -p "$ROOTFS/$f"
+        mount -r --bind /$f "$ROOTFS/$f"
     done
 }
 
 umount_pseudofs() {
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
-            umount -f $ROOTFS/$f >/dev/null 2>&1
+            umount -f "$ROOTFS/$f" >/dev/null 2>&1
         done
     fi
 }
 
 run_cmd_target() {
-    info_msg "Running $@ for target $_ARCH ..."
+    info_msg "Running $* for target $_ARCH ..."
     case "${_TARGET_ARCH}" in
-        i686*|x86_64*) eval XBPS_ARCH=${_TARGET_ARCH} "$@";;
-        *) eval XBPS_TARGET_ARCH=${_TARGET_ARCH:=${_ARCH}} "$@";;
+        i686*|x86_64*) eval XBPS_ARCH="${_TARGET_ARCH}" "$@";;
+        *) eval XBPS_TARGET_ARCH="${_TARGET_ARCH:=${_ARCH}}" "$@";;
     esac
-    [ $? -ne 0 ] && die "Failed to run $@"
+    [ $? -ne 0 ] && die "Failed to run $*"
 }
 
 run_cmd() {
-    info_msg "Running $@ ..."
+    info_msg "Running $* ..."
     eval "$@"
-    [ $? -ne 0 ] && die "Failed to run $@"
+    [ $? -ne 0 ] && die "Failed to run $*"
 }
 
 register_binfmt() {
@@ -113,7 +113,7 @@ register_binfmt() {
             die "Unknown target architecture!"
             ;;
     esac
-    cp -f $(which $QEMU_BIN) $ROOTFS/usr/bin || die "failed to copy $QEMU_BIN to the ROOTFS"
+    cp -f "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin" || die "failed to copy $QEMU_BIN to the ROOTFS"
 }
 
 #
@@ -131,7 +131,7 @@ while getopts "b:C:c:hp:r:k:V" opt; do
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
     esac
 done
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 PLATFORM="$1"
 SUBPLATFORM=$PLATFORM
@@ -154,8 +154,10 @@ case "$PLATFORM" in
     *) _TARGET_ARCH="armv7l"; _ARCH="armv7l";;
 esac
 
-: ${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current --repository=http://repo.voidlinux.eu/current/musl --repository=http://repo.voidlinux.eu/current/aarch64}
-: ${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cachedir-${_TARGET_ARCH}}
+: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
+                      --repository=http://repo.voidlinux.eu/current/musl \
+                      --repository=http://repo.voidlinux.eu/current/aarch64}"
+: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cachedir-${_TARGET_ARCH}}"
 case "$PLATFORM" in
     i686*|x86_64*) PKGBASE="base-voidstrap";;
     *) PKGBASE="base-system";;
@@ -204,13 +206,13 @@ fi
 # Check if package base-system is available.
 #
 ROOTFS=$(mktemp -d) || die "failed to create tempdir, exiting..."
-mkdir -p $ROOTFS/var/db/xbps/keys
-cp keys/*.plist $ROOTFS/var/db/xbps/keys
+mkdir -p "$ROOTFS/var/db/xbps/keys"
+cp keys/*.plist "$ROOTFS/var/db/xbps/keys"
 
 run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS"
 run_cmd_target "xbps-query -R -r $ROOTFS $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -ppkgver $PKGBASE"
 
-chmod 755 $ROOTFS
+chmod 755 "$ROOTFS"
 
 case "$PLATFORM" in
     i686*|x86_64*) PKGS="${PKGBASE}" ;;
@@ -225,9 +227,9 @@ mount_pseudofs
 run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y ${PKGS}"
 
 # Enable en_US.UTF-8 locale and generate it into the target ROOTFS.
-if [ -e $ROOTFS/etc/default/libc-locales ]; then
+if [ -e "$ROOTFS/etc/default/libc-locales" ]; then
     LOCALE=en_US.UTF-8
-    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i $ROOTFS/etc/default/libc-locales
+    sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i "$ROOTFS/etc/default/libc-locales"
 fi
 
 #
@@ -244,8 +246,8 @@ if [ -n "${_ARCH}" ]; then
             register_binfmt
             run_cmd "xbps-reconfigure -r $ROOTFS base-files"
             run_cmd "chroot $ROOTFS env -i xbps-reconfigure -f base-files"
-            rmdir $ROOTFS/usr/lib32 2>/dev/null
-            rm -f $ROOTFS/lib32 $ROOTFS/lib64 $ROOTFS/usr/lib64
+            rmdir "$ROOTFS/usr/lib32" 2>/dev/null
+            rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
             ;;
     esac
     run_cmd "chroot $ROOTFS xbps-reconfigure -a"
@@ -254,7 +256,7 @@ fi
 #
 # Setup default root password.
 #
-run_cmd "chroot $ROOTFS sh -c 'echo "root:voidlinux" | chpasswd -c SHA512'"
+run_cmd "chroot $ROOTFS sh -c 'echo root:voidlinux | chpasswd -c SHA512'"
 if [ -n "$POST_HOOK" ]; then
     run_cmd "$POST_HOOK $ROOTFS"
 fi
@@ -262,22 +264,20 @@ umount_pseudofs
 #
 # Cleanup ROOTFS.
 #
-rm -f $ROOTFS/etc/.pwd.lock 2>/dev/null
-rm -rf $ROOTFS/var/cache/* 2>/dev/null
+rm -f "$ROOTFS/etc/.pwd.lock" 2>/dev/null
+rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
 #
 # Generate final tarball.
 #
-arch=$ARCH
 if [ -n "${_ARCH}" ]; then
-    rm -f $ROOTFS/usr/bin/$QEMU_BIN
-    arch=${_ARCH}
+    rm -f "$ROOTFS/usr/bin/$QEMU_BIN"
 fi
 
 tarball=void-${PLATFORM}-ROOTFS-$(date '+%Y%m%d').tar.xz
 run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T0 -9 > $tarball "
 
-rm -rf $ROOTFS
+rm -rf "$ROOTFS"
 
 info_msg "Successfully created $tarball ($PLATFORM)"
 
