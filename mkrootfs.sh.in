@@ -69,14 +69,30 @@ _EOF
 }
 
 mount_pseudofs() {
+    # This function ensures that the psuedofs mountpoints are present
+    # in the chroot.  Strictly they are not necessary to have for many
+    # commands, but bind-mounts are cheap and it isn't too bad to just
+    # mount them all the time.
     for f in dev proc sys; do
+        # In a naked chroot there is nothing to bind the mounts to, so
+        # we need to create directories for these first.
         [ ! -d "$ROOTFS/$f" ] && mkdir -p "$ROOTFS/$f"
-        mount -r --bind /$f "$ROOTFS/$f"
+        if ! mountpoint -q "$ROOTFS/$f" ; then
+            # It is VERY important that this only happen if the
+            # pseudofs isn't already mounted.  If it already is then
+            # this is virtually impossible to troubleshoot because it
+            # looks like the subsequent umount just isn't working.
+            mount -r --bind /$f "$ROOTFS/$f"
+        fi
     done
 }
 
 umount_pseudofs() {
-    umount -f /proc/sys/fs/binfmt_misc >/dev/null 2>&1
+    # This function cleans up the mounts in the chroot.  Failure to
+    # clean up these mounts will prevent the tmpdir from being
+    # deletable instead throwing the error "Device or Resource Busy".
+    # The '-f' option is passed to umount to account for the
+    # contingency where the psuedofs mounts are not present.
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
             umount -f "$ROOTFS/$f" >/dev/null 2>&1
@@ -107,25 +123,118 @@ run_cmd() {
     eval "$@"
 }
 
+run_cmd_chroot() {
+    # General purpose chroot function which makes sure the chroot is
+    # prepared.  This function takes 2 arguments, the location to
+    # chroot to and the command to run.
+
+    # This is an idempotent function, it is safe to call every time
+    # before entering the chroot.  This has the advantage of making
+    # execution in the chroot appear as though it "Just Works(tm)".
+    register_binfmt
+
+    # Before we step into the chroot we need to make sure the
+    # pseudo-filesystems are ready to go.  Not all commands will need
+    # this, but its still a good idea to call it here anyway.
+    mount_pseudofs
+
+    # With assurance that things will run now we can jump into the
+    # chroot and run stuff!
+    chroot "$1" sh -c "$2"
+}
+
+cleanup_chroot() {
+    # This function cleans up the chroot shims that are used by QEMU
+    # to allow builds on alien platforms.  It takes no arguments but
+    # expects the global $ROOTFS variable to be set.
+
+    # Un-Mount the pseudofs mounts if they were mounted
+    umount_pseudofs
+
+    # If a QEMU binary was copied in, remove that as well
+    if [ -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
+        rm "$ROOTFS/usr/bin/$QEMU_BIN"
+    fi
+}
+
 # TODO: Figure out how to register the binfmt for x86_64 and for i686
 # to facilitate building on alien build systems.
 register_binfmt() {
-    mountpoint -q /proc/sys/fs/binfmt_misc || modprobe -q binfmt_misc; mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null
-    case "${QEMU_BIN}" in
-        qemu-arm-static)
-            echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+    # This function sets up everything that is needed to be able to
+    # chroot into a ROOTFS and be able to run commands there.  This
+    # really matters on platforms where the host architecture is
+    # different from the target, and you wouldn't be able to run
+    # things like xbps-reconfigure -a.  This function is idempotent
+    # (You can run it multiple times without modifying state).  This
+    # function takes no arguments, but does expect the global variable
+    # $XBPS_TARGET_ARCH to be set.
+
+    # This select sets up the "magic" bytes in /proc that let the
+    # kernel select an alternate interpreter.  More values for this
+    # map can be obtained from here:
+    # https://github.com/qemu/qemu/blob/master/scripts/qemu-binfmt-conf.sh
+    case "${XBPS_TARGET_ARCH}" in
+        armv*)
+            _cpu=arm
+            _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
+            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+            QEMU_BIN=qemu-arm-static
             ;;
-        qemu-aarch64-static)
-            echo ':arm64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/bin/qemu-aarch64-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+        aarch64*)
+            _cpu=aarch64
+            _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7"
+            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
+            QEMU_BIN=qemu-aarch64-static
             ;;
-        qemu-mipsel-static)
-            echo ':mipsel:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-mipsel-static:' > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+        mipsel*)
+            _cpu=mipsel
+            _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00"
+            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+            QEMU_BIN=qemu-mipsel-static
+            ;;
+        *86*)
+            info_msg "FIXME: Assuming that x86 instructions are native"
+            QEMU_BIN=NATIVE
             ;;
         *)
             die "Unknown target architecture!"
             ;;
     esac
-    cp -f "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin" || die "failed to copy $QEMU_BIN to the ROOTFS"
+
+    # In the special case where the build is native we can return
+    # without doing anything else
+    if [ "$QEMU_BIN" = "NATIVE" ] ; then
+        return
+    fi
+    
+    # For builds that do not match the host architecture, the correct
+    # qemu binary will be required.
+    if ! $QEMU_BIN -version >/dev/null 2>&1; then
+        die "$QEMU_BIN binary is missing in your system, exiting."
+    fi
+
+    # In order to use the binfmt system the binfmt_misc mountpoint
+    # must exist inside of proc
+    if ! mountpoint -q /proc/sys/fs/binfmt_misc ; then
+        modprobe -q binfmt_misc
+        mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null
+    fi
+
+    # Only register if the map is incomplete
+    if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
+        echo ":qemu-$_cpu:M::$_magic:$_mask:$QEMU_BIN:" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+    fi
+
+    # If the static binary isn't in the chroot then the chroot will
+    # fail.  The kernel knows about the map but without the static
+    # version there's no interpreter in the chroot, only the
+    # dynamically linked one in the host.  To simplify things we just
+    # use the static one always and make sure it shows up at the same
+    # place in the host and the chroot.
+    if [ ! -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
+        cp -f "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin" ||
+            die "Could not install $QEMU_BIN to $ROOTFS/usr/bin/"
+    fi
 }
 
 #
@@ -156,18 +265,6 @@ if [ -z "$XBPS_TARGET_ARCH" ]; then
     usage; exit 1
 fi
 
-# This select maps the architectures to the appropriate QEMU binaries
-# since this mapping isn't something that can just be subbed in for
-# easily.
-case "$XBPS_TARGET_ARCH" in
-    i686*) QEMU_BIN=qemu-i386-static ;;
-    x86_64*) QEMU_BIN=qemu-x86_64-static ;;
-    armv*) QEMU_BIN=qemu-arm-static ;;
-    aarch64*) QEMU_BIN=qemu-aarch64-static ;;
-    mipsel*) QEMU_BIN=qemu-mipsel-static ;;
-    *) die "Unknown target architecture" ;;
-esac
-
 # If the repository hasn't already been set, we set it to a sane value
 # here.  These should all resolve even if they won't have the
 # appropriate repodata files for the selected architecture.
@@ -185,12 +282,6 @@ for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
         die "$f binary is missing in your system, exiting."
     fi
 done
-
-# For builds that do not match the host architecture, the correct qemu
-# binary will also be required.
-if ! $QEMU_BIN -version >/dev/null 2>&1; then
-    die "$QEMU_BIN binary is missing in your system, exiting."
-fi
 
 # We need to operate on a tempdir, if this fails to create, it is
 # absolutely crucial to bail out so that we don't hose the system that
@@ -248,22 +339,16 @@ case "$XBPS_TARGET_ARCH" in
         run_cmd "XBPS_ARCH=${XBPS_TARGET_ARCH} xbps-reconfigure -r $ROOTFS base-files"
         ;;
     *)
-        # This case handles configuration of the system when it won't
-        # work directly with the host ELF infrastructure.  Before
-        # continuing its necessary to determine the correct magic
-        # numbers and load them into the kernel so that it will defer
-        # to the appropriate interpreter as defined by $QEMU_BIN
-        register_binfmt
-
         # This step sets up enough of the base-files that the chroot
         # will work and they can be reconfigured natively.  Without
         # this step there isn't enough configured for ld to work.
+        # This step runs as the host architecture.
         run_cmd "xbps-reconfigure -r $ROOTFS base-files"
-        
+
         # Now running as the target system, this step reconfigures the
         # base-files completely.  Certain things just won't work in
         # the first pass, so this cleans up any issues that linger.
-        run_cmd "chroot $ROOTFS env -i xbps-reconfigure -f base-files"
+        run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
 
         # TODO: determine why these lines are here.  What is the harm
         # in having them and what do they remove.  Do they interact
@@ -275,11 +360,12 @@ esac
 
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.
-run_cmd "chroot $ROOTFS xbps-reconfigure -a"
+run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 
-# At this point we're done running things that needed to be done with
-# the pseudo filesystems to be mounted, so we can clean that up.
-umount_pseudofs
+# At this point we're done running things in the chroot and we can
+# clean up the shims.  Failure to do this can result in things hanging
+# when we try to delete the tmpdir.
+cleanup_chroot
 
 # Set the default password.  Previous versions of this script used a
 # chroot to do this, but that is unnecessary since chpasswd
@@ -294,12 +380,6 @@ rm -f "$ROOTFS/etc/.pwd.lock"
 # used it is likely to be out of date.  Rather than shipping it around
 # only for it to be out of date, we remove it now.
 rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
-
-# If we needed to copy in a QEMU_BIN executable, that needs to be
-# removed before packaging up the shiny new ROOTFS.  This could be
-# wrapped in a conditional, but its much easier to just remove the
-# binary location on the off chance its there.
-rm -f "$ROOTFS/usr/bin/$QEMU_BIN"
 
 # Finally we can compress the tarball, the name will include the
 # architecture and the date on which the tarball was built.
