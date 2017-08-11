@@ -27,6 +27,7 @@
 
 readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
+readonly REQTOOLS="xbps-install xbps-reconfigure tar xz"
 
 # This source pulls in all the functions from lib.sh.  This set of
 # functions makes it much easier to work with chroots and abstracts
@@ -88,30 +89,17 @@ if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
+# Before going any further, check that the tools that are needed are
+# present.  If we delayed this we could check for the QEMU binary, but
+# its a reasonable tradeoff to just bail out now.
+check_tools
+
 # If the arch wasn't set let's bail out now, nothing else in this
 # script will work without knowing what we're trying to build for.
 if [ -z "$XBPS_TARGET_ARCH" ]; then
     echo "$PROGNAME: arch was not set!"
     usage; exit 1
 fi
-
-# If the repository hasn't already been set, we set it to a sane value
-# here.  These should all resolve even if they won't have the
-# appropriate repodata files for the selected architecture.
-: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
-                      --repository=http://repo.voidlinux.eu/current/musl \
-                      --repository=http://repo.voidlinux.eu/current/aarch64}"
-
-# The package artifacts are cacheable, but they need to be isolated
-# from the host cache.
-: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
-
-# The following binaries are required to proceed
-for f in chroot tar xbps-install xbps-reconfigure xbps-query; do
-    if ! which $f >/dev/null ; then
-        die "$f binary is missing in your system, exiting."
-    fi
-done
 
 # We need to operate on a tempdir, if this fails to create, it is
 # absolutely crucial to bail out so that we don't hose the system that

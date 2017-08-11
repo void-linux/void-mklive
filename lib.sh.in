@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# This contains the COMPLETE list of binaries that this script needs
+# to function.  The only exception is the QEMU binary since it is not
+# known in advance which one wil be required.
+readonly LIBTOOLS="cp echo cat printf which mountpoint mount umount modprobe"
+
 info_msg() {
     # This function handles the printing that is bold within all
     # scripts.  This is a convenience function so that the rather ugly
@@ -15,6 +20,24 @@ die() {
     umount_pseudofs
     [ -d "$ROOTFS" ] && rm -rf "$ROOTFS"
     exit 1
+}
+
+check_tools() {
+    # All scripts within mklive declare the tools they will use in a
+    # variable called "REQTOOLS".  This function checks that these
+    # tools are available and prints out the path to each tool that
+    # will be used.  This can be useful to figure out what is broken
+    # if a different version of something is used than was expected.
+    for tool in $LIBTOOLS $REQTOOLS ; do
+        if ! which "$tool" > /dev/null ; then
+            die "Required tool $f is not available on this system!"
+        fi
+    done
+
+    info_msg "The following tools will be used:"
+    for tool in $LIBTOOLS $REQTOOLS ; do
+        which "$tool"
+    done
 }
 
 mount_pseudofs() {
@@ -159,7 +182,7 @@ register_binfmt() {
     if [ "$QEMU_BIN" = "NATIVE" ] ; then
         return
     fi
-    
+
     # For builds that do not match the host architecture, the correct
     # qemu binary will be required.
     if ! $QEMU_BIN -version >/dev/null 2>&1; then
@@ -189,3 +212,13 @@ register_binfmt() {
             die "Could not install $QEMU_BIN to $ROOTFS/usr/bin/"
     fi
 }
+
+# These should all resolve even if they won't have the appropriate
+# repodata files for the selected architecture.
+: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
+                      --repository=http://repo.voidlinux.eu/current/musl \
+                      --repository=http://repo.voidlinux.eu/current/aarch64}"
+
+# The package artifacts are cacheable, but they need to be isolated
+# from the host cache.
+: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
