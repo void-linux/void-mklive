@@ -192,19 +192,20 @@ esac
 # configure the rest of the system.
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 
-# At this point we're done running things in the chroot and we can
-# clean up the shims.  Failure to do this can result in things hanging
-# when we try to delete the tmpdir.
-cleanup_chroot
-
 # Set the default password.  Previous versions of this script used a
 # chroot to do this, but that is unnecessary since chpasswd
 # understands how to operate on chroots without actually needing to be
 # chrooted.  We also remove the lock file in this step to clean up the
 # lock on the passwd database, lest it be left in the system and
 # propogated to other points.
-echo root:voidlinux | chpasswd -c SHA512 --root "$ROOTFS" || die "Could not set default credentials"
+info_msg "Setting the default root password ('voidlinux')"
+echo root:voidlinux | run_cmd_chroot "$ROOTFS" "chpasswd -c SHA512" || die "Could not set default credentials"
 rm -f "$ROOTFS/etc/.pwd.lock"
+
+# At this point we're done running things in the chroot and we can
+# clean up the shims.  Failure to do this can result in things hanging
+# when we try to delete the tmpdir.
+cleanup_chroot
 
 # The cache isn't that useful since by the time the ROOTFS will be
 # used it is likely to be out of date.  Rather than shipping it around
