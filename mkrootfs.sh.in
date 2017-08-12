@@ -149,32 +149,23 @@ fi
 # the target architecture.  Since the target isn't garanteed to be the
 # same as the host, this needs to be done via qemu.
 info_msg "Reconfiguring packages for ${XBPS_TARGET_ARCH} ..."
-case "$XBPS_TARGET_ARCH" in
-    # TODO: Rather than asserting that x86 code will work, check
-    # instead if the system that is hosting this script is the same as
-    # the target, using binfmt if it is not.
-    i686*|x86_64*)
-        run_cmd "XBPS_ARCH=${XBPS_TARGET_ARCH} xbps-reconfigure -r $ROOTFS base-files"
-        ;;
-    *)
-        # This step sets up enough of the base-files that the chroot
-        # will work and they can be reconfigured natively.  Without
-        # this step there isn't enough configured for ld to work.
-        # This step runs as the host architecture.
-        run_cmd "xbps-reconfigure -r $ROOTFS base-files"
 
-        # Now running as the target system, this step reconfigures the
-        # base-files completely.  Certain things just won't work in
-        # the first pass, so this cleans up any issues that linger.
-        run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
+# This step sets up enough of the base-files that the chroot will work
+# and they can be reconfigured natively.  Without this step there
+# isn't enough configured for ld to work.  This step runs as the host
+# architecture.
+run_cmd "xbps-reconfigure -r $ROOTFS base-files"
 
-        # TODO: determine why these lines are here.  What is the harm
-        # in having them and what do they remove.  Do they interact
-        # adversely with the alien build support discussed above.
-        rmdir "$ROOTFS/usr/lib32" 2>/dev/null
-        rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
-        ;;
-esac
+# Now running as the target system, this step reconfigures the
+# base-files completely.  Certain things just won't work in the first
+# pass, so this cleans up any issues that linger.
+run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
+
+# TODO: determine why these lines are here.  What is the harm in
+# having them and what do they remove.  Do they interact adversely
+# with the alien build support discussed above.
+rmdir "$ROOTFS/usr/lib32" 2>/dev/null
+rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
 
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.
