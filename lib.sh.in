@@ -213,12 +213,15 @@ register_binfmt() {
     fi
 }
 
+set_cachedir() {
+    # The package artifacts are cacheable, but they need to be isolated
+    # from the host cache.
+    : "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
+}
+
 # These should all resolve even if they won't have the appropriate
 # repodata files for the selected architecture.
 : "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
                       --repository=http://repo.voidlinux.eu/current/musl \
                       --repository=http://repo.voidlinux.eu/current/aarch64}"
 
-# The package artifacts are cacheable, but they need to be isolated
-# from the host cache.
-: "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"

@@ -83,6 +83,9 @@ done
 shift $((OPTIND - 1))
 XBPS_TARGET_ARCH="$1"
 
+# Set the XBPS cache
+set_cachedir
+
 # This is an aweful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then
