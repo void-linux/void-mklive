@@ -36,6 +36,10 @@ trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 # shellcheck source=./lib.sh
 . ./lib.sh
 
+# This script has a special cleanup() function since it needs to
+# unmount the rootfs as mounted on a loop device.  This function is
+# defined after sourcing the library functions to ensure it is the
+# last one defined.
 cleanup() {
     unmount_pseudofs
     umount -f "${ROOTFS}/boot" 2>/dev/null
@@ -48,6 +52,12 @@ cleanup() {
     [ -d "$ROOTFS" ] && rmdir "$ROOTFS"
 }
 
+
+# This script is designed to take in a complete platformfs and spit
+# out an image that is suitable for writing with dd.  The image is
+# configurable in terms of the filesystem layout, but not in terms of
+# the installed system itself.  Customization to the installed system
+# should be made during the mkplatformfs step.
 usage() {
     cat <<_EOF
 Usage: $PROGNAME [options] <rootfs-tarball>
@@ -99,7 +109,7 @@ elif [ ! -r "$ROOTFS_TARBALL" ]; then
 fi
 
 # By default we build all platform images with a 64MiB boot partition
-# formated FAT16, and an approxomately 1.9GiB root partition formated
+# formated FAT16, and an approximately 1.9GiB root partition formated
 # ext4.  More exotic combinations are of course possible, but this
 # combination works on all known platforms.
 : "${IMGSIZE:=2G}"
@@ -116,7 +126,7 @@ check_tools
 PLATFORM="${ROOTFS_TARBALL#void-}"
 PLATFORM="${PLATFORM%-ROOTFS*}"
 
-# This is an aweful hack since the script isn't using privesc
+# This is an awful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
@@ -144,14 +154,18 @@ truncate -s "${IMGSIZE}" "$FILENAME" >/dev/null 2>&1
 # because otherwise things will go very badly for the host system.
 ROOTFS=$(mktemp -d) || die "Could not create tmpdir for ROOTFS"
 
-
 info_msg "Creating disk image partitions/filesystems ..."
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
+    # The mkfs.vfat program tries to make some "intelligent" choices
+    # about the type of filesystem it creates.  Instead we set options
+    # if the type is vfat to ensure that the same options will be used
+    # every time.
     _args="-I -F16"
 fi
 
 case "$PLATFORM" in
     cubieboard2|cubietruck|ci20*|odroid-c2*)
+        # These platforms use a single partition for the entire filesystem.
         sfdisk "${FILENAME}" <<_EOF
 label: dos
 2048,,L
@@ -162,6 +176,10 @@ _EOF
         ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
         ;;
     *)
+        # These platforms use a partition layout with a small boot
+        # partition (64M by default) and the rest of the space as the
+        # root filesystem.  This is the generally preferred disk
+        # layout for new platforms.
         sfdisk "${FILENAME}" <<_EOF
 label: dos
 2048,${BOOT_FSSIZE},b,*
@@ -173,6 +191,13 @@ _EOF
         # shellcheck disable=SC2086
         mkfs.${BOOT_FSTYPE} $_args "${LOOPDEV}p1" >/dev/null
         case "$ROOT_FSTYPE" in
+            # Because the images produced by this script are generally
+            # either on single board computers using flash memory or
+            # in cloud environments that already provide disk
+            # durability, we shut off the journal for ext filesystems.
+            # For flash memory this greatly extends the life of the
+            # memory and for cloud images this lowers the overhead by
+            # a small amount.
             ext[34]) disable_journal="-O ^has_journal";;
         esac
         mkfs.${ROOT_FSTYPE} "$disable_journal" "${LOOPDEV}p2" >/dev/null 2>&1
@@ -184,25 +209,50 @@ _EOF
         ;;
 esac
 
+# This step unpacks the platformfs tarball made by mkplatformfs.sh.
 info_msg "Unpacking rootfs tarball ..."
 if [ "$PLATFORM" = "beaglebone" ]; then
+    # The beaglebone requires some special extra handling.  The MLO
+    # program is a special first stage boot loader that brings up
+    # enough of the processor to then load u-boot which loads the rest
+    # of the system.  The noauto option also prevents /boot from being
+    # mounted during system startup.
     fstab_args=",noauto"
     tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/MLO
     tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/u-boot.img
     touch "$ROOTFS/boot/uEnv.txt"
     umount "$ROOTFS/boot"
 fi
+
+# In the general case, its enough to just unpack the ROOTFS_TARBALL
+# onto the ROOTFS.  This will get a system that is ready to boot, save
+# for the bootloader which is handled later.
 tar xfp "$ROOTFS_TARBALL" --xattrs --xattrs-include='*' -C "$ROOTFS"
 
+# For f2fs the system should not attempt an fsck at boot.  This
+# filesystem is in theory self healing and does not use the standard
+# mechanisms.  All other filesystems should use fsck at boot.
 fspassno="1"
 if [ "$ROOT_FSTYPE" = "f2fs" ]; then
     fspassno="0"
 fi
+
+# Void images prefer uuids to nodes in /dev since these are not
+# dependent on the hardware layout.  On a single board computer this
+# may not matter much but it makes the cloud images easier to manage.
 echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> "${ROOTFS}/etc/fstab"
 if [ -n "$BOOT_UUID" ]; then
     echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> "${ROOTFS}/etc/fstab"
 fi
 
+# This section does final configuration on the images.  In the case of
+# SBCs this writes the bootloader to the image or sets up other
+# required binaries to boot.  In the case of images destined for a
+# Cloud, this sets up the services that the cloud will expect to be
+# running and a suitable bootloader.  When adding a new platform,
+# please add a comment explaining what the steps you are adding do,
+# and where information about your specific platform's boot process
+# can be found.
 info_msg "Configuring image for platform $PLATFORM"
 case "$PLATFORM" in
 bananapi*|cubieboard2*|cubietruck*)
@@ -227,6 +277,12 @@ ci20*)
     dd if="${ROOTFS}/boot/u-boot.img" of="${LOOPDEV}" obs=1K seek=14 >/dev/null 2>&1
     ;;
 GCP*)
+    # Google Cloud Platform image configuration for Google Cloud
+    # Engine.  The steps below are built in reference to the
+    # documentation on building custom images available here:
+    # https://cloud.google.com/compute/docs/images/import-existing-image
+    # The images produced by this script are ready to upload and boot.
+
     # Setup GRUB
     mount_pseudofs
     chroot "${ROOTFS}" grub-install "${LOOPDEV}"
@@ -258,21 +314,34 @@ GCP*)
     rm -f "${ROOTFS}/etc/ssh/*key*"
     rm -f "${ROOTFS}/etc/ssh/moduli"
 
-    # Force hte hostname since this isn't read from DHCP
+    # Force the hostname since this isn't read from DHCP
     echo void-GCE > "${ROOTFS}/etc/hostname"
     ;;
 esac
 
+# Release all the mounts, deconfigure the loop device, and remove the
+# rootfs mountpoint.  Since this was just a mountpoint it should be
+# empty.  If it contains stuff we bail out here since something went
+# very wrong.
 umount -R "$ROOTFS"
 losetup -d "$LOOPDEV"
 rmdir "$ROOTFS" || die "$ROOTFS not empty!"
 
+# We've been working with this as root for a while now, so this makes
+# sure the permissions are sane.
 chmod 644 "$FILENAME"
+
+# The standard images are ready to go, but the cloud images require
+# some minimal additional post processing.
 case "$PLATFORM" in
     GCP*)
+        # This filename is mandated by the Google Cloud Engine import
+        # process, the archive name is not.
         mv void-GCP*.img disk.raw
         info_msg "Compressing disk.raw"
         tar Sczf "${FILENAME%.img}.tar.gz" disk.raw
+        # Since this process just produces something that can be
+        # uploaded, we remove the original disk image.
         rm disk.raw
         info_msg "Sucessfully created ${FILENAME%.img}.tar.gz image."
         ;;
