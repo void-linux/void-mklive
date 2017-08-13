@@ -25,42 +25,27 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
-readonly PROGNAME=$(basename $0)
+readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
 
 trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 
-mount_pseudofs() {
-    for f in sys dev proc; do
-        mkdir -p $ROOTFS/$f
-        mount --bind /$f $ROOTFS/$f
-    done
-}
-umount_pseudofs() {
-    umount -f $ROOTFS/sys >/dev/null 2>&1
-    umount -f $ROOTFS/dev >/dev/null 2>&1
-    umount -f $ROOTFS/proc >/dev/null 2>&1
-}
+# This source pulls in all the functions from lib.sh.  This set of
+# functions makes it much easier to work with chroots and abstracts
+# away all the problems with running binaries with QEMU.
+# shellcheck source=./lib.sh
+. ./lib.sh
 
 cleanup() {
     unmount_pseudofs
-    umount -f ${ROOTFS}/boot 2>/dev/null
-    umount -f ${ROOTFS} 2>/dev/null
+    umount -f "${ROOTFS}/boot" 2>/dev/null
+    umount -f "${ROOTFS}" 2>/dev/null
     if [ -e "$LOOPDEV" ]; then
-        partx -d $LOOPDEV 2>/dev/null
-        losetup -d $LOOPDEV 2>/dev/null
+        partx -d "$LOOPDEV" 2>/dev/null
+        losetup -d "$LOOPDEV" 2>/dev/null
     fi
 	
-    [ -d "$ROOTFS" ] && rmdir $ROOTFS
-}
-
-info_msg() {
-    printf "\033[1m[${PLATFORM}] $@\n\033[m"
-}
-
-die() {
-    echo "FATAL: $@"
-    exit 1
+    [ -d "$ROOTFS" ] && rmdir "$ROOTFS"
 }
 
 usage() {
@@ -86,9 +71,10 @@ _EOF
     exit 0
 }
 
-#
-# main()
-#
+# ########################################
+#      SCRIPT EXECUTION STARTS HERE
+# ########################################
+
 while getopts "b:B:o:r:s:hV" opt; do
     case $opt in
         b) BOOT_FSTYPE="$OPTARG";;
@@ -100,186 +86,197 @@ while getopts "b:B:o:r:s:hV" opt; do
         h) usage;;
     esac
 done
-shift $(($OPTIND - 1))
-
+shift $((OPTIND - 1))
 ROOTFS_TARBALL="$1"
+
 if [ -z "$ROOTFS_TARBALL" ]; then
     usage
 elif [ ! -r "$ROOTFS_TARBALL" ]; then
+    # In rare cases the tarball can wind up owned by the wrong user.
+    # This leads to confusing failures if execution is allowed to
+    # proceed.
     die "Cannot read rootfs tarball: $ROOTFS_TARBALL"
 fi
 
-PLATFORM="${ROOTFS_TARBALL#void-}"
-PLATFORM="${PLATFORM%-rootfs*}"
+# By default we build all platform images with a 64MiB boot partition
+# formated FAT16, and an approxomately 1.9GiB root partition formated
+# ext4.  More exotic combinations are of course possible, but this
+# combination works on all known platforms.
+: "${IMGSIZE:=2G}"
+: "${BOOT_FSTYPE:=vfat}"
+: "${BOOT_FSSIZE:=64MiB}"
+: "${ROOT_FSTYPE:=ext4}"
 
+# Verify that the required tooling is available
+readonly REQTOOLS="sfdisk partx losetup mount truncate mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
+check_tools
+
+# Setup the platform variable.  Here we want just the name and
+# optionally -musl if this is the musl variant.
+PLATFORM="${ROOTFS_TARBALL#void-}"
+PLATFORM="${PLATFORM%-ROOTFS*}"
+
+# This is an aweful hack since the script isn't using privesc
+# mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then
     die "need root perms to continue, exiting."
 fi
 
-: ${IMGSIZE:=2G}
-: ${BOOT_FSTYPE:=vfat}
-: ${BOOT_FSSIZE:=64MiB}
-: ${ROOT_FSTYPE:=ext4}
-
+# Set the default filename if none was provided above.  The default
+# will include the platform the image is being built for and the date
+# on which it was built.
 if [ -z "$FILENAME" ]; then
     FILENAME="void-${PLATFORM}-$(date +%Y%m%d).img"
 fi
 
-# double check PLATFORM is supported...
+# Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
     bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|usbarmory|GCP|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
-for f in sfdisk partx losetup mount mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}; do
-    if ! which ${f} >/dev/null; then
-        die "Cannot find ${f}, exiting."
-    fi
-done
-
-# dd conv=sparse support first appeared in coreutils-8.16, disable it in
-# older versions.
-DD_VERSION=$(dd --version|head -n1|awk '{print $3}')
-case "$DD_VERSION" in
-    [8-9].1[6-9]*|[8-9].[2-9]*) DD_SPARSE="conv=sparse";;
-esac
-
+# Create the base image.  This was previously accomplished with dd,
+# but truncate is markedly faster.
 info_msg "Creating disk image ($IMGSIZE) ..."
-truncate -s "${IMGSIZE}" $FILENAME >/dev/null 2>&1
+truncate -s "${IMGSIZE}" "$FILENAME" >/dev/null 2>&1
 
-ROOTFS=$(mktemp -d)
+# Grab a tmpdir for the rootfs.  If this fails we need to halt now
+# because otherwise things will go very badly for the host system.
+ROOTFS=$(mktemp -d) || die "Could not create tmpdir for ROOTFS"
+
 
 info_msg "Creating disk image partitions/filesystems ..."
 if [ "$BOOT_FSTYPE" = "vfat" ]; then
-    _btype="fat32"
     _args="-I -F16"
 fi
+
 case "$PLATFORM" in
-cubieboard2|cubietruck|ci20*|odroid-c2*)
-    sfdisk ${FILENAME} <<_EOF
+    cubieboard2|cubietruck|ci20*|odroid-c2*)
+        sfdisk "${FILENAME}" <<_EOF
 label: dos
 2048,,L
 _EOF
-    LOOPDEV=$(losetup --show --find --partscan $FILENAME)
-    mkfs.${ROOT_FSTYPE} -O '^64bit,^extra_isize,^has_journal' ${LOOPDEV}p1 >/dev/null 2>&1
-    mount ${LOOPDEV}p1 $ROOTFS
-    ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
-    ;;
-*)
-    sfdisk ${FILENAME} <<_EOF
+        LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
+        mkfs.${ROOT_FSTYPE} -O '^64bit,^extra_isize,^has_journal' "${LOOPDEV}p1" >/dev/null 2>&1
+        mount "${LOOPDEV}p1" "$ROOTFS"
+        ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
+        ;;
+    *)
+        sfdisk "${FILENAME}" <<_EOF
 label: dos
 2048,${BOOT_FSSIZE},b,*
 ,+,L
 _EOF
-    LOOPDEV=$(losetup --show --find --partscan $FILENAME)
-    mkfs.${BOOT_FSTYPE} $_args ${LOOPDEV}p1 >/dev/null
-    case "$ROOT_FSTYPE" in
-        ext[34]) disable_journal="-O ^has_journal";;
-    esac
-    mkfs.${ROOT_FSTYPE} $disable_journal ${LOOPDEV}p2 >/dev/null 2>&1
-    mount ${LOOPDEV}p2 $ROOTFS
-    mkdir -p ${ROOTFS}/boot
-    mount ${LOOPDEV}p1 ${ROOTFS}/boot
-    BOOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p1)
-    ROOT_UUID=$(blkid -o value -s UUID ${LOOPDEV}p2)
-    ;;
+        LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
+        # Normally we need to quote to prevent argument splitting, but
+        # we explicitly want argument splitting here.
+        # shellcheck disable=SC2086
+        mkfs.${BOOT_FSTYPE} $_args "${LOOPDEV}p1" >/dev/null
+        case "$ROOT_FSTYPE" in
+            ext[34]) disable_journal="-O ^has_journal";;
+        esac
+        mkfs.${ROOT_FSTYPE} "$disable_journal" "${LOOPDEV}p2" >/dev/null 2>&1
+        mount "${LOOPDEV}p2" "$ROOTFS"
+        mkdir -p "${ROOTFS}/boot"
+        mount "${LOOPDEV}p1" "${ROOTFS}/boot"
+        BOOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
+        ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p2")
+        ;;
 esac
 
 info_msg "Unpacking rootfs tarball ..."
 if [ "$PLATFORM" = "beaglebone" ]; then
     fstab_args=",noauto"
-    tar xfp $ROOTFS_TARBALL -C $ROOTFS ./boot/MLO
-    tar xfp $ROOTFS_TARBALL -C $ROOTFS ./boot/u-boot.img
-    touch $ROOTFS/boot/uEnv.txt
-    umount $ROOTFS/boot
+    tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/MLO
+    tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/u-boot.img
+    touch "$ROOTFS/boot/uEnv.txt"
+    umount "$ROOTFS/boot"
 fi
-tar xfp $ROOTFS_TARBALL --xattrs --xattrs-include='*' -C $ROOTFS
+tar xfp "$ROOTFS_TARBALL" --xattrs --xattrs-include='*' -C "$ROOTFS"
 
 fspassno="1"
 if [ "$ROOT_FSTYPE" = "f2fs" ]; then
     fspassno="0"
 fi
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> ${ROOTFS}/etc/fstab
+echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${fspassno}" >> "${ROOTFS}/etc/fstab"
 if [ -n "$BOOT_UUID" ]; then
-    echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> ${ROOTFS}/etc/fstab
+    echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> "${ROOTFS}/etc/fstab"
 fi
 
+info_msg "Configuring image for platform $PLATFORM"
 case "$PLATFORM" in
 bananapi*|cubieboard2*|cubietruck*)
-    dd if=${ROOTFS}/boot/u-boot-sunxi-with-spl.bin of=${LOOPDEV} bs=1024 seek=8 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot-sunxi-with-spl.bin" of="${LOOPDEV}" bs=1024 seek=8 >/dev/null 2>&1
     ;;
 odroid-c2*)
-    dd if=${ROOTFS}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=1 count=442 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/bl1.bin.hardkernel of=${LOOPDEV} bs=512 skip=1 seek=1 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/u-boot.bin of=${LOOPDEV} bs=512 seek=97 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/bl1.bin.hardkernel" of="${LOOPDEV}" bs=1 count=442 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/bl1.bin.hardkernel" of="${LOOPDEV}" bs=512 skip=1 seek=1 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" bs=512 seek=97 >/dev/null 2>&1
     ;;
 odroid-u2*)
-    dd if=${ROOTFS}/boot/E4412_S.bl1.HardKernel.bin of=${LOOPDEV} seek=1 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/bl2.signed.bin of=${LOOPDEV} seek=31 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/u-boot.bin of=${LOOPDEV} seek=63 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/E4412_S.tzsw.signed.bin of=${LOOPDEV} seek=2111 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/E4412_S.bl1.HardKernel.bin" of="${LOOPDEV}" seek=1 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/bl2.signed.bin" of="${LOOPDEV}" seek=31 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" seek=63 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/E4412_S.tzsw.signed.bin" of="${LOOPDEV}" seek=2111 >/dev/null 2>&1
     ;;
 usbarmory*)
-    dd if=${ROOTFS}/boot/u-boot.imx of=${LOOPDEV} bs=512 seek=2 conv=fsync >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot.imx" of="${LOOPDEV}" bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 ci20*)
-    dd if=${ROOTFS}/boot/u-boot-spl.bin of=${LOOPDEV} obs=512 seek=1 >/dev/null 2>&1
-    dd if=${ROOTFS}/boot/u-boot.img of=${LOOPDEV} obs=1K seek=14 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot-spl.bin" of="${LOOPDEV}" obs=512 seek=1 >/dev/null 2>&1
+    dd if="${ROOTFS}/boot/u-boot.img" of="${LOOPDEV}" obs=1K seek=14 >/dev/null 2>&1
     ;;
 GCP*)
     # Setup GRUB
     mount_pseudofs
-    chroot ${ROOTFS} grub-install ${LOOPDEV}
-    sed -i "s:page_poison=1:page_poison=1 console=ttyS0,38400n8d:" ${ROOTFS}/etc/default/grub
-    chroot ${ROOTFS} update-grub
+    chroot "${ROOTFS}" grub-install "${LOOPDEV}"
+    sed -i "s:page_poison=1:page_poison=1 console=ttyS0,38400n8d:" "${ROOTFS}/etc/default/grub"
+    chroot "${ROOTFS}" update-grub
     umount_pseudofs
 
     # Setup the GCP Guest services
     for _service in dhcpcd sshd agetty-console nanoklogd socklog-unix GCP-Guest-Initialization GCP-accounts GCP-clock-skew GCP-ip-forwarding ; do
-        chroot ${ROOTFS} ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service
+        chroot "${ROOTFS}" ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service
     done
 
     # Turn off the agetty's since we can't use them anyway
-    rm -v ${ROOTFS}/etc/runit/runsvdir/default/agetty-tty*
+    rm -v "${ROOTFS}/etc/runit/runsvdir/default/agetty-tty*"
 
     # Disable root login over ssh and lock account
-    sed -i "s:PermitRootLogin yes:PermitRootLogin no:" ${ROOTFS}/etc/ssh/sshd_config
-    chroot ${ROOTFS} passwd -l root
+    sed -i "s:PermitRootLogin yes:PermitRootLogin no:" "${ROOTFS}/etc/ssh/sshd_config"
+    chroot "${ROOTFS}" passwd -l root
 
     # Set the Timezone
-    chroot ${ROOTFS} ln -svf /usr/share/zoneinfo/UTC /etc/localtime
+    chroot "${ROOTFS}" ln -svf /usr/share/zoneinfo/UTC /etc/localtime
 
     # Generate glibc-locales if necessary (this is a noop on musl)
     if [ "$PLATFORM" = GCP ] ; then
-        chroot ${ROOTFS} xbps-reconfigure -f glibc-locales
+        chroot "${ROOTFS}" xbps-reconfigure -f glibc-locales
     fi
 
     # Remove SSH host keys (these will get rebuilt on first boot)
-    rm -v ${ROOTFS}/etc/ssh/*key*
-    rm -v ${ROOTFS}/etc/ssh/moduli
+    rm -f "${ROOTFS}/etc/ssh/*key*"
+    rm -f "${ROOTFS}/etc/ssh/moduli"
 
     # Force hte hostname since this isn't read from DHCP
-    echo "void-GCE" > ${ROOTFS}/etc/hostname
+    echo void-GCE > "${ROOTFS}/etc/hostname"
     ;;
 esac
 
-mountpoint -q ${ROOTFS}/boot && umount ${ROOTFS}/boot
-umount $ROOTFS
-losetup -d $LOOPDEV
-rmdir $ROOTFS
+umount -R "$ROOTFS"
+losetup -d "$LOOPDEV"
+rmdir "$ROOTFS" || die "$ROOTFS not empty!"
 
-chmod 644 $FILENAME
+chmod 644 "$FILENAME"
 case "$PLATFORM" in
     GCP*)
         mv void-GCP*.img disk.raw
         info_msg "Compressing disk.raw"
-        tar Sczf "${FILENAME/.img/.tar.gz}" disk.raw
+        tar Sczf "${FILENAME%.img}.tar.gz" disk.raw
         rm disk.raw
-        info_msg "Sucessfully created ${FILENAME/.img/.tar.gz/} image."
+        info_msg "Sucessfully created ${FILENAME%.img}.tar.gz image."
         ;;
     *)
         info_msg "Successfully created $FILENAME image."
         ;;
 esac
-
-# vim: set ts=4 sw=4 et:
