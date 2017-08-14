@@ -285,29 +285,28 @@ GCP*)
 
     # Setup GRUB
     mount_pseudofs
-    chroot "${ROOTFS}" grub-install "${LOOPDEV}"
+    run_cmd_chroot "${ROOTFS}" "grub-install ${LOOPDEV}"
     sed -i "s:page_poison=1:page_poison=1 console=ttyS0,38400n8d:" "${ROOTFS}/etc/default/grub"
-    chroot "${ROOTFS}" update-grub
-    umount_pseudofs
+    run_cmd_chroot "${ROOTFS}" update-grub
 
     # Setup the GCP Guest services
     for _service in dhcpcd sshd agetty-console nanoklogd socklog-unix GCP-Guest-Initialization GCP-accounts GCP-clock-skew GCP-ip-forwarding ; do
-        chroot "${ROOTFS}" ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service
+        run_cmd_chroot "${ROOTFS}" "ln -sv /etc/sv/$_service /etc/runit/runsvdir/default/$_service"
     done
 
     # Turn off the agetty's since we can't use them anyway
-    rm -v "${ROOTFS}/etc/runit/runsvdir/default/agetty-tty*"
+    rm -v "${ROOTFS}/etc/runit/runsvdir/default/agetty-tty"*
 
     # Disable root login over ssh and lock account
     sed -i "s:PermitRootLogin yes:PermitRootLogin no:" "${ROOTFS}/etc/ssh/sshd_config"
-    chroot "${ROOTFS}" passwd -l root
+    run_cmd_chroot "${ROOTFS}" "passwd -l root"
 
     # Set the Timezone
-    chroot "${ROOTFS}" ln -svf /usr/share/zoneinfo/UTC /etc/localtime
+    run_cmd_chroot "${ROOTFS}" "ln -svf /usr/share/zoneinfo/UTC /etc/localtime"
 
     # Generate glibc-locales if necessary (this is a noop on musl)
     if [ "$PLATFORM" = GCP ] ; then
-        chroot "${ROOTFS}" xbps-reconfigure -f glibc-locales
+        run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f glibc-locales"
     fi
 
     # Remove SSH host keys (these will get rebuilt on first boot)
@@ -316,6 +315,10 @@ GCP*)
 
     # Force the hostname since this isn't read from DHCP
     echo void-GCE > "${ROOTFS}/etc/hostname"
+
+    # Cleanup the chroot from anything that was setup for the
+    # run_cmd_chroot commands
+    cleanup_chroot
     ;;
 esac
 
