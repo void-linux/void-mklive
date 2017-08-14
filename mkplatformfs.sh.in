@@ -105,28 +105,30 @@ check_tools
 # noarch though, so we strip off the -musl extention if it was
 # provided.
 case "$PLATFORM" in
-    bananapi*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    beaglebone*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    dockstar*) XBPS_TARGET_ARCH="armv5tel"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    odroid-u2*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    odroid-c2*) XBPS_TARGET_ARCH="aarch64"; PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
-    rpi3*) XBPS_TARGET_ARCH="aarch64"; PKGS="$BASEPKG rpi3-base" ;;
-    rpi2*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG rpi-base" ;;
-    rpi*) XBPS_TARGET_ARCH="armv6l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    usbarmory*) XBPS_TARGET_ARCH="armv7l"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    ci20*) XBPS_TARGET_ARCH="mipsel"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    i686*) XBPS_TARGET_ARCH="i686"; PKGS="$BASEPKG" ;;
-    x86_64*) XBPS_TARGET_ARCH="x86_64"; PKGS="$BASEPKG" ;;
-    GCP*) XBPS_TARGET_ARCH="x86_64"; PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    bananapi*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    beaglebone*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    cubieboard2*|cubietruck*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    dockstar*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    odroid-u2*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    odroid-c2*) PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
+    rpi3*) PKGS="$BASEPKG rpi3-base" ;;
+    rpi2*) PKGS="$BASEPKG rpi-base" ;;
+    rpi*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    usbarmory*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    ci20*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    i686*) PKGS="$BASEPKG" ;;
+    x86_64*) PKGS="$BASEPKG" ;;
+    GCP*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
 # Check if we should be using the -musl variant
 if [ -z "${BASE_TARBALL##*-musl-*}" ] ; then
-    XBPS_TARGET_ARCH="${XBPS_TARGET_ARCH}-musl"
     PLATFORM="${PLATFORM}-musl"
 fi
+
+# Derive the target architecture using the static map
+set_target_arch_from_platform
 
 # Append any additional packages if they were requested
 if [ -z "$EXTRA_PKGS" ] ; then
