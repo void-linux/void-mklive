@@ -156,8 +156,13 @@ info_msg "Reconfiguring packages for ${XBPS_TARGET_ARCH} ..."
 # This step sets up enough of the base-files that the chroot will work
 # and they can be reconfigured natively.  Without this step there
 # isn't enough configured for ld to work.  This step runs as the host
-# architecture.
-run_cmd "xbps-reconfigure -r $ROOTFS base-files"
+# architecture, but on x86 some special extra steps have to be taken
+# to make this work.
+if [ -z "${XBPS_TARGET_ARCH##*86*}" ] && [ -z "${HOSTARCH##*86*}" ] ; then
+    run_cmd_target "xbps-reconfigure --rootdir $ROOTFS base-files"
+else
+    run_cmd "xbps-reconfigure --rootdir $ROOTFS base-files"
+fi
 
 # Now running as the target system, this step reconfigures the
 # base-files completely.  Certain things just won't work in the first

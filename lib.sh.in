@@ -4,6 +4,7 @@
 # to function.  The only exception is the QEMU binary since it is not
 # known in advance which one wil be required.
 readonly LIBTOOLS="cp echo cat printf which mountpoint mount umount modprobe"
+readonly HOSTARCH=$(xbps-uhelper arch)
 
 info_msg() {
     # This function handles the printing that is bold within all
@@ -74,7 +75,9 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $* for target $XBPS_TARGET_ARCH ..."
-    if [ "$XBPS_TARGET_ARCH" = "$(xbps-uhelper arch)" ] ; then
+    if [ "$XBPS_TARGET_ARCH" = "${HOSTARCH}" ] ||
+           [ -z "${XBPS_TARGET_ARCH##*86*}" ] &&
+               [ -z "${HOSTARCH##*86*}" ] ; then
         # This is being run on the same architecture as the host,
         # therefore we should set XBPS_ARCH.
         if ! eval XBPS_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
