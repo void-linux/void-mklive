@@ -41,7 +41,7 @@ trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 # defined after sourcing the library functions to ensure it is the
 # last one defined.
 cleanup() {
-    unmount_pseudofs
+    umount_pseudofs
     umount -f "${ROOTFS}/boot" 2>/dev/null
     umount -f "${ROOTFS}" 2>/dev/null
     if [ -e "$LOOPDEV" ]; then
