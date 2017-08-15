@@ -165,7 +165,7 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
 # Finally we can compress the tarball, the name will include the
 # platform and the date on which the tarball was built.
-tarball=void-${PLATFORM}-ROOTFS-$(date '+%Y%m%d').tar.xz
+tarball=void-${PLATFORM}-PLATFORMFS-$(date '+%Y%m%d').tar.xz
 run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T0 -9 > $tarball "
 
 # Now that we have the tarball we don't need the rootfs anymore, so we
