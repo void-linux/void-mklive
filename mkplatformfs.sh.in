@@ -122,11 +122,6 @@ case "$PLATFORM" in
     *) die "$PROGNAME: invalid platform!";;
 esac
 
-# Check if we should be using the -musl variant
-if [ -z "${BASE_TARBALL##*-musl-*}" ] ; then
-    PLATFORM="${PLATFORM}-musl"
-fi
-
 # Derive the target architecture using the static map
 set_target_arch_from_platform
 

@@ -264,3 +264,17 @@ set_cachedir() {
                       --repository=http://repo.voidlinux.eu/current/musl \
                       --repository=http://repo.voidlinux.eu/current/aarch64}"
 
+
+
+# This library is the authoritative source of the platform map,
+# because of this we may need to get this information from the command
+# line.  This select allows us to get that information out.  This
+# fails silently if the toolname isn't known since this script is
+# sourced.
+case $1 in
+    platform2arch)
+        PLATFORM=$2
+        set_target_arch_from_platform
+        echo "$XBPS_TARGET_ARCH"
+        ;;
+esac
