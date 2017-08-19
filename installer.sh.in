@@ -413,7 +413,8 @@ menu_filesystems() {
     local dev fstype fssize mntpoint reformat
 
     while true; do
-        DIALOG --title " Select the partition to edit " --menu "$MENULABEL" \
+        DIALOG --ok-label "Change" --cancel-label "Done" \
+            --title " Select the partition to edit " --menu "$MENULABEL" \
             ${MENUSIZE} $(show_partitions)
         [ $? -ne 0 ] && return
 
