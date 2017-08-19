@@ -7,11 +7,17 @@ DATE=$(shell date "+%Y%m%d")
 T_PLATFORMS=rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} usbarmory{,-musl} GCP{,-musl}
 T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
 
+T_SBC_IMGS=rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} usbarmory{,-musl}
+T_CLOUD_IMGS=GCP{,-musl}
+
 ARCHS=$(shell echo $(T_ARCHS))
 PLATFORMS=$(shell echo $(T_PLATFORMS))
+SBC_IMGS=$(shell echo $(T_SBC_IMGS))
+CLOUD_IMGS=$(shell echo $(T_CLOUD_IMGS))
 
 ALL_ROOTFS=$(foreach arch,$(ARCHS),void-$(arch)-ROOTFS-$(DATE).tar.xz)
 ALL_PLATFORMFS=$(foreach platform,$(PLATFORMS),void-$(platform)-PLATFORMFS-$(DATE).tar.xz)
+ALL_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATE).img.xz) $(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
 
 SUDO := sudo
 
@@ -24,9 +30,6 @@ all: $(SCRIPTS)
 clean:
 	rm -v *.sh
 
-images:
-	echo $(IMAGES)
-
 rootfs-all: $(ALL_ROOTFS)
 
 rootfs-all-print:
@@ -38,9 +41,26 @@ void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
 void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS)
 	$(SUDO) ./mkplatformfs.sh $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
-platformfs-all: $(ALL_PLATFORMFS)
+platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 
 platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
+
+images-all: platformfs-all $(ALL_IMAGES)
+
+images-all-print:
+	@echo $(ALL_IMAGES)
+
+void-%-$(DATE).img:
+	$(SUDO) ./mkimage.sh void-$*-PLATFORMFS-$(DATE).tar.xz
+
+# The GCP images are special for $reasons
+void-GCP-$(DATE).tar.gz:
+	$(SUDO) ./mkimage.sh void-GCP-PLATFORMFS-$(DATE).tar.xz
+
+void-GCP-musl-$(DATE).tar.gz:
+	$(SUDO) ./mkimage.sh void-GCP-musl-PLATFORMFS-$(DATE).tar.xz
+
+
 
 .PHONY: clean rootfs-all-print platformfs-all-print
