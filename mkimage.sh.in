@@ -124,7 +124,7 @@ check_tools
 # Setup the platform variable.  Here we want just the name and
 # optionally -musl if this is the musl variant.
 PLATFORM="${ROOTFS_TARBALL#void-}"
-PLATFORM="${PLATFORM%-ROOTFS*}"
+PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # This is an awful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
