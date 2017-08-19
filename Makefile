@@ -17,7 +17,8 @@ CLOUD_IMGS=$(shell echo $(T_CLOUD_IMGS))
 
 ALL_ROOTFS=$(foreach arch,$(ARCHS),void-$(arch)-ROOTFS-$(DATE).tar.xz)
 ALL_PLATFORMFS=$(foreach platform,$(PLATFORMS),void-$(platform)-PLATFORMFS-$(DATE).tar.xz)
-ALL_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATE).img.xz) $(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
+ALL_SBC_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATE).img.xz)
+ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
 
 SUDO := sudo
 
@@ -46,12 +47,16 @@ platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
 
-images-all: platformfs-all $(ALL_IMAGES)
+images-all: platformfs-all images-all-sbc images-all-cloud
+
+images-all-sbc: $(ALL_SBC_IMAGES)
+
+images-all-cloud: $(ALL_CLOUD_IMAGES)
 
 images-all-print:
-	@echo $(ALL_IMAGES)
+	@echo $(ALL_SBC_IMAGES) $(ALL_CLOUD_IMAGES)
 
-void-%-$(DATE).img:
+void-%-$(DATE).img.xz:
 	$(SUDO) ./mkimage.sh void-$*-PLATFORMFS-$(DATE).tar.xz
 
 # The GCP images are special for $reasons
