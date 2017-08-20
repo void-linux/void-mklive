@@ -31,6 +31,12 @@ all: $(SCRIPTS)
 clean:
 	rm -v *.sh
 
+distdir-$(DATE):
+	mkdir -p distdir-$(DATE)
+
+dist: distdir-$(DATE)
+	mv void*$(DATE)* distdir-$(DATE)/
+
 rootfs-all: $(ALL_ROOTFS)
 
 rootfs-all-print:
@@ -68,4 +74,4 @@ void-GCP-musl-$(DATE).tar.gz:
 
 
 
-.PHONY: clean rootfs-all-print platformfs-all-print
+.PHONY: clean dist rootfs-all-print platformfs-all-print
