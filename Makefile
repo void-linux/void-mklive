@@ -23,6 +23,7 @@ ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
 SUDO := sudo
 
 XBPS_REPOSITORY := -r https://lug.utdallas.edu/mirror/void/current -r https://lug.utdallas.edu/mirror/void/current/musl -r https://lug.utdallas.edu/mirror/void/current/aarch64
+COMPRESSOR_THREADS=2
 
 %.sh: %.sh.in
 	 sed -e "s|@@MKLIVE_VERSION@@|$(VERSION) $(GITVER)|g" $^ > $@
@@ -45,10 +46,10 @@ rootfs-all-print:
 	echo $(ALL_ROOTFS)
 
 void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
-	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) $*
+	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $*
 
 void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS)
-	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
+	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
 platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 
@@ -65,14 +66,14 @@ images-all-print:
 	@echo $(ALL_SBC_IMAGES) $(ALL_CLOUD_IMAGES)
 
 void-%-$(DATE).img.xz:
-	$(SUDO) ./mkimage.sh void-$*-PLATFORMFS-$(DATE).tar.xz
+	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-$*-PLATFORMFS-$(DATE).tar.xz
 
 # The GCP images are special for $reasons
 void-GCP-$(DATE).tar.gz:
-	$(SUDO) ./mkimage.sh void-GCP-PLATFORMFS-$(DATE).tar.xz
+	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-GCP-PLATFORMFS-$(DATE).tar.xz
 
 void-GCP-musl-$(DATE).tar.gz:
-	$(SUDO) ./mkimage.sh void-GCP-musl-PLATFORMFS-$(DATE).tar.xz
+	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-GCP-musl-PLATFORMFS-$(DATE).tar.xz
 
 
 

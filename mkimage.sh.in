@@ -73,6 +73,7 @@ OPTIONS
  -r <fstype>    Set / filesystem type (defaults to EXT4)
  -s <totalsize> Set total image size (defaults to 2GB)
  -o <output>    Set image filename (guessed automatically)
+ -x <num>       Use <num> threads to compress the image (dynamic if unset)
  -h             Show this help
  -V             Show version
 
@@ -85,13 +86,14 @@ _EOF
 #      SCRIPT EXECUTION STARTS HERE
 # ########################################
 
-while getopts "b:B:o:r:s:hV" opt; do
+while getopts "b:B:o:r:s:x:h:V" opt; do
     case $opt in
         b) BOOT_FSTYPE="$OPTARG";;
         B) BOOT_FSSIZE="$OPTARG";;
         o) FILENAME="$OPTARG";;
         r) ROOT_FSTYPE="$OPTARG";;
         s) IMGSIZE="$OPTARG";;
+        x) COMPRESSOR_THREADS="$OPTARG" ;;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
         h) usage;;
     esac
@@ -350,7 +352,7 @@ case "$PLATFORM" in
         ;;
     *)
         info_msg "Compressing $FILENAME with xz (level 9 compression)"
-        xz -T0 -9 "$FILENAME"
+        xz "-T${COMPRESSOR_THREADS:-0}" -9 "$FILENAME"
         info_msg "Successfully created $FILENAME image."
         ;;
 esac

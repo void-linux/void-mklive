@@ -60,6 +60,7 @@ Options
     -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -r <repo>   Set XBPS repository (may be set multiple times)
+    -x <num>    Use <num> threads to compress the image (dynamic if unset)
     -h          Show this help
     -V          Show version
 _EOF
@@ -71,7 +72,7 @@ _EOF
 
 BASEPKG=base-system
 
-while getopts "b:p:k:c:C:r:h:V" opt; do
+while getopts "b:p:k:c:C:r:x:h:V" opt; do
     case $opt in
         b) BASEPKG="$OPTARG" ;;
         p) EXTRA_PKGS="$OPTARG" ;;
@@ -79,6 +80,7 @@ while getopts "b:p:k:c:C:r:h:V" opt; do
         c) XBPS_CACHEDIR="--cachedir=$OPTARG" ;;
         C) XBPS_CONFFILE="-C $OPTARG" ;;
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG" ;;
+        x) COMPRESSOR_THREADS="$OPTARG" ;;
         h) usage; exit 0 ;;
         V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0 ;;
     esac
@@ -161,7 +163,7 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 # Finally we can compress the tarball, the name will include the
 # platform and the date on which the tarball was built.
 tarball=void-${PLATFORM}-PLATFORMFS-$(date '+%Y%m%d').tar.xz
-run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T0 -9 > $tarball "
+run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $tarball "
 
 # Now that we have the tarball we don't need the rootfs anymore, so we
 # can get rid of it.
