@@ -22,6 +22,8 @@ ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
 
 SUDO := sudo
 
+XBPS_REPOSITORY := -r https://lug.utdallas.edu/mirror/void/current -r https://lug.utdallas.edu/mirror/void/current/musl -r https://lug.utdallas.edu/mirror/void/current/aarch64
+
 %.sh: %.sh.in
 	 sed -e "s|@@MKLIVE_VERSION@@|$(VERSION) $(GITVER)|g" $^ > $@
 	 chmod +x $@
@@ -43,10 +45,10 @@ rootfs-all-print:
 	echo $(ALL_ROOTFS)
 
 void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
-	$(SUDO) ./mkrootfs.sh $*
+	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) $*
 
 void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS)
-	$(SUDO) ./mkplatformfs.sh $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
+	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
 platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 
