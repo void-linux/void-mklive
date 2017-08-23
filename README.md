@@ -6,7 +6,9 @@ This repository contains utilities for Void Linux:
  * mklive    (The Void Linux live image maker for x86)
 
  * mkimage   (The Void Linux image maker for ARM platforms)
+ * mkplatformfs (The Void Linux filesystem tool to produce a rootfs for a particular platform)
  * mkrootfs  (The Void Linux rootfs maker for ARM platforms)
+ * mknet (Script to generate netboot tarballs for Void)
 
 #### Dependencies
 
@@ -40,3 +42,9 @@ Build an x86\_64 musl live image with packages stored in a local repository:
     # ./mklive.sh -a x86_64-musl -r /path/to/host/binpkgs
 
 See the usage output for more information :-)
+
+
+These scripts are in flux, if you want to build a duplicate of a
+production image, its not a bad idea to ping maldridge on IRC.  This
+message will be removed when this readme is replaced with complete
+documentation.
