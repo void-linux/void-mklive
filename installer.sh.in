@@ -945,6 +945,7 @@ validate_filesystems() {
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
+        fmt=""
         dev=$2; fstype=$3; size=$4; mntpt="$5"; mkfs=$6
         shift 6
 
