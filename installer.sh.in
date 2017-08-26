@@ -379,6 +379,18 @@ show_partitions() {
             fi
         done
     done
+    # Device Mapper
+    for p in /dev/mapper/*; do
+        part=$(basename $p)
+        [ "${part}" = "live-rw" ] && continue
+        [ "${part}" = "live-base" ] && continue
+        [ "${part}" = "control" ] && continue
+
+        fstype=$(lsblk -nfr $p|awk '{print $2}'|head -1)
+        fssize=$(lsblk -nr $p|awk '{print $4}'|head -1)
+        echo "${p}"
+        echo "size:${fssize:-unknown};fstype:${fstype:-none}"
+    done
     # Software raid (md)
     for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
         part=$(basename $p)
