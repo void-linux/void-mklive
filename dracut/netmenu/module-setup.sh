@@ -7,7 +7,7 @@ check() {
 }
 
 depends() {
-    return 0
+    echo network
 }
 
 install() {
@@ -43,6 +43,7 @@ install() {
     inst /usr/bin/reboot
     inst /usr/bin/rm
     inst /usr/bin/sed
+    inst /usr/bin/sh
     inst /usr/bin/sort
     inst /usr/bin/sync
     inst /usr/bin/stdbuf

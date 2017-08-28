@@ -8,7 +8,7 @@ dialog --colors --keep-tite --no-shadow --no-mouse \
        "Shell" "Run dash" \
        2>/tmp/netmenu.action
 
-if ! $? ; then
+if [ ! $? ] ; then
     reboot -f
 fi
 

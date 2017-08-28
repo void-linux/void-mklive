@@ -211,10 +211,10 @@ sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
     "$PXELINUX_DIR/default"
 
 # Default output file format
-OUTPUT_FILE="void-netboot-${XBPS_TARGET_ARCH}-${KERNELVERSION}-$(date +%Y%m%d)"
-info_msg "Compressing results to $OUTPUT_FILE.tar.gz"
+OUTPUT_FILE="void-${XBPS_TARGET_ARCH}-NETBOOT-$(date +%Y%m%d).tar.gz"
+info_msg "Compressing results to $OUTPUT_FILE"
 cd "$BOOT_DIR" || die "Could not enter image dir"
-tar -zcvf "$CURDIR/$OUTPUT_FILE.tar.gz" .
+tar -zcvf "$CURDIR/$OUTPUT_FILE" .
 cd "$CURDIR" || die "Could not return to working directory"
 
 # As a final cleanup step, remove the ROOTFS and the expanded BOOT_DIR

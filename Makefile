@@ -10,15 +10,19 @@ T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
 T_SBC_IMGS=rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} usbarmory{,-musl}
 T_CLOUD_IMGS=GCP{,-musl}
 
+T_PXE_ARCHS=x86_64{,-musl}
+
 ARCHS=$(shell echo $(T_ARCHS))
 PLATFORMS=$(shell echo $(T_PLATFORMS))
 SBC_IMGS=$(shell echo $(T_SBC_IMGS))
 CLOUD_IMGS=$(shell echo $(T_CLOUD_IMGS))
+PXE_ARCHS=$(shell echo $(T_PXE_ARCHS))
 
 ALL_ROOTFS=$(foreach arch,$(ARCHS),void-$(arch)-ROOTFS-$(DATE).tar.xz)
 ALL_PLATFORMFS=$(foreach platform,$(PLATFORMS),void-$(platform)-PLATFORMFS-$(DATE).tar.xz)
 ALL_SBC_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATE).img.xz)
 ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATE).tar.gz)
+ALL_PXE_ARCHS=$(foreach arch,$(PXE_ARCHS),void-$(arch)-NETBOOT-$(DATE).tar.gz)
 
 SUDO := sudo
 
@@ -75,6 +79,12 @@ void-GCP-$(DATE).tar.gz:
 void-GCP-musl-$(DATE).tar.gz:
 	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-GCP-musl-PLATFORMFS-$(DATE).tar.xz
 
+pxe-all: $(ALL_PXE_ARCHS)
 
+pxe-all-print:
+	@echo $(ALL_PXE_ARCHS)
 
-.PHONY: clean dist rootfs-all-print platformfs-all-print
+void-%-NETBOOT-$(DATE).tar.gz: $(SCRIPTS)
+	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATE).tar.xz
+
+.PHONY: clean dist rootfs-all-print platformfs-all-print pxe-all-print
