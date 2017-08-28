@@ -55,6 +55,9 @@ Options:
  -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (lz4 if unset).
  -o <file>          Output file name for the netboot tarball (auto if unset).
 
+ -k <keymap>        Console keymap to set (us if unset)
+ -l <locale>        Locale to set (en_US.UTF-8 if unset)
+
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
  -S "splash image"  Set a custom splash image for the bootloader
@@ -74,6 +77,8 @@ while getopts "r:c:C:T:i:o:h" opt; do
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
+        k) KEYMAP="$OPTARG";;
+        l) LOCALE="$OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         S) SPLASH_IMAGE="OPTARG";;
@@ -201,12 +206,12 @@ cp -f "${SPLASH_IMAGE-data/splash.png}" "$BOOT_DIR"
 
 # This sets all the variables in the default config file
 info_msg "Configuring pxelinux.0 default boot menu"
-sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
+sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE-splash.png}")|" \
     -e "s|@@KERNVER@@|${KERNELVERSION}|" \
-    -e "s|@@KEYMAP@@|${KEYMAP}|" \
-    -e "s|@@ARCH@@|$BASE_ARCH|" \
-    -e "s|@@LOCALE@@|${LOCALE}|" \
-    -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
+    -e "s|@@KEYMAP@@|${KEYMAP-us}|" \
+    -e "s|@@ARCH@@|$XBPS_TARGET_ARCH|" \
+    -e "s|@@LOCALE@@|${LOCALE-en_US.UTF-8}|" \
+    -e "s|@@BOOT_TITLE@@|${BOOT_TITLE-Void Linux}|" \
     -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
     "$PXELINUX_DIR/default"
 
