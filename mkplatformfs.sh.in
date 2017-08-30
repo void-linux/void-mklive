@@ -127,6 +127,9 @@ esac
 # Derive the target architecture using the static map
 set_target_arch_from_platform
 
+# And likewise set the cache
+set_cachedir
+
 # Append any additional packages if they were requested
 if [ -z "$EXTRA_PKGS" ] ; then
     PKGS="$PKGS $EXTRA_PKGS"
