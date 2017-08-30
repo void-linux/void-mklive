@@ -47,18 +47,23 @@ dist: distdir-$(DATE)
 rootfs-all: $(ALL_ROOTFS)
 
 rootfs-all-print:
-	echo $(ALL_ROOTFS)
+	@echo $(ALL_ROOTFS) | sed "s: :\n:g"
 
 void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
 	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $*
-
-void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS)
-	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
 platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 
 platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
+
+void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS) platformfs-%-helper
+	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
+
+platformfs-%-helper:
+# This rule exists because you can't do the shell expansion in the
+# dependent rule resolution stage
+	$(MAKE) void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
 images-all: platformfs-all images-all-sbc images-all-cloud
 
@@ -67,24 +72,22 @@ images-all-sbc: $(ALL_SBC_IMAGES)
 images-all-cloud: $(ALL_CLOUD_IMAGES)
 
 images-all-print:
-	@echo $(ALL_SBC_IMAGES) $(ALL_CLOUD_IMAGES)
+	@echo $(ALL_SBC_IMAGES) $(ALL_CLOUD_IMAGES) | sed "s: :\n:g"
 
-void-%-$(DATE).img.xz:
+void-%-$(DATE).img.xz: void-%-PLATFORMFS-$(DATE).tar.xz
 	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-$*-PLATFORMFS-$(DATE).tar.xz
 
-# The GCP images are special for $reasons
-void-GCP-$(DATE).tar.gz:
-	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-GCP-PLATFORMFS-$(DATE).tar.xz
-
-void-GCP-musl-$(DATE).tar.gz:
-	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-GCP-musl-PLATFORMFS-$(DATE).tar.xz
+# Some of the images MUST be compressed with gzip rather than xz, this
+# rule services those images.
+void-%-$(DATE).tar.gz: void-%-PLATFORMFS-$(DATE).tar.xz
+	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-$*-PLATFORMFS-$(DATE).tar.xz
 
 pxe-all: $(ALL_PXE_ARCHS)
 
 pxe-all-print:
-	@echo $(ALL_PXE_ARCHS)
+	@echo $(ALL_PXE_ARCHS) | sed "s: :\n:g"
 
-void-%-NETBOOT-$(DATE).tar.gz: $(SCRIPTS)
+void-%-NETBOOT-$(DATE).tar.gz: $(SCRIPTS) void-%-ROOTFS-$(DATE).tar.xz
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATE).tar.xz
 
-.PHONY: clean dist rootfs-all-print platformfs-all-print pxe-all-print
+.PHONY: clean dist rootfs-all-print platformfs-all-print pxe-all-print platformfs-%-helper
