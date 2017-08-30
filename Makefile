@@ -51,16 +51,18 @@ rootfs-all-print:
 
 void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
 	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $*
+	mkdir -p stamps
+	touch stamps/platformfs-$*-$(DATE)-stamp
 
 platformfs-all: rootfs-all $(ALL_PLATFORMFS)
 
 platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
 
-void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS) platformfs-%-helper
+void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS) stamps/platformfs-%-$(DATE)-stamp
 	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
-platformfs-%-helper:
+stamps/platformfs-%-$(DATE)-stamp:
 # This rule exists because you can't do the shell expansion in the
 # dependent rule resolution stage
 	$(MAKE) void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
@@ -90,4 +92,4 @@ pxe-all-print:
 void-%-NETBOOT-$(DATE).tar.gz: $(SCRIPTS) void-%-ROOTFS-$(DATE).tar.xz
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATE).tar.xz
 
-.PHONY: clean dist rootfs-all-print platformfs-all-print pxe-all-print platformfs-%-helper
+.PHONY: clean dist rootfs-all-print platformfs-all-print pxe-all-print

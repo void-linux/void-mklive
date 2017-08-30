@@ -6,4 +6,5 @@
 *.tar.gz
 xbps-cache
 xbps-cachedir*
+stamps*
 !dracut/*/*.sh
