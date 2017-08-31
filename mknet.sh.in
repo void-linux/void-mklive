@@ -43,7 +43,12 @@ readonly CURDIR="$(pwd)"
 # Die is a function provided in lib.sh which handles the cleanup of
 # the mounts and removal of temporary directories if the running
 # program exists unexpectedly.
-trap 'die "An unchecked exception has occured!"' INT TERM
+trap 'bailout' INT TERM
+
+bailout() {
+    [ -d "$BOOT_DIR" ] && rm -rf "$BOOT_DIR"
+    die "An unchecked exception has occured!"
+}
 
 usage() {
     cat <<_EOF
