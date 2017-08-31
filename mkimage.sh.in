@@ -342,7 +342,7 @@ case "$PLATFORM" in
     GCP*)
         # This filename is mandated by the Google Cloud Engine import
         # process, the archive name is not.
-        mv void-GCP*.img disk.raw
+        mv "$FILENAME" disk.raw
         info_msg "Compressing disk.raw"
         tar Sczf "${FILENAME%.img}.tar.gz" disk.raw
         # Since this process just produces something that can be
