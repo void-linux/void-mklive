@@ -51,7 +51,7 @@ Usage: $PROGNAME [options] <platform> <base-tarball>
 Supported platforms: i686, x86_64, GCP,
                      dockstar, bananapi, beaglebone, cubieboard2, cubietruck,
                      odroid-c2, odroid-u2, rpi, rpi2 (armv7), rpi3 (aarch64),
-                     usbarmory, ci20
+                     usbarmory, ci20, pogoplugv4
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -116,6 +116,7 @@ case "$PLATFORM" in
     rpi3*) PKGS="$BASEPKG rpi3-base" ;;
     rpi2*) PKGS="$BASEPKG rpi-base" ;;
     rpi*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    pogo*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     usbarmory*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     ci20*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     i686*) PKGS="$BASEPKG" ;;
@@ -156,6 +157,40 @@ run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -
 # Since this is the only thing we're doing in the chroot, we clean up
 # right after.
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
+
+# Before final cleanup the ROOTFS needs to be checked to make sure it
+# contains an initrd and if its a platform with arch 'arm*' it needs
+# to also have a uInitrd.  For this to work the system needs to have
+# the uboot-mkimage package installed.  Base system packages that do
+# not provide this must provide the uInitrd pre-prepared if they are
+# arm based.  x86 images will have this built using native dracut
+# using post unpacking steps for platforms that consume the x86
+# tarballs.
+if [ ! -f "$ROOTFS/boot/uInitrd" ] && [ -z "${XBPS_TARGET_ARCH##*arm*}" ] ; then
+
+    # Dracut needs to know the kernel version that will be using this
+    # initrd so that it can install the kernel drivers in it.  Normally
+    # this check is quite complex, but since this is a clean rootfs and we
+    # just installed exactly one kernel, this check can get by with a
+    # really niave command to figure out the kernel version
+    KERNELVERSION=$(ls "$ROOTFS/usr/lib/modules/")
+
+    # Some platforms also have special arguments that need to be set
+    # for dracut.  This allows us to kludge around issues that may
+    # exist on certain specific platforms we build for.
+    set_dracut_args_from_platform
+
+    # Now that things are setup, we can call dracut and build the initrd.
+    # This will pretty much step through the normal process to build
+    # initrd with the exception that the autoinstaller and netmenu are
+    # force added since no module depends on them.
+    info_msg "Building initrd for kernel version $KERNELVERSION"
+    run_cmd_chroot "$ROOTFS" "env -i /usr/bin/dracut $dracut_args /boot/initrd $KERNELVERSION"
+    [ $? -ne 0 ] && die "Failed to generate the initramfs"
+
+    run_cmd_chroot "$ROOTFS" "env -i /usr/bin/mkimage -A arm -O linux -T ramdisk -C gzip -a 0 -e 0 -n 'Void Linux' -d /boot/initrd /boot/uInitrd"
+fi
+
 cleanup_chroot
 
 # The cache isn't that useful since by the time the ROOTFS will be

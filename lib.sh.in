@@ -234,6 +234,7 @@ set_target_arch_from_platform() {
         beaglebone*) XBPS_TARGET_ARCH="armv7l";;
         cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l";;
         dockstar*) XBPS_TARGET_ARCH="armv5tel";;
+        pogoplugv4*) XBPS_TARGET_ARCH="armv5tel" ;;
         odroid-u2*) XBPS_TARGET_ARCH="armv7l";;
         odroid-c2*) XBPS_TARGET_ARCH="aarch64";;
         rpi3*) XBPS_TARGET_ARCH="aarch64";;
@@ -250,6 +251,15 @@ set_target_arch_from_platform() {
     if [ -z "${PLATFORM##*-musl}" ] ; then
         XBPS_TARGET_ARCH="${XBPS_TARGET_ARCH}-musl"
     fi
+}
+
+set_dracut_args_from_platform() {
+    # In rare cases it is necessary to set platform specific dracut
+    # args.  This is mostly the case on ARM platforms.
+    case "$PLATFORM" in
+        pogoplugv4*) dracut_args="-o 'btrfs drm i18n resume terminfo'" ;;
+        *) ;;
+    esac
 }
 
 set_cachedir() {

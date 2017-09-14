@@ -59,6 +59,7 @@ Options:
  -c <cachedir>      Use this XBPS cache directory.
  -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
  -o <file>          Output file name for the netboot tarball (auto if unset).
+ -K <kernelpkg>     Use <kernelpkg> instead of 'linux' to build the image.
 
  -k <keymap>        Console keymap to set (us if unset)
  -l <locale>        Locale to set (en_US.UTF-8 if unset)
@@ -76,11 +77,12 @@ _EOF
 #      SCRIPT EXECUTION STARTS HERE
 # ########################################
 
-while getopts "r:c:C:T:i:o:h" opt; do
+while getopts "r:c:C:T:K:i:o:k:l:h" opt; do
     case $opt in
         r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
+        K) KERNELPKG="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         k) KEYMAP="$OPTARG";;
         l) LOCALE="$OPTARG";;
@@ -153,10 +155,20 @@ info_msg "Install kernel and additional required netboot packages"
 # The rootfs has no kernel in it, so it needs to have at the very
 # least dracut, syslinux, and linux installed.  binutils provides
 # /usr/bin/strip which lets us shrink down the size of the initrd
-# dracut-network provides the in-initrd network stack
-# dialog is needed by the install environment
-# ${INITRAMFS_COMPRESSION} is the name of the compressor we want to use (lz4 by default)
-run_cmd_target "xbps-install $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -Sy linux dracut syslinux binutils dracut-network dialog ${INITRAMFS_COMPRESSION-xz}"
+# dracut-network provides the in-initrd network stack dialog is needed
+# by the install environment.  ${INITRAMFS_COMPRESSION} is the name of
+# the compressor we want to use (lz4 by default).
+if [ -z "${XBPS_TARGET_ARCH}" ] ; then
+    # This platform is x86 or compatible, we should use
+    # syslinux/pxelinux to boot the system.
+    bootloader_pkg=syslinux
+else
+    # This is likely an arm platform of some kind.  In general these
+    # either have u-boot or a u-boot compatible loader, so we'll use
+    # that to produce a uImage and a uInitrd
+    bootloader_pkg=uboot-mkimage
+fi
+run_cmd_target "xbps-install $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -Sy ${KERNELPKG-linux} dracut binutils dracut-network dialog ${INITRAMFS_COMPRESSION-xz} ${bootloader_pkg}"
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 
 # Dracut needs to know the kernel version that will be using this
@@ -182,45 +194,71 @@ run_cmd_chroot "$ROOTFS" "env -i /usr/bin/dracut \
 [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
 info_msg "Collect netboot components"
-# The whole point of this endeavor is to get the files needed for PXE.
-# Now that they have been generated, we copy them out of the doomed
-# ROOTFS and into the $BOOT_DIR where we're staging the rest of the
-# tarball
-mv -v "$ROOTFS/boot/initrd" "$BOOT_DIR"
-cp -v "$ROOTFS/boot/vmlinuz-$KERNELVERSION" "$BOOT_DIR/vmlinuz"
+if [ ${bootloader_pkg} == "syslinux" ] ; then
+    # The whole point of this endeavor is to get the files needed for PXE.
+    # Now that they have been generated, we copy them out of the doomed
+    # ROOTFS and into the $BOOT_DIR where we're staging the rest of the
+    # tarball
+    mv -v "$ROOTFS/boot/initrd" "$BOOT_DIR"
+    cp -v "$ROOTFS/boot/vmlinuz-$KERNELVERSION" "$BOOT_DIR/vmlinuz"
 
-# The initrd has *very* restrictive permissions by default.  To
-# prevent some SysAdmin down the road having a very frustrating time
-# debugging this, we just fix this here and now.
-chmod 0644 "$BOOT_DIR/initrd"
+    # The initrd has *very* restrictive permissions by default.  To
+    # prevent some SysAdmin down the road having a very frustrating time
+    # debugging this, we just fix this here and now.
+    chmod 0644 "$BOOT_DIR/initrd"
 
-# Now we need to grab the rest of the files that go in the tarball.
-# Some of these are always required, some of these are canonical, and
-# some of this list is from trial and error.  Either way, this is the
-# minimum needed to get Void up and booting on metal from the network.
-for prog in pxelinux.0 ldlinux.c32 libcom32.c32 vesamenu.c32 libutil.c32 chain.c32 ; do
-    cp -v "$ROOTFS/usr/share/syslinux/$prog" "$BOOT_DIR"
-done
+    # Now we need to grab the rest of the files that go in the tarball.
+    # Some of these are always required, some of these are canonical, and
+    # some of this list is from trial and error.  Either way, this is the
+    # minimum needed to get Void up and booting on metal from the network.
+    for prog in pxelinux.0 ldlinux.c32 libcom32.c32 vesamenu.c32 libutil.c32 chain.c32 ; do
+        cp -v "$ROOTFS/usr/share/syslinux/$prog" "$BOOT_DIR"
+    done
 
-# Lastly we need the default pxelinux config and the splash image.
-# This is user configurable, but if that isn't set then we'll use the
-# one from data/splash.png instead
-mkdir -p "$PXELINUX_DIR"
-cp -f pxelinux.cfg/pxelinux.cfg.in "$PXELINUX_DIR/default"
-cp -f "${SPLASH_IMAGE-data/splash.png}" "$BOOT_DIR"
+    # Lastly we need the default pxelinux config and the splash image.
+    # This is user configurable, but if that isn't set then we'll use the
+    # one from data/splash.png instead
+    mkdir -p "$PXELINUX_DIR"
+    cp -f pxelinux.cfg/pxelinux.cfg.in "$PXELINUX_DIR/default"
+    cp -f "${SPLASH_IMAGE-data/splash.png}" "$BOOT_DIR"
 
-# This sets all the variables in the default config file
-info_msg "Configuring pxelinux.0 default boot menu"
-sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE-splash.png}")|" \
-    -e "s|@@KERNVER@@|${KERNELVERSION}|" \
-    -e "s|@@KEYMAP@@|${KEYMAP-us}|" \
-    -e "s|@@ARCH@@|$XBPS_TARGET_ARCH|" \
-    -e "s|@@LOCALE@@|${LOCALE-en_US.UTF-8}|" \
-    -e "s|@@BOOT_TITLE@@|${BOOT_TITLE-Void Linux}|" \
-    -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
-    "$PXELINUX_DIR/default"
+    # This sets all the variables in the default config file
+    info_msg "Configuring pxelinux.0 default boot menu"
+    sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE-splash.png}")|" \
+        -e "s|@@KERNVER@@|${KERNELVERSION}|" \
+        -e "s|@@KEYMAP@@|${KEYMAP-us}|" \
+        -e "s|@@ARCH@@|$XBPS_TARGET_ARCH|" \
+        -e "s|@@LOCALE@@|${LOCALE-en_US.UTF-8}|" \
+        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE-Void Linux}|" \
+        -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
+        "$PXELINUX_DIR/default"
+else
+    # u-boot has far far fewer components, but u-boot artifacts do
+    # require some pre-processing
 
-# Default output file format
+    if [ ! -f "$ROOTFS/boot/uImage" ] ; then
+
+        # Build the uImage, this is really just the kernel with a wrapper
+        # to make u-boot happy.  It also sets the load and entry
+        # addresses, though in general these are overriden by the u-boot
+        # configuration.
+        run_cmd_chroot "$ROOTFS" "env -i /usr/bin/mkimage -A arm -O linux -T kernel -C none -a 0x00000000 -e 0x00000000 -n 'Void Kernel' -d /boot/zImage /boot/uImage"
+
+        # Build the uInitrd which is similarly just a copy of the real
+        # initrd in a format that u-boot is willing to ingest.
+        run_cmd_chroot "$ROOTFS" "env -i /usr/bin/mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 -n 'Void Installer Initrd' -d /boot/initrd /boot/uInitrd"
+
+        # Copy out the artifacts that are worth keeping
+        cp "$ROOTFS/boot/uImage" "$BOOT_DIR"
+        cp "$ROOTFS/boot/uInitrd" "$BOOT_DIR"
+        cp -r "$ROOTFS/boot/dtbs" "$BOOT_DIR"
+    else
+        # Copy the existing uImage out
+        cp "$ROOTFS/boot/uImage" "$BOOT_DIR"
+    fi
+fi
+
+# Compress the artifacts for distribution
 OUTPUT_FILE="void-${XBPS_TARGET_ARCH}-NETBOOT-$(date +%Y%m%d).tar.gz"
 info_msg "Compressing results to $OUTPUT_FILE"
 cd "$BOOT_DIR" || die "Could not enter image dir"
