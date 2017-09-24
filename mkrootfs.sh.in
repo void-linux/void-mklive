@@ -73,7 +73,7 @@ _EOF
 
 # Boilerplate option parsing.  This script supports the bare minimum
 # needed to build an image.
-while getopts "C:c:h:r:x:o:V" opt; do
+while getopts "C:c:hr:x:o:V" opt; do
     case $opt in
         C) XBPS_CONFFILE="-C $OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;

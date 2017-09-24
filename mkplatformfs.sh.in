@@ -72,7 +72,7 @@ _EOF
 
 BASEPKG=base-system
 
-while getopts "b:p:k:c:C:r:x:h:V" opt; do
+while getopts "b:p:k:c:C:r:x:hV" opt; do
     case $opt in
         b) BASEPKG="$OPTARG" ;;
         p) EXTRA_PKGS="$OPTARG" ;;
