@@ -52,21 +52,14 @@ rootfs-all-print:
 
 void-%-ROOTFS-$(DATE).tar.xz: $(SCRIPTS)
 	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $*
-	mkdir -p stamps
-	touch stamps/rootfs-$*-$(DATE)-stamp
 
-platformfs-all: rootfs-all $(ALL_PLATFORMFS)
+platformfs-all: $(ALL_PLATFORMFS)
 
 platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
 
-void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS) stamps/rootfs-%-$(DATE)-stamp
+void-%-PLATFORMFS-$(DATE).tar.xz: $(SCRIPTS)
 	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
-
-stamps/rootfs-%-$(DATE)-stamp:
-# This rule exists because you can't do the shell expansion in the
-# dependent rule resolution stage
-	$(MAKE) void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATE).tar.xz
 
 images-all: platformfs-all images-all-sbc images-all-cloud
 
