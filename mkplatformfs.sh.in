@@ -165,8 +165,13 @@ run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 # not provide this must provide the uInitrd pre-prepared if they are
 # arm based.  x86 images will have this built using native dracut
 # using post unpacking steps for platforms that consume the x86
-# tarballs.
-if [ ! -f "$ROOTFS/boot/uInitrd" ] && [ -z "${XBPS_TARGET_ARCH##*arm*}" ] ; then
+# tarballs.  This check is very specific and ensures that applicable
+# tooling is present before proceeding.
+if [ ! -f "$ROOTFS/boot/uInitrd" ] ||
+       [ ! -f "$ROOTFS/boot/initrd" ] &&
+           [ -z "${XBPS_TARGET_ARCH##*arm*}" ] &&
+           [ -x "$ROOTFS/usr/bin/dracut" ] &&
+           [ -x "$ROOTFS/usr/bin/mkimage" ]; then
 
     # Dracut needs to know the kernel version that will be using this
     # initrd so that it can install the kernel drivers in it.  Normally
