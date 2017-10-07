@@ -3,6 +3,7 @@ VERSION = 0.22
 SHIN    += $(shell find -type f -name '*.sh.in')
 SCRIPTS += $(SHIN:.sh.in=.sh)
 DATE=$(shell date "+%Y%m%d")
+SHELL=/bin/bash
 
 T_PLATFORMS=rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} usbarmory{,-musl} GCP{,-musl}
 T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
