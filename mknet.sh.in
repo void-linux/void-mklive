@@ -158,14 +158,16 @@ info_msg "Install kernel and additional required netboot packages"
 # dracut-network provides the in-initrd network stack dialog is needed
 # by the install environment.  ${INITRAMFS_COMPRESSION} is the name of
 # the compressor we want to use (lz4 by default).
-if [ -z "${XBPS_TARGET_ARCH}" ] ; then
+if [ -z "${XBPS_TARGET_ARCH##*x86*}" ] ; then
     # This platform is x86 or compatible, we should use
     # syslinux/pxelinux to boot the system.
+    info_msg "Selecting syslinux bootloader"
     bootloader_pkg=syslinux
 else
     # This is likely an arm platform of some kind.  In general these
     # either have u-boot or a u-boot compatible loader, so we'll use
     # that to produce a uImage and a uInitrd
+    info_msg "Selecting u-boot bootloader"
     bootloader_pkg=uboot-mkimage
 fi
 run_cmd_target "xbps-install $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -Sy ${KERNELPKG-linux} dracut binutils dracut-network dialog ${INITRAMFS_COMPRESSION-xz} ${bootloader_pkg}"
@@ -194,7 +196,7 @@ run_cmd_chroot "$ROOTFS" "env -i /usr/bin/dracut \
 [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
 info_msg "Collect netboot components"
-if [ ${bootloader_pkg} == "syslinux" ] ; then
+if [ ${bootloader_pkg} = "syslinux" ] ; then
     # The whole point of this endeavor is to get the files needed for PXE.
     # Now that they have been generated, we copy them out of the doomed
     # ROOTFS and into the $BOOT_DIR where we're staging the rest of the
