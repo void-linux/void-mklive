@@ -1284,15 +1284,17 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     fi
 
     if [ -f $TARGETDIR/etc/sudoers ]; then
-        if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" ]; then
-            # enable sudo for primary user USERLOGIN
-            echo "# Enable sudo for login '$(get_option USERLOGIN)'" >> $TARGETDIR/etc/sudoers
-            echo "$(get_option USERLOGIN) ALL=(ALL) ALL" >> $TARGETDIR/etc/sudoers
+        USERLOGIN="$(get_option USERLOGIN)"
+        if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
+            # enable sudo for primary user USERLOGIN who is not member of wheel
+            echo "# Enable sudo for login '$USERLOGIN'" >> $TARGETDIR/etc/sudoers
+            echo "$USERLOGIN ALL=(ALL) ALL" >> $TARGETDIR/etc/sudoers
         else
-            # enable sudoers entry for members of group wheel for primary user
+            # enable the sudoers entry for members of group wheel
             sed -i $TARGETDIR/etc/sudoers \
                 -e "s;#.*%wheel ALL=(ALL) ALL;%wheel ALL=(ALL) ALL;"
         fi
+        unset USERLOGIN
     fi
 
     # enable text console for grub if chosen
