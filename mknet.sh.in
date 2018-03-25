@@ -158,7 +158,7 @@ info_msg "Install kernel and additional required netboot packages"
 # dracut-network provides the in-initrd network stack dialog is needed
 # by the install environment.  ${INITRAMFS_COMPRESSION} is the name of
 # the compressor we want to use (lz4 by default).
-if [ -z "${XBPS_TARGET_ARCH##*x86*}" ] ; then
+if [ -z "${XBPS_TARGET_ARCH##*86*}" ] ; then
     # This platform is x86 or compatible, we should use
     # syslinux/pxelinux to boot the system.
     info_msg "Selecting syslinux bootloader"
