@@ -113,7 +113,7 @@ case "$PLATFORM" in
     dockstar*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-u2*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-c2*) PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
-    rpi3*) PKGS="$BASEPKG rpi3-base" ;;
+    rpi3*) PKGS="$BASEPKG rpi-base" ;;
     rpi2*) PKGS="$BASEPKG rpi-base" ;;
     rpi*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     pogo*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
