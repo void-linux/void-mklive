@@ -143,6 +143,10 @@ ROOTFS=$(mktemp -d) || die "failed to create tempdir, exiting..."
 
 # Now that we have a directory for the ROOTFS, we can expand the
 # existing base filesystem into the directory
+if [ ! -e "$BASE_TARBALL" ]; then
+    die "no valid base tarball given, exiting."
+fi
+
 info_msg "Expanding base tarball $BASE_TARBALL into $ROOTFS for $PLATFORM build."
 tar xf "$BASE_TARBALL" -C "$ROOTFS"
 
