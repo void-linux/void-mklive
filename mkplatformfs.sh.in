@@ -210,6 +210,14 @@ cleanup_chroot
 # only for it to be out of date, we remove it now.
 rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
+# Now we can run the POST_CMD script. This user-supplied script gets the
+# $ROOTFS as a parameter.
+if [ -n "$POST_CMD" ]; then
+    info_msg "Running user supllied command: $POST_CMD"
+    run_cmd $POST_CMD $ROOTFS
+fi
+
+
 # Compress the tarball or just print out the path?
 if [ "$COMPRESSION" = "y" ]; then
     # Finally we can compress the tarball, the name will include the
