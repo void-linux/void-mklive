@@ -57,7 +57,6 @@ Supported architectures: i686, i686-musl, x86_64, x86_64-musl,
 
 
 Options
-    -b <syspkg> Set an alternative base-system package (defaults to base-system)
     -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
