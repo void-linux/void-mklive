@@ -315,6 +315,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:h" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         h) usage;;
+	*) usage;;
     esac
 done
 shift $((OPTIND - 1))
