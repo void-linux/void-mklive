@@ -69,7 +69,8 @@ Options:
  -a <xbps-arch>     Set XBPS_ARCH (do not use it unless you know what it is)
  -b <system-pkg>    Set an alternative base-system package (defaults to base-system).
  -r <repo-url>      Use this XBPS repository (may be specified multiple times).
- -c <cachedir>      Use this XBPS cache directory (/var/cache/xbps if unset).
+ -c <cachedir>      Use this XBPS cache directory (a subdirectory of current 
+directory if unset).
  -k <keymap>        Default keymap to use (us if unset)
  -l <locale>        Default locale to use (en_US.UTF-8 if unset).
  -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
