@@ -74,7 +74,7 @@ directory if unset).
  -k <keymap>        Default keymap to use (us if unset)
  -l <locale>        Default locale to use (en_US.UTF-8 if unset).
  -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
- -s <gzip|bzip2|xz>     Compression type for the squashfs image (xz if unset)
+ -s <gzip|lzo|xz>     Compression type for the squashfs image (xz if unset)
  -S <freesize>      Allocate this free size (MB) for the rootfs.
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
