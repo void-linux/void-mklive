@@ -1228,6 +1228,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         rm -f $TARGETDIR/etc/motd
         rm -f $TARGETDIR/etc/issue
         rm -f $TARGETDIR/usr/sbin/void-installer
+        rm -f $TARGETDIR/etc/polkit-1/rules.d/void-live.rules
         # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
