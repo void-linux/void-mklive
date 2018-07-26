@@ -177,7 +177,7 @@ run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 # initrd so that it can install the kernel drivers in it.  Normally
 # this check is quite complex, but since this is a clean rootfs and we
 # just installed exactly one kernel, this check can get by with a
-# really niave command to figure out the kernel version
+# really naive command to figure out the kernel version
 KERNELVERSION=$(ls "$ROOTFS/usr/lib/modules/")
 
 # Now that things are setup, we can call dracut and build the initrd.
