@@ -151,17 +151,11 @@ copy_include_directory() {
 }
 
 generate_initramfs() {
-    local _args
-
     copy_dracut_files $ROOTFS
     copy_autoinstaller_files $ROOTFS
-    if [ "$BASE_SYSTEM_PKG" = "base-system-systemd" ]; then
-        _args="--add systemd"
-    else
-        _args="--omit systemd"
-    fi
+
     chroot $ROOTFS env -i /usr/bin/dracut -N --${INITRAMFS_COMPRESSION} \
-        --add-drivers "ahci" --force-add "vmklive autoinstaller" ${_args} "/boot/initrd" $KERNELVERSION
+        --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd" $KERNELVERSION
     [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
     mv $ROOTFS/boot/initrd $BOOT_DIR
