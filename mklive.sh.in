@@ -319,6 +319,7 @@ done
 shift $((OPTIND - 1))
 
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://repo.voidlinux.eu/current --repository=http://muslrepo.voidlinux.eu/current"
+BOOT_CMDLINE="$BOOT_CMDLINE rd.live.overlay.overlayfs=1 "
 
 ARCH=$(xbps-uhelper arch)
 
