@@ -21,6 +21,16 @@ if [ -d ${NEWROOT}/etc/gdm ]; then
     fi
 fi
 
+# Configure sddm autologin for the kde iso.
+if [ -r ${NEWROOT}/etc/sddm.conf ]; then
+    mv ${NEWROOT}/etc/sddm.conf ${NEWROOT}/etc/sddm.conf.old
+    cat > ${NEWROOT}/etc/sddm.conf <<_EOF
+[Autologin]
+User=anon
+Session=plasma.desktop
+_EOF
+fi
+
 # Configure lightdm autologin.
 if [ -r ${NEWROOT}/etc/lightdm.conf ]; then
     sed -i -e "s|^\#\(default-user=\).*|\1$USERNAME|" \
