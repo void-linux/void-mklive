@@ -494,7 +494,7 @@ ${BOLD}NOTE: you don't need this on EFI systems.${RESET}\n\n
 For EFI systems GPT is mandatory and a FAT32 partition with at least\n
 100MB must be created with the TOGGLE \`boot', this will be used as\n
 EFI System Partition. This partition must have mountpoint as \`/boot/efi'.\n\n
-At least 1 partitions is required for the rootfs (/).\n
+At least 1 partition is required for the rootfs (/).\n
 For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
 ${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
 ${RESET}\n" 18 80
