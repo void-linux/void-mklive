@@ -75,7 +75,6 @@ directory if unset).
  -l <locale>        Default locale to use (en_US.UTF-8 if unset).
  -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
  -s <gzip|lzo|xz>     Compression type for the squashfs image (xz if unset)
- -S <freesize>      Allocate this free size (MB) for the rootfs.
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
  -I <includedir>    Include directory structure under given path into rootfs
@@ -259,11 +258,8 @@ generate_squashfs() {
 
     # Find out required size for the rootfs and create an ext3fs image off it.
     ROOTFS_SIZE=$(du -sm "$ROOTFS"|awk '{print $1}')
-    if [ -z "$ROOTFS_FREESIZE" ]; then
-        ROOTFS_FREESIZE="$((ROOTFS_SIZE/6))"
-    fi
     mkdir -p "$BUILDDIR/tmp/LiveOS"
-    truncate -s "$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" \
+    truncate -s "$((ROOTFS_SIZE+ROOTFS_SIZE/6)M" \
 	    "$BUILDDIR"/tmp/LiveOS/ext3fs.img >/dev/null 2>&1
     mkdir -p "$BUILDDIR/tmp-rootfs"
     mkfs.ext3 -F -m1 "$BUILDDIR/tmp/LiveOS/ext3fs.img" >/dev/null 2>&1
