@@ -270,9 +270,9 @@ set_cachedir() {
 
 # These should all resolve even if they won't have the appropriate
 # repodata files for the selected architecture.
-: "${XBPS_REPOSITORY:=--repository=http://repo.voidlinux.eu/current \
-                      --repository=http://repo.voidlinux.eu/current/musl \
-                      --repository=http://repo.voidlinux.eu/current/aarch64}"
+: "${XBPS_REPOSITORY:=--repository=http://alpha.de.repo.voidlinux.org/current \
+                      --repository=http://alpha.de.repo.voidlinux.org/current/musl \
+                      --repository=http://alpha.de.repo.voidlinux.org/current/aarch64}"
 
 
 

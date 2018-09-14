@@ -27,7 +27,7 @@ ALL_PXE_ARCHS=$(foreach arch,$(PXE_ARCHS),void-$(arch)-NETBOOT-$(DATE).tar.gz)
 
 SUDO := sudo
 
-XBPS_REPOSITORY := -r https://repo.voidlinux.eu/current -r https://repo.voidlinux.eu/current/musl -r https://repo.voidlinux.eu/current/aarch64
+XBPS_REPOSITORY := -r https://alpha.de.repo.voidlinux.org/current -r https://alpha.de.repo.voidlinux.org/current/musl -r https://alpha.de.repo.voidlinux.org/current/aarch64
 COMPRESSOR_THREADS=2
 
 %.sh: %.sh.in

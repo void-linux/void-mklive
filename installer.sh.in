@@ -807,7 +807,7 @@ set_bootloader() {
 
 test_network() {
     rm -f xtraeme.asc && \
-        xbps-uhelper fetch http://repo.voidlinux.eu/live/xtraeme.asc >$LOG 2>&1
+        xbps-uhelper fetch http://alpha.de.repo.voidlinux.org/live/xtraeme.asc >$LOG 2>&1
     if [ $? -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
