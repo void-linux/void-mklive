@@ -1033,7 +1033,7 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             ext4) MKFS="mke2fs -F -t ext4"; modprobe ext4 >$LOG 2>&1;;
             f2fs) MKFS="mkfs.f2fs"; modprobe f2fs >$LOG 2>&1;;
             vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
-            xfs) MKFS="mkfs.xfs -f"; modprobe xfs >$LOG 2>&1;;
+            xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
             esac
             TITLE="Check $LOG for details ..."
             INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
