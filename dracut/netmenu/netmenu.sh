@@ -1,7 +1,7 @@
 #!/bin/sh
 
 dialog --colors --keep-tite --no-shadow --no-mouse \
-       --backtitle "\Zb\Z7Void Linux installation -- http://www.voidlinux.org/\Zn" \
+       --backtitle "\Zb\Z7Void Linux installation -- https://www.voidlinux.org/\Zn" \
        --cancel-label "Reboot" --aspect 20 \
        --menu "Select an Action:" 10 50 2 \
        "Install" "Run void-installer" \
