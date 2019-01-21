@@ -214,7 +214,7 @@ if [ ${bootloader_pkg} = "syslinux" ] ; then
     # some of this list is from trial and error.  Either way, this is the
     # minimum needed to get Void up and booting on metal from the network.
     for prog in pxelinux.0 ldlinux.c32 libcom32.c32 vesamenu.c32 libutil.c32 chain.c32 ; do
-        cp -v "$ROOTFS/usr/share/syslinux/$prog" "$BOOT_DIR"
+        cp -v "$ROOTFS/usr/lib/syslinux/$prog" "$BOOT_DIR"
     done
 
     # Lastly we need the default pxelinux config and the splash image.
