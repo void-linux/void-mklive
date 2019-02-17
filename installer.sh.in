@@ -94,7 +94,7 @@ WIDGET_SIZE="10 70"
 DIALOG() {
     rm -f $ANSWER
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.eu/ (@@MKLIVE_VERSION@@)${RESET}" \
+        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
         --cancel-label "Back" --aspect 20 "$@" 2>$ANSWER
     return $?
 }
@@ -102,7 +102,7 @@ DIALOG() {
 INFOBOX() {
     # Note: dialog --infobox and --keep-tite don't work together
     dialog --colors --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.eu/ (@@MKLIVE_VERSION@@)${RESET}" \
+        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
         --title "${TITLE}" --aspect 20 --infobox "$@"
 }
 
@@ -1444,7 +1444,7 @@ Linux distribution made from scratch and built from the source package tree \
 available for XBPS, a new alternative binary package system.\n\n
 The installation should be pretty straightforward. If you are in trouble \
 please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.freenode.org${RESET}.\n\n
-${BOLD}http://www.voidlinux.eu${RESET}\n\n" 16 80
+${BOLD}https://www.voidlinux.org${RESET}\n\n" 16 80
 
 while true; do
     menu
