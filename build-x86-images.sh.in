@@ -74,7 +74,7 @@ if [ -z "$IMAGE" -o "$IMAGE" = lxqt ]; then
 		./mklive.sh -a $ARCH -o $LXQT_IMG -p "$LXQT_PKGS" ${REPO} $@
 	fi
 fi
-if [ "$IMAGE" = kde ]; then
+if [ -z "$IMAGE" -o "$IMAGE" = kde ]; then
 	if [ ! -e $KDE_IMG ]; then
 		./mklive.sh -a $ARCH -o $KDE_IMG -p "$KDE_PKGS" ${REPO} $@
 	fi
