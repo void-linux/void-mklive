@@ -94,7 +94,7 @@ WIDGET_SIZE="10 70"
 DIALOG() {
     rm -f $ANSWER
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
+        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org/ (@@MKLIVE_VERSION@@)${RESET}" \
         --cancel-label "Back" --aspect 20 "$@" 2>$ANSWER
     return $?
 }
@@ -102,7 +102,7 @@ DIALOG() {
 INFOBOX() {
     # Note: dialog --infobox and --keep-tite don't work together
     dialog --colors --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
+        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org/ (@@MKLIVE_VERSION@@)${RESET}" \
         --title "${TITLE}" --aspect 20 --infobox "$@"
 }
 
@@ -440,7 +440,8 @@ menu_filesystems() {
             "f2fs" "Flash-Friendly Filesystem" \
             "swap" "Linux swap" \
             "vfat" "FAT32" \
-            "xfs" "SGI's XFS"
+            "xfs" "SGI's XFS" \
+            "nilfs2" "NTT's nilfs2"
         if [ $? -eq 0 ]; then
             fstype=$(cat $ANSWER)
         else
@@ -493,10 +494,14 @@ at the first 2GB of the disk with the TOGGLE \`bios_grub' enabled.\n
 ${BOLD}NOTE: you don't need this on EFI systems.${RESET}\n\n
 For EFI systems GPT is mandatory and a FAT32 partition with at least\n
 100MB must be created with the TOGGLE \`boot', this will be used as\n
-EFI System Partition. This partition must have mountpoint as \`/boot/efi'.\n\n
+EFI System Partition. This partition must have mountpoint as /boot/efi\n
+or /boot.\n\n
 At least 1 partition is required for the rootfs (/).\n
 For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
-${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
+${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n\n
+${BOLD}WARNING:${RESET} If f2fs or nilfs2 is used as the root filesystem, then \n
+the boot partition MUST be mounted at /boot, and a filesystem must be used\n
+that GRUB supports, (i.e. btrfs, ext2/ext3/ext4, vfat, or xfs)${RESET}\n\n
 ${RESET}\n" 18 80
         if [ $? -eq 0 ]; then
             while true; do
@@ -789,6 +794,13 @@ set_bootloader() {
     if [ -n "$EFI_SYSTEM" ]; then
         grub_args="--target=$EFI_TARGET --efi-directory=/boot/efi --bootloader-id=void_grub --recheck"
     fi
+
+    # making sure /boot/efi exists, in case /boot
+    # is used as the boot partition
+    if [ ! -d $TARGETDIR/boot/efi ]; then
+        mkdir $TARGETDIR/boot/efi
+    fi
+
     echo "Running grub-install $grub_args $dev..." >$LOG
     chroot $TARGETDIR grub-install $grub_args $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
@@ -846,8 +858,28 @@ configure_wifi() {
         echo "  auth_alg=SHARED" >> ${_wpasupconf%.conf}-${dev}.conf
         echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
     else
-        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "network={" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "  ssid=\"$ssid\"" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "  scan_ssid=1" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "  key_mgmt=WPA-PSK" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "  psk=\"$pass\"" >> ${_wpasupconf%.conf}-${dev}.conf
+        echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
     fi
+
+    # copying wpa_supplicant hook into dhcpcd hooks directory	 
+    # and restarting dhcpcd
+    cp /usr/share/dhcpcd/hooks/10-wpa_supplicant /usr/libexec/dhcpcd-hooks
+    sv restart dhcpcd >$LOG 2>&1
+    sv check dhcpcd >$LOG 2>&1
+    if [ ! $? ]; then
+        DIALOG --msgbox "Error: dhcpcd couldn't be restarted!" ${MSGBOXSIZE}
+        return 1
+    else
+        INFOBOX "Restarting dhcpcd..." 4 60
+    fi
+
+    # wait a couple seconds to setup wifi
+    sleep 5
 
     configure_net_dhcp $dev
     return $?
@@ -881,6 +913,10 @@ configure_net_dhcp() {
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
             return 1
         fi
+
+        # wait a little bit for wifi to configure
+        sleep 10
+
         iface_setup $dev
         if [ $? -eq 1 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} DHCP request failed for $dev. Check $LOG for errors." ${MSGBOXSIZE}
@@ -965,7 +1001,7 @@ validate_filesystems() {
             rootfound=1
         elif [ "$mntpt" = "/usr" ]; then
             usrfound=1
-        elif [ "$fstype" = "vfat" -a "$mntpt" = "/boot/efi" ]; then
+        elif [ "$fstype" = "vfat" -a \( "$mntpt" = "/boot/efi" -o "$mntpt" = "/boot" \) ]; then
             efi_system_partition=1
         fi
         if [ "$mkfs" -eq 1 ]; then
@@ -985,10 +1021,12 @@ the mount point for the root filesystem (/) has not yet been configured." ${MSGB
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 /usr mount point has been configured but is not supported, please remove it to continue." ${MSGBOXSIZE}
         return 1
-    elif [ -n "$EFI_SYSTEM" -a -z "$efi_system_partition" ]; then
+    elif [ -n "$EFI_SYSTEM" -a \( -z "$efi_system_partition" \) ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 The EFI System Partition has not yet been configured, please create it\n
-as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
+as FAT32, mountpoint /boot/efi or /boot and at least with 100MB of size.\n
+If f2fs or nilfs2 is used on the root partition, then the boot partition MUST be\n
+mounted at /boot" ${MSGBOXSIZE}
     fi
     FILESYSTEMS_DONE=1
 }
@@ -1031,9 +1069,10 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             ext2) MKFS="mke2fs -F"; modprobe ext2 >$LOG 2>&1;;
             ext3) MKFS="mke2fs -F -j"; modprobe ext3 >$LOG 2>&1;;
             ext4) MKFS="mke2fs -F -t ext4"; modprobe ext4 >$LOG 2>&1;;
-            f2fs) MKFS="mkfs.f2fs"; modprobe f2fs >$LOG 2>&1;;
+            f2fs) MKFS="mkfs.f2fs -f"; modprobe f2fs >$LOG 2>&1;;
             vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
             xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
+            nilfs2) MKFS="mkfs.nilfs2 -f -q"; modprobe nilfs2 >$LOG 2>&1;;
             esac
             TITLE="Check $LOG for details ..."
             INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
@@ -1285,6 +1324,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             else
                 enable_dhcpd
             fi
+            
+            # enabling wpa_supplicant hook for dhcpcd
+            cp /usr/share/dhcpcd/hooks/10-wpa_supplicant $TARGETDIR/usr/libexec/dhcpcd-hooks
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhdpcd.conf.orig
@@ -1444,7 +1486,7 @@ Linux distribution made from scratch and built from the source package tree \
 available for XBPS, a new alternative binary package system.\n\n
 The installation should be pretty straightforward. If you are in trouble \
 please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.freenode.org${RESET}.\n\n
-${BOLD}https://www.voidlinux.org${RESET}\n\n" 16 80
+${BOLD}http://www.voidlinux.org${RESET}\n\n" 16 80
 
 while true; do
     menu
