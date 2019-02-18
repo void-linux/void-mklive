@@ -346,7 +346,6 @@ fi
 readonly CURDIR="$PWD"  
 
 
-ISO_VOLUME="VOID_LIVE"
 if [ -n "$ROOTDIR" ]; then
     BUILDDIR=$(mktemp --tmpdir="$ROOTDIR" -d)
 else
