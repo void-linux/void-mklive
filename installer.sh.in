@@ -440,8 +440,7 @@ menu_filesystems() {
             "f2fs" "Flash-Friendly Filesystem" \
             "swap" "Linux swap" \
             "vfat" "FAT32" \
-            "xfs" "SGI's XFS" \
-            "nilfs2" "NTT's nilfs2"
+            "xfs" "SGI's XFS"
         if [ $? -eq 0 ]; then
             fstype=$(cat $ANSWER)
         else
@@ -494,14 +493,10 @@ at the first 2GB of the disk with the TOGGLE \`bios_grub' enabled.\n
 ${BOLD}NOTE: you don't need this on EFI systems.${RESET}\n\n
 For EFI systems GPT is mandatory and a FAT32 partition with at least\n
 100MB must be created with the TOGGLE \`boot', this will be used as\n
-EFI System Partition. This partition must have mountpoint as /boot/efi\n
-or /boot.\n\n
+EFI System Partition. This partition must have mountpoint as \`/boot/efi'.\n\n
 At least 1 partition is required for the rootfs (/).\n
 For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
-${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n\n
-${BOLD}WARNING:${RESET} If f2fs or nilfs2 is used as the root filesystem, then \n
-the boot partition MUST be mounted at /boot, and a filesystem must be used\n
-that GRUB supports, (i.e. btrfs, ext2/ext3/ext4, vfat, or xfs)${RESET}\n\n
+${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
 ${RESET}\n" 18 80
         if [ $? -eq 0 ]; then
             while true; do
@@ -792,13 +787,14 @@ set_bootloader() {
 
     # Check if it's an EFI system via efivars module.
     if [ -n "$EFI_SYSTEM" ]; then
+        
+        # making sure /boot/efi exists (in case /boot
+        # is used as the boot partition
+        if [ ! \( -d $TARGETDIR/boot/efi \) ]; then
+            mkdir $TARGETDIR/boot/efi
+        fi
+        
         grub_args="--target=$EFI_TARGET --efi-directory=/boot/efi --bootloader-id=void_grub --recheck"
-    fi
-
-    # making sure /boot/efi exists, in case /boot
-    # is used as the boot partition
-    if [ ! -d $TARGETDIR/boot/efi ]; then
-        mkdir $TARGETDIR/boot/efi
     fi
 
     echo "Running grub-install $grub_args $dev..." >$LOG
@@ -849,16 +845,7 @@ configure_wifi() {
     fi
 
     rm -f ${_wpasupconf%.conf}-${dev}.conf
-
-    # wpa_supplicant defaults
-    echo "ctrl_interface=/run/wpa_supplicant" >> ${_wpasupconf%.conf}-${dev}.conf
-    echo "ctrl_interface_group=wheel"         >> ${_wpasupconf%.conf}-${dev}.conf
-    echo "eapol_version=1"                    >> ${_wpasupconf%.conf}-${dev}.conf
-    echo "ap_scan=1"                          >> ${_wpasupconf%.conf}-${dev}.conf
-    echo "fast_reauth=1"                      >> ${_wpasupconf%.conf}-${dev}.conf
-    echo "update_config=1"                    >> ${_wpasupconf%.conf}-${dev}.conf
-
-
+    cp -f ${_wpasupconf} ${_wpasupconf%.conf}-${dev}.conf
     if [ "$enc" = "wep" ]; then
         echo "network={" >> ${_wpasupconf%.conf}-${dev}.conf
         echo "  ssid=\"$ssid\"" >> ${_wpasupconf%.conf}-${dev}.conf
@@ -867,31 +854,8 @@ configure_wifi() {
         echo "  auth_alg=SHARED" >> ${_wpasupconf%.conf}-${dev}.conf
         echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
     else
-        echo "network={" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  ssid=\"$ssid\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  scan_ssid=1" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  key_mgmt=WPA-PSK" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  psk=\"$pass\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
+        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf%.conf}-${dev}.conf
     fi
-
-    ln -sf ${_wpasupconf%.conf}-${dev}.conf ${_wpasupconf}
-
-    # enabling wpa_supplicant
-    ln -sf /etc/sv/wpa_supplicant /var/service
-    ln -sf /etc/sv/dhcpcd /var/service
-    sv restart wpa_supplicant >$LOG 2>&1
-    sv restart dhcpcd >$LOG 2>&1
-    sv check dhcpcd >$LOG 2>&1
-    if [ ! $? ]; then
-        DIALOG --msgbox "Error: dhcpcd couldn't be restarted!" ${MSGBOXSIZE}
-        return 1
-    else
-        INFOBOX "Setting up network..." 4 60
-    fi
-
-    # wait a couple seconds to setup wifi
-    sleep 5
 
     configure_net_dhcp $dev
     return $?
@@ -925,10 +889,6 @@ configure_net_dhcp() {
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
             return 1
         fi
-
-        # wait a little bit for wifi to configure
-        sleep 10
-
         iface_setup $dev
         if [ $? -eq 1 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} DHCP request failed for $dev. Check $LOG for errors." ${MSGBOXSIZE}
@@ -1036,9 +996,7 @@ the mount point for the root filesystem (/) has not yet been configured." ${MSGB
     elif [ -n "$EFI_SYSTEM" -a \( -z "$efi_system_partition" \) ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 The EFI System Partition has not yet been configured, please create it\n
-as FAT32, mountpoint /boot/efi or /boot and at least with 100MB of size.\n
-If f2fs or nilfs2 is used on the root partition, then the boot partition MUST be\n
-mounted at /boot" ${MSGBOXSIZE}
+as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
     fi
     FILESYSTEMS_DONE=1
 }
@@ -1084,7 +1042,6 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             f2fs) MKFS="mkfs.f2fs -f"; modprobe f2fs >$LOG 2>&1;;
             vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
             xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
-            nilfs2) MKFS="mkfs.nilfs2 -f -q"; modprobe nilfs2 >$LOG 2>&1;;
             esac
             TITLE="Check $LOG for details ..."
             INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
@@ -1238,9 +1195,7 @@ install_packages() {
 }
 
 enable_dhcpd() {
-    ln -sf /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default
-    ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default
-    cp -r /etc/wpa_supplicant/* $TARGETDIR/etc/wpa_supplicant
+    ln -sf /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
 }
 
 menu_install() {
