@@ -1,0 +1,51 @@
+{
+    "variables": {
+        "version": "{{env `RELEASE`}}"
+    },
+    "builders": [
+        {
+            "type": "virtualbox-iso",
+            "vboxmanage": [
+                ["modifyvm", "{{.Name}}", "--nictype1", "virtio"]
+            ],
+            "iso_url": "https://alpha.de.repo.voidlinux.org/live/20190217/void-live-x86_64-20190217.iso",
+            "iso_checksum": "b6884f6ea435e242c29a5778ced7a1ce187cef2f07eb9543765064a1256030e9",
+            "iso_checksum_type": "sha256",
+            "boot_wait": "5s",
+            "boot_command": [
+                "<tab><wait>",
+                "auto autourl=http://{{ .HTTPIP }}:{{ .HTTPPort }}/autoinstall.cfg",
+                "<enter>"
+            ],
+            "guest_os_type": "Linux_64",
+            "http_directory": "http",
+            "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+            "ssh_wait_timeout": "20m",
+            "virtualbox_version_file": ".vbox_version",
+            "guest_additions_mode": "disable",
+            "ssh_username": "vagrant",
+            "ssh_password": "vagrant"
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "scripts/vagrant.sh",
+            "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'"
+        }
+    ],
+
+    "post-processors": [
+        [
+            {
+                "type": "vagrant"
+            },
+            {
+                "type": "vagrant-cloud",
+                "box_tag": "voidlinux/glibc64",
+                "version": "{{user `version`}}"
+            }
+        ]
+    ]
+}
