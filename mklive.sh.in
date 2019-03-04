@@ -29,6 +29,11 @@
 trap 'error_out $? $LINENO' INT TERM 0
 umask 022
 
+RUNDIR=$(pwd -P)
+SCRIPTDIR=$(realpath $(dirname "$0"))
+
+cd "$SCRIPTDIR"
+
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network"
 readonly PROGNAME=$(basename "$0")
@@ -287,7 +292,7 @@ generate_iso_image() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat -no-emul-boot \
         -isohybrid-mbr "$SYSLINUX_DATADIR"/isohdpfx.bin \
-        -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
+        -output "$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 }
 
 #
@@ -342,6 +347,9 @@ fi
 
 readonly CURDIR="$PWD"  
 
+if ! echo "$OUTPUT_FILE" | grep '^/.*'; then # If -o relative path, make absolute
+    OUTPUT_FILE=$(realpath "$RUNDIR/$OUTPUT_FILE")
+fi
 
 if [ -n "$ROOTDIR" ]; then
     BUILDDIR=$(mktemp --tmpdir="$ROOTDIR" -d)
@@ -417,7 +425,5 @@ generate_squashfs
 print_step "Generating ISO image..."
 generate_iso_image
 
-hsize=$(du -sh "$CURDIR/$OUTPUT_FILE"|awk '{print $1}')
-info_msg "Created $(readlink -f "$CURDIR"/"$OUTPUT_FILE") ($hsize) successfully."
-
-
+hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
+info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."
