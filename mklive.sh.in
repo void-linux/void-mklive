@@ -345,8 +345,6 @@ if [ "$(id -u)" -ne 0 ]; then
     die "Must be run as root, exiting..."
 fi
 
-readonly CURDIR="$PWD"  
-
 if ! echo "$OUTPUT_FILE" | grep '^/.*'; then # If -o relative path, make absolute
     OUTPUT_FILE=$(realpath "$RUNDIR/$OUTPUT_FILE")
 fi
