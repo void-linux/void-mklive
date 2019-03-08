@@ -31,7 +31,7 @@ check_tools() {
     # if a different version of something is used than was expected.
     for tool in $LIBTOOLS $REQTOOLS ; do
         if ! which "$tool" > /dev/null ; then
-            die "Required tool $f is not available on this system!"
+            die "Required tool $tool is not available on this system!"
         fi
     done
 
