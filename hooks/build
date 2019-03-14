@@ -1,0 +1,2 @@
+#!/bin/sh
+docker build --build-arg ARCH=$ARCH -t $IMAGE_NAME .
