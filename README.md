@@ -14,6 +14,8 @@ This repository contains utilities for Void Linux:
  * make
 
 #### Dependencies
+ * Compression type for the initramfs image
+   * liblz4 (for lz4, xz) (default)
  * xbps>=0.45
  * qemu-user-static binaries (for mkrootfs)
 
