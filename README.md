@@ -10,8 +10,10 @@ This repository contains utilities for Void Linux:
  * mkrootfs  (The Void Linux rootfs maker for ARM platforms)
  * mknet (Script to generate netboot tarballs for Void)
 
-#### Dependencies
+#### Build Dependencies
+ * make
 
+#### Dependencies
  * xbps>=0.45
  * qemu-user-static binaries (for mkrootfs)
 
