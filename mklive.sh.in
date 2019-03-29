@@ -287,7 +287,7 @@ generate_iso_image() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat -no-emul-boot \
         -isohybrid-mbr "$SYSLINUX_DATADIR"/isohdpfx.bin \
-        -output "$CURDIR/$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
+        -output "$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 }
 
 #
@@ -339,9 +339,6 @@ PACKAGE_LIST="$BASE_SYSTEM_PKG $PACKAGE_LIST"
 if [ "$(id -u)" -ne 0 ]; then
     die "Must be run as root, exiting..."
 fi
-
-readonly CURDIR="$PWD"  
-
 
 if [ -n "$ROOTDIR" ]; then
     BUILDDIR=$(mktemp --tmpdir="$ROOTDIR" -d)
@@ -417,7 +414,7 @@ generate_squashfs
 print_step "Generating ISO image..."
 generate_iso_image
 
-hsize=$(du -sh "$CURDIR/$OUTPUT_FILE"|awk '{print $1}')
-info_msg "Created $(readlink -f "$CURDIR"/"$OUTPUT_FILE") ($hsize) successfully."
+hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
+info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."
 
 
