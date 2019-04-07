@@ -25,7 +25,10 @@ RUN xbps-reconfigure -a && \
     --repository=${REPOSITORY}/current \
     --repository=${REPOSITORY}/current/musl \
     -r /target \
-    ${BASEPKG}
+    ${BASEPKG} && \
+    [ ${BASEPKG} = base-chroot ] && \
+    rm -rf /usr/share/{doc,i18n,gettext*,info,locale,man,bash-completion,zsh}
+
 
 # 3) configure and clean up the final image
 FROM scratch
