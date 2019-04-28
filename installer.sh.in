@@ -577,22 +577,22 @@ set_locale() {
 }
 
 menu_timezone() {
-    local _tzones="$(cd /usr/share/zoneinfo; find Africa/ America/ Antarctica/ Arctic/ Asia/ Atlantic/ Australia/ Europe/ Indian/ Pacific/ posix/ -type f | sort)"
-    local _TIMEZONES=
+    local areas=(Africa America Antarctica Arctic Asia Atlantic Australia Europe Indian Pacific)
 
-    for f in ${_tzones}; do
-        _TIMEZONES="${_TIMEZONES} ${f} -"
-    done
-    while true; do
-        DIALOG --title " Select your timezone " --menu "$MENULABEL" 14 70 14 ${_TIMEZONES}
-        if [ $? -eq 0 ]; then
-            set_option TIMEZONE "$(cat $ANSWER)"
+    local area locations location
+    while (IFS='|'; DIALOG ${area:+--default-item|"$area"} --title " Select area " --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${areas[@]}")); do
+        area=$(cat $ANSWER)
+        read -a locations -d '\n' < <(find /usr/share/zoneinfo/$area -type f -printf '%P\n' | sort)
+        if (IFS='|'; DIALOG --title " Select location (${area}) " --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${locations[@]//_/ }")); then
+            location=$(tr ' ' '_' < $ANSWER)
+            set_option TIMEZONE "$area/$location"
             TIMEZONE_DONE=1
-            break
+            return 0
         else
-            return
+            continue
         fi
     done
+    return 1
 }
 
 set_timezone() {
