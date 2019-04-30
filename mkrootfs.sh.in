@@ -57,7 +57,7 @@ Supported architectures: i686, i686-musl, x86_64, x86_64-musl,
 
 
 Options
-    -b <syspkg> Set an alternative base-system package (defaults to base-system)
+    -b <syspkg> Set an alternative base-system package (defaults to base-voidstrap)
     -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
     -C <file>   Full path to the XBPS configuration file
     -h          Show this help
@@ -72,10 +72,14 @@ _EOF
 #      SCRIPT EXECUTION STARTS HERE
 # ########################################
 
+# Set the default system package.
+SYSPKG="base-voidstrap"
+
 # Boilerplate option parsing.  This script supports the bare minimum
 # needed to build an image.
-while getopts "C:c:hr:x:o:V" opt; do
+while getopts "b:C:c:hr:x:o:V" opt; do
     case $opt in
+        b) SYSPKG="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         h) usage; exit 0;;
@@ -136,10 +140,10 @@ chmod 755 "$ROOTFS"
 mount_pseudofs
 
 # With everything setup, we can now run the install to load the
-# base-voidstrap package into the rootfs.  This will not produce a
+# system package into the rootfs.  This will not produce a
 # bootable system but will instead produce a base component that can
 # be quickly expanded to perform other actions on.
-run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y base-voidstrap"
+run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y $SYSPKG"
 
 # Enable en_US.UTF-8 locale and generate it into the target ROOTFS.
 # This is a bit of a hack since some glibc stuff doesn't really work
