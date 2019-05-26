@@ -69,6 +69,9 @@ images-all: platformfs-all images-all-sbc images-all-cloud
 
 images-all-sbc: $(ALL_SBC_IMAGES)
 
+images-all-sbc-print:
+	@echo $(ALL_SBC_IMAGES) | sed "s: :\n:g"
+
 images-all-cloud: $(ALL_CLOUD_IMAGES)
 
 images-all-print:
