@@ -6,6 +6,33 @@
 readonly LIBTOOLS="cp echo cat printf which mountpoint mount umount modprobe"
 readonly HOSTARCH=$(xbps-uhelper arch)
 
+is_target_native() {
+    # Because checking whether the target is runnable is ugly, stuff
+    # it into a single function. That makes it easy to check anywhere.
+    local target_arch
+
+    target_arch="$1"
+    # this will cover most
+    if [ "${target_arch%-musl}" = "${HOSTARCH%-musl}" ]; then
+        return 0
+    fi
+
+    case "$HOSTARCH" in
+        # ppc64le has no 32-bit variant, only runs its own stuff
+        ppc64le*) return 1 ;;
+        # x86_64 also runs i686
+        x86_64*) test -z "${target_arch##*86*}" ;;
+        # aarch64 also runs armv*
+        aarch64*) test -z "${target_arch##armv*}" ;;
+        # bigendian ppc64 also runs ppc
+        ppc64*) test "${target_arch%-musl}" = "ppc" ;;
+        # anything else is just their own
+        *) return 1 ;;
+    esac
+
+    return $?
+}
+
 info_msg() {
     # This function handles the printing that is bold within all
     # scripts.  This is a convenience function so that the rather ugly
@@ -80,9 +107,7 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $* for target $XBPS_TARGET_ARCH ..."
-    if [ "$XBPS_TARGET_ARCH" = "${HOSTARCH}" ] ||
-           [ -z "${XBPS_TARGET_ARCH##*86*}" ] &&
-               [ -z "${HOSTARCH##*86*}" ] ; then
+    if is_target_native "$XBPS_TARGET_ARCH"; then
         # This is being run on the same architecture as the host,
         # therefore we should set XBPS_ARCH.
         if ! eval XBPS_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
