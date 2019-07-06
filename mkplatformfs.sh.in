@@ -135,7 +135,7 @@ set_target_arch_from_platform
 set_cachedir
 
 # Append any additional packages if they were requested
-if [ -z "$EXTRA_PKGS" ] ; then
+if [ -n "$EXTRA_PKGS" ] ; then
     PKGS="$PKGS $EXTRA_PKGS"
 fi
 
