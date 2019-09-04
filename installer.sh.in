@@ -485,8 +485,15 @@ menu_partitions() {
     if [ $? -eq 0 ]; then
         local device=$(cat $ANSWER)
 
-        DIALOG --title "Modify Partition Table on $device" --msgbox "\n
-${BOLD}cfdisk will be executed in disk $device.${RESET}\n\n
+        DIALOG --title " Select the software for partitioning " \
+            --menu "$MENULABEL" ${MENUSIZE} \
+            "cfdisk" "Easy to use" \
+            "fdisk" "More advanced"
+        if [ $? -eq 0 ]; then
+            local software=$(cat $ANSWER)
+
+            DIALOG --title "Modify Partition Table on $device" --msgbox "\n
+${BOLD}${software} will be executed in disk $device.${RESET}\n\n
 For BIOS systems, MBR or GPT partition tables are supported.\n
 To use GPT on PC BIOS systems an empty partition of 1MB must be added\n
 at the first 2GB of the disk with the TOGGLE \`bios_grub' enabled.\n
@@ -498,13 +505,14 @@ At least 1 partition is required for the rootfs (/).\n
 For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
 ${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
 ${RESET}\n" 18 80
-        if [ $? -eq 0 ]; then
-            while true; do
-                clear; cfdisk $device; PARTITIONS_DONE=1
-                break
-            done
-        else
-            return
+            if [ $? -eq 0 ]; then
+                while true; do
+                    clear; $software $device; PARTITIONS_DONE=1
+                    break
+                done
+            else
+                return
+            fi
         fi
     fi
 }
