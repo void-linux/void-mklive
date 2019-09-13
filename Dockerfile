@@ -32,3 +32,5 @@ FROM scratch
 COPY --from=stage1 /target /
 RUN xbps-reconfigure -a && \
   rm -r /var/cache/xbps
+
+CMD ["/bin/sh"]
