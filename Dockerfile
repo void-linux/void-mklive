@@ -3,8 +3,8 @@ FROM alpine:3.9 as stage0
 ARG REPOSITORY=https://alpha.de.repo.voidlinux.org
 ARG ARCH=x86_64
 COPY keys/* /target/var/db/xbps/keys/
-RUN apk add ca-certificates && \
-  wget -O - ${REPOSITORY}/static/xbps-static-latest.$(uname -m)-musl.tar.xz | \
+RUN apk add ca-certificates curl && \
+  curl ${REPOSITORY}/static/xbps-static-latest.$(uname -m)-musl.tar.xz | \
     tar Jx && \
   XBPS_ARCH=${ARCH} xbps-install.static -yMU \
     --repository=${REPOSITORY}/current \
