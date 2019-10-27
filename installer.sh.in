@@ -952,6 +952,7 @@ menu_network() {
 validate_filesystems() {
     local mnts dev size fstype mntpt mkfs rootfound fmt
     local usrfound efi_system_partition
+    local bootdev=$(get_option BOOTLOADER)
 
     unset TARGETFS
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
@@ -985,10 +986,11 @@ the mount point for the root filesystem (/) has not yet been configured." ${MSGB
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 /usr mount point has been configured but is not supported, please remove it to continue." ${MSGBOXSIZE}
         return 1
-    elif [ -n "$EFI_SYSTEM" -a -z "$efi_system_partition" ]; then
+    elif [ -n "$EFI_SYSTEM" -a "$bootdev" != "none" -a -z "$efi_system_partition" ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 The EFI System Partition has not yet been configured, please create it\n
 as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
+        return 1
     fi
     FILESYSTEMS_DONE=1
 }
@@ -1191,23 +1193,26 @@ enable_dhcpd() {
 }
 
 menu_install() {
-    # Don't continue if filesystems are not ready.
-    validate_filesystems || return 1
-
     ROOTPASSWORD_DONE="$(get_option ROOTPASSWORD)"
     BOOTLOADER_DONE="$(get_option BOOTLOADER)"
 
-    if [ -z "$FILESYSTEMS_DONE" ]; then
-        DIALOG --msgbox "${BOLD}Required filesystems were not configured, \
-please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
-        return 1
-    elif [ -z "$ROOTPASSWORD_DONE" ]; then
+    if [ -z "$ROOTPASSWORD_DONE" ]; then
         DIALOG --msgbox "${BOLD}The root password has not been configured, \
 please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
     elif [ -z "$BOOTLOADER_DONE" ]; then
         DIALOG --msgbox "${BOLD}The disk to install the bootloader has not been \
 configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
+        return 1
+    fi
+
+    # Validate filesystems after making sure bootloader is done,
+    # so that specific checks can be made based on the selection
+    validate_filesystems || return 1
+
+    if [ -z "$FILESYSTEMS_DONE" ]; then
+        DIALOG --msgbox "${BOLD}Required filesystems were not configured, \
+please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
     fi
 
