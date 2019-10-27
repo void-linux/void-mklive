@@ -68,7 +68,7 @@ if [ -z "$IMAGE" -o "$IMAGE" = cinnamon ]; then
 fi
 
 if [ -z "$IMAGE" -o "$IMAGE" = gnome ]; then
-	if [ ! -e $CINNAMON_IMG ]; then
+	if [ ! -e $GNOME_IMG ]; then
 		./mklive.sh -a $ARCH -o $GNOME_IMG -p "$GNOME_PKGS" ${REPO} $@
 	fi
 fi
