@@ -81,6 +81,7 @@ directory if unset).
 
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
+ -v linux<version>  Install a custom Linux version on ISO image (linux meta-package if unset).
  -K                 Do not remove builddir.
 
 The $PROGNAME script generates a live image of the Void Linux distribution.
@@ -288,7 +289,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -305,6 +306,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:h" opt; do
         p) PACKAGE_LIST="$OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
+        v) LINUX_VERSION="$OPTARG";;
         h) usage;;
 	*) usage;;
     esac
@@ -370,9 +372,25 @@ copy_void_keys "$VOIDHOSTDIR"
 XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r "$ROOTFS" ${XBPS_REPOSITORY} -S
 XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} -S
 
-_linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux|head -1)
+# Get linux version for ISO
+# If linux version option specified use
+if [ -n "$LINUX_VERSION" ]; then
+    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]*"; then
+        die "-v option must be in format linux<version>"
+    fi
+
+    _linux_series="$LINUX_VERSION"
+    PACKAGE_LIST="$PACKAGE_LIST $LINUX_VERSION"
+else # Otherwise find latest stable version from linux meta-package
+    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux|head -1)
+fi
+
 _kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
+
+if [ "$?" -ne "0" ]; then
+    die "Failed to find kernel package version"
+fi
 
 : ${OUTPUT_FILE="void-live-${BASE_ARCH}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
