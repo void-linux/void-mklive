@@ -177,6 +177,10 @@ cleanup_rootfs() {
     rm -r "$ROOTFS"/usr/lib/dracut/modules.d/01autoinstaller
 }
 
+configure_system() {
+    sed -i 's|/bin/sh|/bin/bash|' "$ROOTFS/etc/passwd"
+}
+
 generate_isolinux_boot() {
     cp -f "$SYSLINUX_DATADIR"/isolinux.bin "$ISOLINUX_DIR"
     cp -f "$SYSLINUX_DATADIR"/ldlinux.c32 "$ISOLINUX_DIR"
@@ -420,6 +424,9 @@ generate_grub_efi_boot
 
 print_step "Cleaning up rootfs..."
 cleanup_rootfs
+
+print_step "Configuring system..."
+configure_system
 
 print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
