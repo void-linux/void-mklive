@@ -247,6 +247,10 @@ if [ -n "$BOOT_UUID" ]; then
     echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults${fstab_args} 0 2" >> "${ROOTFS}/etc/fstab"
 fi
 
+# Images are shipped with root as the only user by default, so we need to
+# ensure ssh login is possible for headless setups.
+sed -i "${ROOTFS}/etc/ssh/sshd_config" -e 's|^#\(PermitRootLogin\) .*|\1 yes|g'
+
 # This section does final configuration on the images.  In the case of
 # SBCs this writes the bootloader to the image or sets up other
 # required binaries to boot.  In the case of images destined for a
