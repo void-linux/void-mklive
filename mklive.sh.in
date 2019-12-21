@@ -29,7 +29,7 @@
 trap 'error_out $? $LINENO' INT TERM 0
 umask 022
 
-readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
+readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso linux-firmware"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network"
 readonly PROGNAME=$(basename "$0")
 
