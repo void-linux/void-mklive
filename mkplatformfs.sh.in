@@ -51,7 +51,7 @@ Usage: $PROGNAME [options] <platform> <base-tarball>
 Supported platforms: i686, x86_64, GCP,
                      dockstar, bananapi, beaglebone, cubieboard2, cubietruck,
                      odroid-c2, odroid-u2, rpi, rpi2 (armv7), rpi3 (aarch64),
-                     usbarmory, ci20, pogoplugv4
+                     usbarmory, ci20, pogoplugv4, pinebookpro
 
 Options
     -b <syspkg> Set an alternative base-system package (defaults to base-system)
@@ -127,6 +127,7 @@ case "$PLATFORM" in
     i686*) PKGS="$BASEPKG" ;;
     x86_64*) PKGS="$BASEPKG" ;;
     GCP*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    pinebookpro*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
