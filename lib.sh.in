@@ -58,6 +58,10 @@ mount_pseudofs() {
             mount -r --bind /$f "$ROOTFS/$f"
         fi
     done
+    if ! mountpoint -q "$ROOTFS/tmp" ; then
+        mkdir -p "$ROOTFS/tmp"
+        mount -o mode=0755,nosuid,nodev -t tmpfs tmpfs "$ROOTFS/tmp"
+    fi
 }
 
 umount_pseudofs() {
@@ -71,6 +75,7 @@ umount_pseudofs() {
             umount -f "$ROOTFS/$f" >/dev/null 2>&1
         done
     fi
+    umount -f "$ROOTFS/tmp" >/dev/null 2>&1
 }
 
 run_cmd_target() {
