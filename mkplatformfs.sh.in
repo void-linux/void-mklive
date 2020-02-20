@@ -82,7 +82,7 @@ while getopts "b:p:k:c:C:r:x:o:nhV" opt; do
         k) POST_CMD="$OPTARG" ;;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG" ;;
         C) XBPS_CONFFILE="-C $OPTARG" ;;
-        r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG" ;;
+        r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY" ;;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
         n) COMPRESSION="n" ;;
