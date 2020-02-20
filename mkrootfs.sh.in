@@ -136,8 +136,10 @@ run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -
 # so we set this here.
 chmod 755 "$ROOTFS"
 
-# The pseudofs mountpoints are needed for the qemu support in cases
-# where we are running things that aren't natively executable.
+# The binfmt setup and pseudofs mountpoints are needed for the qemu
+# support in cases where we are running things that aren't natively
+# executable.
+register_binfmt
 mount_pseudofs
 
 # With everything setup, we can now run the install to load the
