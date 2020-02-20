@@ -237,7 +237,7 @@ register_binfmt() {
     # use the static one always and make sure it shows up at the same
     # place in the host and the chroot.
     if [ ! -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
-        cp -f "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin" ||
+        install -m755 -D "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin/$QEMU_BIN" ||
             die "Could not install $QEMU_BIN to $ROOTFS/usr/bin/"
     fi
 }
