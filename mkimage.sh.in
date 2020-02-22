@@ -165,6 +165,11 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 
+BOOT_START=2048
+case "$PLATFORM" in
+    pinebookpro*) BOOT_START=32768 ;;
+esac
+
 case "$PLATFORM" in
     cubieboard2|cubietruck|ci20*|odroid-c2*)
         # These platforms use a single partition for the entire filesystem.
@@ -184,8 +189,8 @@ _EOF
         # layout for new platforms.
         sfdisk "${FILENAME}" <<_EOF
 label: dos
-2048,${BOOT_FSSIZE},b,*
-,+,L
+${BOOT_START},${BOOT_FSSIZE},b,*
++${BOOT_FSSIZE},+,L
 _EOF
         LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
         # Normally we need to quote to prevent argument splitting, but
