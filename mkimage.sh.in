@@ -166,8 +166,14 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
 fi
 
 BOOT_START=2048
+ROOT_START=
 case "$PLATFORM" in
-    pinebookpro*) BOOT_START=32768 ;;
+    pinebookpro*)
+        BOOT_START=32768
+        # Without this, sfdisk creates root partition starting at
+        # 2048, overlapping u-boot reserved space and boot partition.
+        ROOT_START=$BOOT_START
+        ;;
 esac
 
 case "$PLATFORM" in
@@ -190,7 +196,7 @@ _EOF
         sfdisk "${FILENAME}" <<_EOF
 label: dos
 ${BOOT_START},${BOOT_FSSIZE},b,*
-+${BOOT_FSSIZE},+,L
+${ROOT_START},+,L
 _EOF
         LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
         # Normally we need to quote to prevent argument splitting, but
