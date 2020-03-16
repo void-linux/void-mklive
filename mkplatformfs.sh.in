@@ -160,7 +160,7 @@ tar xf "$BASE_TARBALL" -C "$ROOTFS"
 # $PKGS.  After this step we will do an xbps-reconfigure -f $PKGS
 # under the correct architecture to ensure the system is setup
 # correctly.
-run_cmd_target "xbps-install -S $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y $PKGS"
+run_cmd_target "xbps-install -SU $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -y $PKGS"
 
 # Now that the packages are installed, we need to chroot in and
 # reconfigure.  This needs to be done as the right architecture.
