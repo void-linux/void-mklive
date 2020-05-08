@@ -99,6 +99,6 @@ masterdir-all-print:
 masterdir-all: $(ALL_MASTERDIRS)
 
 masterdir-%:
-	$(SUDO) docker build --build-arg REPOSITORY=$(XBPS_REPOSITORY) --build-arg ARCH=$* --build-arg ADDINS=spdx-licenses-list -t voidlinux/masterdir-$*:$(DATECODE) .
+	$(SUDO) docker build --build-arg REPOSITORY=$(XBPS_REPOSITORY) --build-arg ARCH=$* -t voidlinux/masterdir-$*:$(DATECODE) .
 
 .PHONY: clean dist rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all masterdir-all-print masterdir-all masterdir-push-all
