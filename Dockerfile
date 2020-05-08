@@ -17,7 +17,6 @@ FROM scratch as stage1
 ARG REPOSITORY=https://alpha.de.repo.voidlinux.org
 ARG ARCH=x86_64
 ARG BASEPKG=base-minimal
-ARG ADDINS=
 COPY --from=stage0 /target /
 COPY keys/* /target/var/db/xbps/keys/
 RUN xbps-reconfigure -a && \
@@ -26,7 +25,7 @@ RUN xbps-reconfigure -a && \
     --repository=${REPOSITORY}/current \
     --repository=${REPOSITORY}/current/musl \
     -r /target \
-    ${BASEPKG} ${ADDINS}
+    ${BASEPKG}
 
 # 3) configure and clean up the final image
 FROM scratch
