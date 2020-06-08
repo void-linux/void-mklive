@@ -1,5 +1,5 @@
 # 1) use alpine to generate a void environment
-FROM alpine:3.9 as stage0
+FROM alpine:3.12 as stage0
 ARG REPOSITORY=https://alpha.de.repo.voidlinux.org
 ARG ARCH=x86_64
 COPY keys/* /target/var/db/xbps/keys/
