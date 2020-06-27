@@ -1,0 +1,42 @@
+# 1) use alpine to generate a void environment
+FROM alpine:3.12 as stage0
+ARG REPOSITORY=https://alpha.de.repo.voidlinux.org
+ARG ARCH=x86_64
+COPY keys/* /target/var/db/xbps/keys/
+RUN apk add ca-certificates curl && \
+  curl ${REPOSITORY}/static/xbps-static-latest.$(uname -m)-musl.tar.xz | \
+    tar Jx && \
+  XBPS_ARCH=${ARCH} xbps-install.static -yMU \
+    --repository=${REPOSITORY}/current \
+    --repository=${REPOSITORY}/current/musl \
+    -r /target \
+    base-minimal
+
+# 2) using void to generate the final build
+FROM scratch as stage1
+ARG REPOSITORY=https://alpha.de.repo.voidlinux.org
+ARG ARCH=x86_64
+COPY --from=stage0 /target /
+COPY keys/* /target/var/db/xbps/keys/
+RUN mkdir -p /target/etc/xbps.d/ && \
+        echo "noextract=/etc/sv/agetty*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/lib/gconv*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/share/bash-completion*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/share/i18n*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/share/man*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/share/locale*" >> /target/etc/xbps.d/noextract.conf && \
+        echo "noextract=/usr/share/info*" >> /target/etc/xbps.d/noextract.conf && \
+        xbps-reconfigure -a && \
+        mkdir -p /target/var/cache && ln -s /var/cache/xbps /target/var/cache/xbps && \
+        XBPS_ARCH=${ARCH} xbps-install -yMU \
+        --repository=${REPOSITORY}/current \
+        --repository=${REPOSITORY}/current/musl \
+        -r /target \
+        base-files coreutils ca-certificates dash sed xbps
+
+# 3) configure and clean up the final image
+FROM scratch
+COPY --from=stage1 /target /
+RUN xbps-reconfigure -a && rm -rf /var/cache/xbps
+
+CMD ["/bin/sh"]
