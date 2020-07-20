@@ -918,13 +918,13 @@ configure_net_static() {
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to bring $dev interface." ${MSGBOXSIZE}
         return 1
     fi
-    echo "running: ip addr add $ip dev $dev"
+    echo "running: ip addr add $ip dev $dev" >$LOG
     ip addr add $ip dev $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to set ip to the $dev interface." ${MSGBOXSIZE}
         return 1
     fi
-    ip route add $gw dev $dev >$LOG 2>&1
+    ip route add default via $gw >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to setup your gateway." ${MSGBOXSIZE}
         return 1
