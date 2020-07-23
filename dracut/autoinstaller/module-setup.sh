@@ -17,7 +17,8 @@ install() {
     inst /usr/bin/clear
     inst /usr/bin/cp
     inst /usr/bin/chpasswd
-    inst /usr/bin/dhcpcd
+    inst /usr/bin/dhclient
+    inst /usr/bin/dhclient-script
     inst /usr/bin/halt
     inst /usr/bin/install
     inst /usr/bin/lsblk
@@ -25,14 +26,12 @@ install() {
     inst /usr/bin/mkfs.ext4
     inst /usr/bin/mkswap
     inst /usr/bin/mount
+    inst /usr/bin/resolvconf
     inst /usr/bin/sfdisk
     inst /usr/bin/sync
     inst /usr/bin/xbps-install
     inst /usr/bin/xbps-uhelper
     inst /usr/bin/xbps-query
-
-    inst /usr/libexec/dhcpcd-hooks/20-resolv.conf
-    inst /usr/libexec/dhcpcd-run-hooks
 
     inst_multiple /var/db/xbps/keys/*
     inst_multiple /usr/share/xbps.d/*

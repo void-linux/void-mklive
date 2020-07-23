@@ -22,12 +22,12 @@ VAI_welcome() {
 }
 
 VAI_get_address() {
-    # Enable the hook for resolv.conf
-    mkdir -p /usr/lib/dhcpcd/dhcpcd-hooks
-    ln -sf /usr/libexec/dhcpcd-hooks/20-resolv.conf /usr/lib/dhcpcd/dhcpcd-hooks/
+    mkdir -p /var/lib/dhclient
 
-    # Get an IP address
-    dhcpcd -w -L --timeout 0
+    # This will fork, but it means that over a slow link the DHCP
+    # lease will still be maintained.  It also doesn't have a
+    # hard-coded privsep user in it like dhcpcd.
+    dhclient
 }
 
 VAI_partition_disk() {
