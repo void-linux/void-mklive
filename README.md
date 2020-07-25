@@ -33,7 +33,7 @@ and then see the usage output:
 
 #### Examples
 
-Build a native live image with runit and keyboard set to 'fr':
+Build a native live image keyboard set to 'fr':
 
     # ./mklive.sh -k fr
 
