@@ -187,7 +187,7 @@ if [ ! -f "$ROOTFS/boot/uInitrd" ] ||
     # initrd so that it can install the kernel drivers in it.  Normally
     # this check is quite complex, but since this is a clean rootfs and we
     # just installed exactly one kernel, this check can get by with a
-    # really niave command to figure out the kernel version
+    # really naive command to figure out the kernel version
     KERNELVERSION=$(ls "$ROOTFS/usr/lib/modules/")
 
     # Some platforms also have special arguments that need to be set
