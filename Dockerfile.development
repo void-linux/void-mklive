@@ -1,0 +1,9 @@
+# Use this Dockerfile to test the scripts in a safe environment.
+
+FROM voidlinux/voidlinux:latest
+
+COPY . /scripts
+WORKDIR /scripts
+
+RUN xbps-install -Sy make git bash
+RUN make
