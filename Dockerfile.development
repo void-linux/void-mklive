@@ -5,5 +5,5 @@ FROM voidlinux/voidlinux:latest
 COPY . /scripts
 WORKDIR /scripts
 
-RUN xbps-install -Sy make git bash
+RUN xbps-install -Sy make git bash kmod
 RUN make
