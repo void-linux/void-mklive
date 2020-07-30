@@ -22,32 +22,5 @@
       "type": "qemu",
       "vm_name": "DO-glibc64"
     }
-  ],
-  "post-processors": [
-    {
-      "image_description": "Packer import {{timestamp}}",
-      "image_name": "void-linux-{{user `release`}}",
-      "image_regions": "{{user `image_regions`}}",
-      "image_tags": [
-        "custom",
-        "packer"
-      ],
-      "space_name": "{{user `spaces_bucket`}}",
-      "spaces_region": "{{user `spaces_region`}}",
-      "type": "digitalocean-import"
-    }
-  ],
-  "provisioners": [
-    {
-      "execute_command": "echo 'void' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
-      "script": "scripts/cloud.sh",
-      "type": "shell"
-    }
-  ],
-  "variables": {
-    "image_regions": "{{env `IMAGE_REGIONS`}}",
-    "spaces_bucket": "{{env `SPACES_BUCKET`}}",
-    "spaces_region": "{{env `SPACES_REGION`}}",
-    "release": "{{env `RELEASE`}}"
-  }
+  ]
 }

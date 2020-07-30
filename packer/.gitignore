@@ -2,3 +2,4 @@ output_*
 packer_cache
 crash.log
 *.box
+templates/

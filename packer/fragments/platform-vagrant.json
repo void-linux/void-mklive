@@ -1,0 +1,24 @@
+{
+  "post-processors": [
+    [
+      {
+        "type": "vagrant"
+      },
+      {
+        "box_tag": "voidlinux/glibc64",
+        "type": "vagrant-cloud",
+        "version": "{{user `version`}}"
+      }
+    ]
+  ],
+  "provisioners": [
+    {
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
+      "script": "scripts/vagrant.sh",
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "version": "{{env `RELEASE`}}"
+  }
+}

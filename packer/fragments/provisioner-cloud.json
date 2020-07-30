@@ -1,0 +1,9 @@
+{
+  "provisioners": [
+    {
+      "execute_command": "echo 'void' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
+      "script": "scripts/cloud.sh",
+      "type": "shell"
+    }
+  ]
+}
