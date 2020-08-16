@@ -375,7 +375,7 @@ XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} -S
 # Get linux version for ISO
 # If linux version option specified use
 if [ -n "$LINUX_VERSION" ]; then
-    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]*"; then
+    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]\+"; then
         die "-v option must be in format linux<version>"
     fi
 
