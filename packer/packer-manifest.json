@@ -1,0 +1,19 @@
+{
+  "builds": [
+    {
+      "name": "qemu",
+      "builder_type": "qemu",
+      "build_time": 1598776155,
+      "files": [
+        {
+          "name": "output-qemu/packer-qemu",
+          "size": 1048576000
+        }
+      ],
+      "artifact_id": "VM",
+      "packer_run_uuid": "bef5beb0-c26f-2680-495d-6a04ca26e636",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "bef5beb0-c26f-2680-495d-6a04ca26e636"
+}

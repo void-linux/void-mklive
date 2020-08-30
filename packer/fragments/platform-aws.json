@@ -1,0 +1,12 @@
+{
+    "post-processors": [
+        {
+            "type": "amazon-import",
+            "s3_bucket_name": "{{user `s3_bucket_name`}}",
+            "format": "raw"
+        }
+    ],
+    "variables": {
+        "s3_bucket_name": "{{env `S3_BUCKET_NAME`}}"
+    }
+}
