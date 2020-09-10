@@ -213,7 +213,7 @@ _EOF
             # a small amount.
             ext[34]) disable_journal="-O ^has_journal";;
         esac
-        mkfs.${ROOT_FSTYPE} "$disable_journal" "${LOOPDEV}p2" >/dev/null 2>&1
+        mkfs.${ROOT_FSTYPE} ${disable_journal:+"$disable_journal"} "${LOOPDEV}p2" >/dev/null 2>&1
         mount "${LOOPDEV}p2" "$ROOTFS"
         mkdir -p "${ROOTFS}/boot"
         mount "${LOOPDEV}p1" "${ROOTFS}/boot"
