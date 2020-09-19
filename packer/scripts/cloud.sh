@@ -8,7 +8,7 @@ mv /etc/sudoers.d/{,10-}wheel
 xbps-fetch -o /usr/bin/growpart https://raw.githubusercontent.com/canonical/cloud-utils/ubuntu/0.31-22-g37d4e32a-0ubuntu1/bin/growpart
 chmod +x /usr/bin/growpart
 
-xbps-install -y util-linux coreutils sed shinit
+xbps-install -Sy util-linux coreutils sed shinit
 ln -s /etc/sv/shinit /var/service/
 
 cat <<'EOF' > /etc/runit/core-services/10-resize-root.sh
