@@ -15,7 +15,7 @@ insmod font
 
 if loadfont "(${voidlive})/boot/grub/fonts/unicode.pf2" ; then
     insmod gfxterm
-    set gfxmode="auto"
+    set gfxmode="1920x1440"
     
     terminal_input console
     terminal_output gfxterm

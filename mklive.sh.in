@@ -32,6 +32,7 @@ umask 022
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
 readonly PROGNAME=$(basename "$0")
+toSign=0
 
 info_msg() {
     printf "\033[1m$@\n\033[m"
@@ -82,6 +83,8 @@ directory if unset).
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
  -v linux<version>  Install a custom Linux version on ISO image (linux meta-package if unset).
+ -d <key-file>      Set a key file to sign bootloader.
+ -t <cert-file>     Set a certificate file to sign bootloader.
  -K                 Do not remove builddir.
 
 The $PROGNAME script generates a live image of the Void Linux distribution.
@@ -190,6 +193,17 @@ generate_isolinux_boot() {
         "$ISOLINUX_DIR"/isolinux.cfg
 }
 
+dosign() {
+    print_step "Signing $2..."
+    
+    if ! sbsign --key "$DBKEY" --cert "$DBCRT" --output "$1.signed" "$1"; then
+       die "Failed to sign $2"
+    fi
+    if ! sbverify --cert "$DBCRT" "$1.signed"; then
+       die "failed to verify the signature"
+    fi
+}
+
 generate_grub_efi_boot() {
     cp -f grub/grub.cfg "$GRUB_DIR"
     cp -f grub/grub_void.cfg.in "$GRUB_DIR"/grub_void.cfg
@@ -226,6 +240,12 @@ generate_grub_efi_boot() {
     fi
     mkdir -p "${GRUB_EFI_TMPDIR}"/EFI/BOOT
     cp -f "$VOIDHOSTDIR"/tmp/bootia32.efi "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTIA32.EFI
+
+    #Bootloader signing
+    if [ $toSign -eq 1 ] && [ -f "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX32.EFI ]; then
+        dosign "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX32.EFI BOOTX32.EFI
+    fi
+    
     xbps-uchroot "$VOIDHOSTDIR" grub-mkstandalone -- \
 		 --directory="/usr/lib/grub/x86_64-efi" \
 		 --format="x86_64-efi" \
@@ -237,6 +257,12 @@ generate_grub_efi_boot() {
         die "Failed to generate EFI loader"
     fi
     cp -f "$VOIDHOSTDIR"/tmp/bootx64.efi "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX64.EFI
+    
+    #Bootloader signing
+    if [ $toSign -eq 1 ] && [ -f "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX64.EFI ]; then
+        dosign "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX64.EFI BOOTX64.EFI
+    fi
+    
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
     rm -rf "$GRUB_EFI_TMPDIR"
@@ -282,7 +308,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:d:t:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -300,6 +326,8 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         v) LINUX_VERSION="$OPTARG";;
+        d) DBKEY="$OPTARG";;
+        t) DBCRT="$OPTARG";;
         h) usage;;
 	*) usage;;
     esac
@@ -328,6 +356,22 @@ PACKAGE_LIST="$BASE_SYSTEM_PKG $PACKAGE_LIST"
 # Check for root permissions.
 if [ "$(id -u)" -ne 0 ]; then
     die "Must be run as root, exiting..."
+fi
+
+#The -d and -t options are complementary. If one exists, the other must also exist. 
+#If these options are set, I also check sbsign command.
+if  ([ $DBKEY ] &&  [ ! $DBCRT ]) || ([ ! $DBKEY ] && [ $DBCRT ]); then
+    die "Must be set a key and certificate via -d and -t option, exiting..."
+elif [ $DBKEY ] && [ $DBCRT ]; then
+    if [ ! -f $DBKEY ]; then
+        die "$DBKEY does not exist, exiting..."
+    elif [ ! -f $DBCRT ]; then
+        die "$DBCRT does not exist, exiting..."
+    elif ! command -v sbsign > /dev/null; then
+        die "sbsign command does not exist, exiting..."
+    else
+        toSign=1
+    fi
 fi
 
 if [ -n "$ROOTDIR" ]; then
