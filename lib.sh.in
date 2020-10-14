@@ -287,6 +287,7 @@ set_target_arch_from_platform() {
         cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l";;
         odroid-u2*) XBPS_TARGET_ARCH="armv7l";;
         odroid-c2*) XBPS_TARGET_ARCH="aarch64";;
+        rpi4*) XBPS_TARGET_ARCH="aarch64";;
         rpi3*) XBPS_TARGET_ARCH="aarch64";;
         rpi2*) XBPS_TARGET_ARCH="armv7l";;
         rpi*) XBPS_TARGET_ARCH="armv6l";;
