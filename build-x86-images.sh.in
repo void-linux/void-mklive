@@ -32,11 +32,11 @@ build_variant() {
 
     case $variant in
         base)
-            SERVICES="$SERVICES dhcpcd acpid"
+            SERVICES="$SERVICES dhcpcd wpa_supplicant acpid"
         ;;
         enlightenment)
             PKGS="$PKGS $XORG_PKGS lxdm enlightenment terminology udisks2 firefox-esr"
-            SERVICES="$SERVICES acpid dhcpcd lxdm dbus polkitd"
+            SERVICES="$SERVICES acpid dhcpcd wpa_supplicant lxdm dbus polkitd"
         ;;
         xfce)
             PKGS="$PKGS $XORG_PKGS lxdm xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
@@ -60,11 +60,11 @@ build_variant() {
         ;;
         lxde)
             PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
-            SERVICES="$SERVICES acpid dbus dhcpcd lxdm polkitd"
+            SERVICES="$SERVICES acpid dbus dhcpcd wpa_supplicant lxdm polkitd"
         ;;
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
-            SERVICES="$SERVICES elogind dbus dhcpcd lxdm polkitd"
+            SERVICES="$SERVICES elogind dbus dhcpcd wpa_supplicant lxdm polkitd"
         ;;
         *)
             >&2 echo "Unknown variant $variant"
