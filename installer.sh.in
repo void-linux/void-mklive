@@ -883,7 +883,8 @@ configure_net_dhcp() {
 
     iface_setup $dev
     if [ $? -eq 1 ]; then
-        dhcpcd -t 10 -w -4 -L $dev -e "wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" 2>&1 | tee $LOG | \
+	wpa_supplicant -i${dev} -c"wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf"
+        dhcpcd -t 10 -w -4  2>&1 | tee $LOG | \
             DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
