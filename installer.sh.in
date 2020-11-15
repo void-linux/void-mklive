@@ -883,16 +883,16 @@ configure_net_dhcp() {
     local timeout=15
     iface_setup $dev
     if [ $? -eq 1 ]; then
-	wpa_supplicant -i${dev} -c"wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf"
+	wpa_supplicant -i${dev} -c"/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" -B
         dhcpcd -t $timeout  -4  2>&1 | tee $LOG 
 	if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
             return 1
         fi
-	for i in {1..$timeout}
+	for i in $(seq 1 $timeout)
 	do
             iface_setup $dev
-	    if [ $? -e 0 ]; then
+	    if [ $? -eq 0 ]; then
                 break
             fi
             sleep 1
