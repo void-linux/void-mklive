@@ -141,8 +141,6 @@ cleanup_chroot() {
     fi
 }
 
-# TODO: Figure out how to register the binfmt for x86_64 and for i686
-# to facilitate building on alien build systems.
 register_binfmt() {
     # This function sets up everything that is needed to be able to
     # chroot into a ROOTFS and be able to run commands there.  This
@@ -163,6 +161,12 @@ register_binfmt() {
     # platforms map.
     if [ -z "$XBPS_TARGET_ARCH" ] && [ ! -z "$PLATFORM" ] ; then
         set_target_arch_from_platform
+    fi
+
+    # In the special case where the build is native we can return
+    # without doing anything else
+    if [ "${HOSTARCH%-musl}" = "${XBPS_TARGET_ARCH%-musl}" ] ; then
+        return
     fi
 
     case "${XBPS_TARGET_ARCH}" in
@@ -202,20 +206,22 @@ register_binfmt() {
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             QEMU_BIN=qemu-mipsel-static
             ;;
-        *86*)
-            info_msg "FIXME: Assuming that x86 instructions are native"
-            QEMU_BIN=NATIVE
+        x86_64*)
+            _cpu=x86_64
+            _magic="\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00"
+            _mask="\xff\xff\xff\xff\xff\xfe\xfe\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+            QEMU_BIN=qemu-x86_64-static
+            ;;
+        i686*)
+            _cpu=i386
+            _magic="\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00"
+            _mask="\xff\xff\xff\xff\xff\xfe\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+            QEMU_BIN=qemu-i386-static
             ;;
         *)
             die "Unknown target architecture!"
             ;;
     esac
-
-    # In the special case where the build is native we can return
-    # without doing anything else
-    if [ "$QEMU_BIN" = "NATIVE" ] ; then
-        return
-    fi
 
     # For builds that do not match the host architecture, the correct
     # qemu binary will be required.
