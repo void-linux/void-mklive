@@ -844,19 +844,25 @@ configure_wifi() {
         DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
     fi
 
-    rm -f ${_wpasupconf%.conf}-${dev}.conf
-    cp -f ${_wpasupconf} ${_wpasupconf%.conf}-${dev}.conf
-    if [ "$enc" = "wep" ]; then
-        echo "network={" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  ssid=\"$ssid\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  wep_key0=\"$pass\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  wep_tx_keyidx=0" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  auth_alg=SHARED" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
+    # reset the configuration to the default, if necessary
+    # otherwise backup the configuration
+    if [ -f ${_wpasupconf}.orig ]; then
+        cp -f ${_wpasupconf}.orig ${_wpasupconf}
     else
-        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf%.conf}-${dev}.conf
+        cp -f ${_wpasupconf} ${_wpasupconf}.orig
+    fi
+    if [ "$enc" = "wep" ]; then
+        echo "network={" >> ${_wpasupconf}
+        echo "  ssid=\"$ssid\"" >> ${_wpasupconf}
+        echo "  wep_key0=\"$pass\"" >> ${_wpasupconf}
+        echo "  wep_tx_keyidx=0" >> ${_wpasupconf}
+        echo "  auth_alg=SHARED" >> ${_wpasupconf}
+        echo "}" >> ${_wpasupconf}
+    else
+        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf}
     fi
 
+    sv reload wpa_supplicant
     configure_net_dhcp $dev
     return $?
 }
@@ -883,7 +889,7 @@ configure_net_dhcp() {
 
     iface_setup $dev
     if [ $? -eq 1 ]; then
-        dhcpcd -t 10 -w -4 -L $dev -e "wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" 2>&1 | tee $LOG | \
+        dhcpcd -t 10 -w -4 -L $dev 2>&1 | tee $LOG | \
             DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
@@ -1292,15 +1298,14 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             # network type empty??!!!
             :
         elif [ "$_type" = "dhcp" ]; then
-            if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
-                cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                ln -sf /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
-            else
-                enable_dhcpd
+            if $(echo $_dev|egrep -q "^wl.*" 2>/dev/null); then
+                cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
+                ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default/wpa_supplicant
             fi
+            enable_dhcpd
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
-            mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhdpcd.conf.orig
+            mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhcpcd.conf.orig
             echo "# Static IP configuration set by the void-installer for $_dev." \
                 >$TARGETDIR/etc/dhcpcd.conf
             echo "interface $_dev" >>$TARGETDIR/etc/dhcpcd.conf
