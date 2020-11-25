@@ -38,6 +38,8 @@ USERNAME_DONE=
 USERGROUPS_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
+LUKS_DONE=
+LVM_DONE=
 NETWORK_DONE=
 FILESYSTEMS_DONE=
 
@@ -129,6 +131,11 @@ set_option() {
 get_option() {
     echo $(grep -E "^${1}.*" $CONF_FILE|sed -e "s|${1}||")
 }
+
+a_lt_b() {
+    awk -v n1="$1" -v n2="$2" 'BEGIN {printf (n1<n2?"0":"1") "\n", n1, n2}'
+}
+
 
 # ISO-639 language names for locales
 iso639_language() {
@@ -425,9 +432,18 @@ menu_filesystems() {
     local dev fstype fssize mntpoint reformat
 
     while true; do
-        DIALOG --ok-label "Change" --cancel-label "Done" \
-            --title " Select the partition to edit " --menu "$MENULABEL" \
-            ${MENUSIZE} $(show_partitions)
+        # if lvm then show root size
+        # if luks say use luks
+        LVMR=$(get_option LVM_ROOT_SIZE)
+        if [ "$(get_option USELVM)" = "1" ]; then
+            DIALOG --ok-label "Change" --cancel-label "Done" \
+                --title " Select the partition to edit, your root size will be $LVMR GB" --menu "$MENULABEL" \
+                ${MENUSIZE} $(show_partitions)
+        else
+            DIALOG --ok-label "Change" --cancel-label "Done" \
+                --title " Select the partition to edit " --menu "$MENULABEL" \
+                ${MENUSIZE} $(show_partitions)
+        fi
         [ $? -ne 0 ] && return
 
         dev=$(cat $ANSWER)
@@ -447,7 +463,20 @@ menu_filesystems() {
             continue
         fi
         if [ "$fstype" != "swap" ]; then
-            DIALOG --inputbox "Please specify the mount point for $dev:" ${INPUTSIZE}
+            # luks and lvm the dev for / is not the partition
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "0" ]; then
+                DIALOG --inputbox "Please specify the mount point for $dev:" ${INPUTSIZE}
+            else
+                if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "1" ]; then
+                    DIALOG --inputbox "only / will be in LVM\nPlease specify the mount point for $dev:" ${INPUTSIZE}
+                else
+                    if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_option USELVM)" = "0" ]; then
+                        DIALOG --inputbox "only / will be LUKS encrypted\nPlease specify the mount point for $dev:" ${INPUTSIZE}
+                    else
+                        DIALOG --inputbox "LVM will be LUKS encrypted and only / will be in LVM\nPlease specify the mount point for $dev:" ${INPUTSIZE}
+                    fi
+                fi
+            fi
             if [ $? -eq 0 ]; then
                 mntpoint=$(cat $ANSWER)
             elif [ $? -eq 1 ]; then
@@ -456,6 +485,24 @@ menu_filesystems() {
         else
             mntpoint=swap
         fi
+        if [ $mntpoint = '/' ]; then
+            deve=$dev
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "0" ]; then
+                deve=$dev
+            fi
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_option USELVM)" = "1" ]; then
+                deve="/dev/mapper/lpool-crootl"
+            fi
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_option USELVM)" = "0" ]; then
+                deve="/dev/mapper/croot"
+            fi
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "1" ]; then
+                deve="/dev/mapper/lpool-rootl"
+            fi
+        else
+            deve=$dev
+        fi
+
         DIALOG --yesno "Do you want to create a new filesystem on $dev?" ${YESNOSIZE}
         if [ $? -eq 0 ]; then
             reformat=1
@@ -465,7 +512,7 @@ menu_filesystems() {
             continue
         fi
         fssize=$(lsblk -nr $dev|awk '{print $4}')
-        set -- "$fstype" "$fssize" "$mntpoint" "$reformat"
+        set -- "$fstype" "$fssize" "$mntpoint" "$reformat" "$deve"
         if [ -n "$1" -a -n "$2" -a -n "$3" -a -n "$4" ]; then
             local bdev=$(basename $dev)
             local ddev=$(basename $(dirname $dev))
@@ -474,7 +521,7 @@ menu_filesystems() {
             else
                 sed -i -e "/^MOUNTPOINT \/dev\/${bdev}.*/d" $CONF_FILE
             fi
-            echo "MOUNTPOINT $dev $1 $2 $3 $4" >>$CONF_FILE
+            echo "MOUNTPOINT $dev $1 $2 $3 $4 $5" >>$CONF_FILE
         fi
     done
 }
@@ -813,6 +860,79 @@ set_bootloader() {
     fi
 }
 
+menu_luks() {
+    local _firstpass _secondpass _desc
+
+    while true; do
+        DIALOG --yesno "Use a unencrypted filesystem?" ${YESNOSIZE}
+        if [ $? -eq 0 ]; then
+            set_option USELUKS 0
+            LUKS_DONE=1
+            break
+        elif [ $? -eq 1 ]; then
+            set_option USELUKS 1
+            break
+        fi
+    done
+    if [ "$(get_option USELUKS)" = "1" ]; then
+        while true; do
+            if [ -z "${_firstpass}" ]; then
+                _desc="Enter the LUKS passphrase"
+            else
+                _desc="$_desc again"
+            fi
+            DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
+            if [ $? -eq 0 ]; then
+                if [ -z "${_firstpass}" ]; then
+                    _firstpass="$(cat $ANSWER)"
+                else
+                    _secondpass="$(cat $ANSWER)"
+                fi
+                if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
+                    if [ "${_firstpass}" != "${_secondpass}" ]; then
+                        INFOBOX "Passwords do not match! Please enter again." 6 60
+                        unset _firstpass _secondpass
+                        sleep 2 && clear && continue
+                    fi
+                    set_option LUKSPASSWORD "LUKS${_firstpass}"
+                    LUKS_DONE=1
+                    DIALOG --msgbox "You need in addition to / an uncrypted /boot partition!" ${MSGBOXSIZE}
+                    break
+                fi
+            else
+                set_option USELUKS 0
+                return
+            fi
+        done
+    fi
+}
+
+menu_lvm() {
+    while true; do
+        DIALOG --yesno "Use a plain nonLVM filesystem?" ${YESNOSIZE}
+        if [ $? -eq 0 ]; then
+            set_option USELVM 0
+            LVM_DONE=1
+            break
+        elif [ $? -eq 1 ]; then
+            while true; do
+                DIALOG --inputbox "Limit root size on LVM in GB to (>2):" ${INPUTSIZE}
+                if [ $? -eq 0 ]; then
+                    NUMBER="$(cat $ANSWER)"
+                    if [ "$NUMBER" -eq "$NUMBER" ] 2>/dev/null && [ "$NUMBER" -gt "2" ]; then
+                        set_option LVM_ROOT_SIZE $NUMBER
+                        break
+                    fi
+                fi
+            done
+            set_option USELVM 1
+            LVM_DONE=1
+            break
+        fi
+    done
+
+}
+
 test_network() {
     rm -f xtraeme.asc && \
         xbps-uhelper fetch http://alpha.de.repo.voidlinux.org/live/xtraeme.asc >$LOG 2>&1
@@ -967,8 +1087,8 @@ validate_filesystems() {
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         fmt=""
-        dev=$2; fstype=$3; size=$4; mntpt="$5"; mkfs=$6
-        shift 6
+        dev=$2; fstype=$3; size=$4; mntpt="$5"; mkfs=$6; deve=$7
+        shift 7
 
         if [ "$mntpt" = "/" ]; then
             rootfound=1
@@ -983,7 +1103,36 @@ validate_filesystems() {
         if [ -z "$TARGETFS" ]; then
             TARGETFS="${fmt}$dev ($size) mounted on $mntpt as ${fstype}\n"
         else
-            TARGETFS="${TARGETFS}${fmt}${dev} ($size) mounted on $mntpt as ${fstype}\n"
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "0" ]; then
+                TARGETFS="${TARGETFS}${fmt}${dev} ($size) mounted on $mntpt as ${fstype}\n"
+            fi
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_option USELVM)" = "0" ]; then
+                if [ "$mntpt" = "/" ]; then
+                    TARGETFS="${TARGETFS}${fmt}${dev} via LUKS ($size) mounted on $mntpt as ${fstype}\n"
+                else
+                    TARGETFS="${TARGETFS}${fmt}${dev} ($size) mounted on $mntpt as ${fstype}\n"
+                fi
+            fi
+            fsi=$((${#size}-1))
+            fsf=${size::$fsi}
+            LVMMAXROOT=$(get_option LVM_ROOT_SIZE)
+            if [ $(a_lt_b $fsf $LVMMAXROOT) = 1 ] && [ "$mntpt" = "/" ]; then
+                size="limited to ${LVMMAXROOT}G from $size"
+            fi
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_option USELVM)" = "1" ]; then
+                if [ "$mntpt" = "/" ]; then
+                    TARGETFS="${TARGETFS}${fmt}${dev} via LVM ($size) mounted on $mntpt as ${fstype}\n"
+                else
+                    TARGETFS="${TARGETFS}${fmt}${dev} ($size) mounted on $mntpt as ${fstype}\n"
+                fi
+            fi
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_option USELVM)" = "1" ]; then
+                if [ "$mntpt" = "/" ]; then
+                    TARGETFS="${TARGETFS}${fmt}${dev} via LUKS+LVM ($size) mounted on $mntpt as ${fstype}\n"
+                else
+                    TARGETFS="${TARGETFS}${fmt}${dev} ($size) mounted on $mntpt as ${fstype}\n"
+                fi
+            fi
         fi
     done
     if [ -z "$rootfound" ]; then
@@ -1009,8 +1158,8 @@ create_filesystems() {
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
-        dev=$2; fstype=$3; mntpt="$5"; mkfs=$6
-        shift 6
+        dev=$2; fstype=$3; fssize=$4; mntpt="$5"; mkfs=$6; deve=$7
+        shift 7
 
         # swap partitions
         if [ "$fstype" = "swap" ]; then
@@ -1046,7 +1195,63 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
             esac
             TITLE="Check $LOG for details ..."
-            INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
+            if [ "$(get_option USELUKS)" = "1" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "0" ];  then
+                INFOBOX "Preparing LUKS on $dev" 6 60
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat $dev --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen $dev croot --key-file=- >$LOG 2>&1
+                if [ $? -ne 0 ]; then
+                    DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+failed prepare LUKS $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+                    DIE 1
+                fi
+                dev=$deve
+            fi
+            if [ "$(get_option USELUKS)" = "1" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "1" ];  then
+                INFOBOX "Preparing LUKS and LVM on $dev" 6 60
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat $dev --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen $dev cpool --key-file=- >$LOG 2>&1
+                if [ $? -ne 0 ]; then
+                    DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+failed prepare LUKS $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+                    DIE 1
+                fi
+                vgcreate lpool /dev/mapper/cpool
+                fsi=$((${#fssize}-1))
+                fsf=${fssize::$fsi}
+                LVMMAXROOT=$(get_option LVM_ROOT_SIZE)
+                if [ $(a_lt_b $fsf $LVMMAXROOT) = 0 ]; then
+                    lvcreate --name crootl -L $fssize lpool
+                else
+                    lvcreate --name crootl -L ${LVMMAXROOT}G lpool
+                fi
+                if [ $? -ne 0 ]; then
+                    DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+failed prepare LVM $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+                    DIE 1
+                fi
+                # dev=/dev/mapper/crootl
+                dev=$deve
+            fi
+            if [ "$(get_option USELUKS)" = "0" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "1" ];  then
+                INFOBOX "Preparing LVM on $dev" 6 60
+                vgcreate lpool $dev
+                fsi=$((${#fssize}-1))
+                fsf=${fssize::$fsi}
+                LVMMAXROOT=$(get_option LVM_ROOT_SIZE)
+                if [ $(a_lt_b $fsf $LVMMAXROOT) = 0 ]; then
+                    lvcreate --name rootl -L $fssize lpool
+                else
+                    lvcreate --name rootl -L ${LVMMAXROOT}G lpool
+                fi
+                if [ $? -ne 0 ]; then
+                    DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+failed prepare LVM $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+                    DIE 1
+                fi
+                # dev=/dev/mapper/rootl
+                dev=$deve
+            fi
+            INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 6 60
             echo "Running $MKFS $dev..." >$LOG
             $MKFS $dev >$LOG 2>&1; rv=$?
             if [ $rv -ne 0 ]; then
@@ -1079,8 +1284,18 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
-        dev=$2; fstype=$3; mntpt="$5"
-        shift 6
+        dev=$2; fstype=$3; fssize=$4; mntpt="$5"; mkfs=$6; deve=$7
+        shift 7
+        if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_options USELVM)" = "0" ]; then
+            dev=$deve
+        fi
+        if [ "$(get_option USELUKS)" = "1" ] && [ "$(get_options USELVM)" = "1" ]; then
+            dev=/dev/mapper/lpool-crootl
+        fi
+        if [ "$(get_option USELUKS)" = "0" ] && [ "$(get_options USELVM)" = "1" ]; then
+            dev=/dev/mapper/lpool-rootl
+        fi
+
         [ "$mntpt" = "/" -o "$fstype" = "swap" ] && continue
         mkdir -p ${TARGETDIR}${mntpt}
         echo "Mounting $dev on $mntpt ($fstype)..." >$LOG
@@ -1115,7 +1330,7 @@ umount_filesystems() {
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         local dev=$2; local fstype=$3; local mntpt=$5
-        shift 6
+        shift 7
         if [ "$fstype" = "swap" ]; then
             echo "Disabling swap space on $dev..." >$LOG
             swapoff $dev >$LOG 2>&1
@@ -1223,7 +1438,7 @@ configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE
 please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
     fi
-
+    # if lvm say the / size
     DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
 ${BOLD}${TARGETFS}${RESET}\n
 ${BOLD}${RED}WARNING: data on partitions will be COMPLETELY DESTROYED for new \
@@ -1332,6 +1547,23 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             -e 's|#\(GRUB_TERMINAL_OUTPUT\).*|\1=console|'
     fi
 
+    if [ "$(get_option USELVM)" = "1" ]; then
+        echo "#LVM GRUB_CMDLINE_LINUX_DEFAULT rd.auto=1" >> $TARGETDIR/etc/default/grub
+    fi
+
+    # handle encrypted issues
+    if [ "$(get_option USELUKS)" = "1" ]; then
+        echo "hostonly=yes" > $TARGETDIR/etc/dracut.conf.d/hostonly.conf
+        SSF=$TARGETDIR/usr/share/void-artwork/splash.png
+        SDF=$TARGETDIR/boot/splash.png
+        if [ -f $SSF ]; then
+            cp $SSF $SDF
+        fi
+        GDF=$TARGETDIR/etc/default/grub
+        sed -i -e 's|^GRUB_BACKGROUND.*|GRUB_BACKGROUND=/boot/splash.png|' $GDF
+        LVER=$(ls $TARGETDIR/boot/vmlinuz* | head -n 1|awk -F "-" '{print $2}'| awk -F "." '{print $1"."$2}')
+        chroot $TARGETDIR xbps-reconfigure -f "linux$LVER" >$LOG 2>&1
+    fi
     # install bootloader.
     set_bootloader
     sync && sync && sync
@@ -1386,6 +1618,8 @@ menu() {
             "RootPassword" "Set system root password" \
             "UserAccount" "Set primary user name and password" \
             "BootLoader" "Set disk to install bootloader" \
+            "Lvm" "Set use of LVM (Optional)" \
+            "Encryption" "Set encrypted partition" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
             "Install" "Start installation with saved settings" \
@@ -1404,6 +1638,8 @@ menu() {
             "RootPassword" "Set system root password" \
             "UserAccount" "Set primary user name and password" \
             "BootLoader" "Set disk to install bootloader" \
+            "Lvm" "Set use of LVM (Optional)" \
+            "Encryption" "Set encrypted partition" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
             "Install" "Start installation with saved settings" \
@@ -1429,7 +1665,9 @@ menu() {
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
         "UserAccount") menu_useraccount && [ -n "$USERNAME_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
                && DEFITEM="BootLoader";;
-        "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
+        "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Lvm";;
+        "Lvm") menu_lvm && [ -n "$LVM_DONE" ] && DEFITEM="Encryption";;
+        "Encryption") menu_luks && [ -n "$LUKS_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
         "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
         "Install") menu_install;;
