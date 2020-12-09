@@ -262,14 +262,11 @@ set_target_arch_from_platform() {
         bananapi*) XBPS_TARGET_ARCH="armv7l";;
         beaglebone*) XBPS_TARGET_ARCH="armv7l";;
         cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l";;
-        dockstar*) XBPS_TARGET_ARCH="armv5tel";;
-        pogoplugv4*) XBPS_TARGET_ARCH="armv5tel" ;;
         odroid-u2*) XBPS_TARGET_ARCH="armv7l";;
         odroid-c2*) XBPS_TARGET_ARCH="aarch64";;
         rpi3*) XBPS_TARGET_ARCH="aarch64";;
         rpi2*) XBPS_TARGET_ARCH="armv7l";;
         rpi*) XBPS_TARGET_ARCH="armv6l";;
-        usbarmory*) XBPS_TARGET_ARCH="armv7l";;
         ci20*) XBPS_TARGET_ARCH="mipsel";;
         i686*) XBPS_TARGET_ARCH="i686";;
         x86_64*) XBPS_TARGET_ARCH="x86_64";;
@@ -287,7 +284,6 @@ set_dracut_args_from_platform() {
     # In rare cases it is necessary to set platform specific dracut
     # args.  This is mostly the case on ARM platforms.
     case "$PLATFORM" in
-        pogoplugv4*) dracut_args="-o 'btrfs drm i18n resume terminfo'" ;;
         *) ;;
     esac
 }

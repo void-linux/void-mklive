@@ -143,7 +143,7 @@ fi
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|usbarmory|GCP|pinebookpro|*-musl);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|GCP|pinebookpro|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -285,9 +285,6 @@ odroid-u2*)
     dd if="${ROOTFS}/boot/bl2.signed.bin" of="${LOOPDEV}" seek=31 >/dev/null 2>&1
     dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" seek=63 >/dev/null 2>&1
     dd if="${ROOTFS}/boot/E4412_S.tzsw.signed.bin" of="${LOOPDEV}" seek=2111 >/dev/null 2>&1
-    ;;
-usbarmory*)
-    dd if="${ROOTFS}/boot/u-boot.imx" of="${LOOPDEV}" bs=512 seek=2 conv=fsync >/dev/null 2>&1
     ;;
 ci20*)
     dd if="${ROOTFS}/boot/u-boot-spl.bin" of="${LOOPDEV}" obs=512 seek=1 >/dev/null 2>&1
