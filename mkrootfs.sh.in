@@ -181,12 +181,6 @@ fi
 # pass, so this cleans up any issues that linger.
 run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
 
-# TODO: determine why these lines are here.  What is the harm in
-# having them and what do they remove.  Do they interact adversely
-# with the alien build support discussed above.
-rmdir "$ROOTFS/usr/lib32" 2>/dev/null
-rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
-
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
