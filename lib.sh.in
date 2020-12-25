@@ -165,54 +165,75 @@ register_binfmt() {
 
     # In the special case where the build is native we can return
     # without doing anything else
-    if [ "${HOSTARCH%-musl}" = "${XBPS_TARGET_ARCH%-musl}" ] ; then
+    # This is only a basic check for identical archs, with more careful
+    # checks below for cases like ppc64 -> ppc and x86_64 -> i686.
+    _hostarch="${HOSTARCH%-musl}"
+    _targetarch="${XBPS_TARGET_ARCH%-musl}"
+    if [ "$_hostarch" = "$_targetarch" ] ; then
         return
     fi
 
-    case "${XBPS_TARGET_ARCH}" in
+    case "${_targetarch}" in
         armv*)
+            # TODO: detect aarch64 hosts that run 32 bit ARM without qemu (some cannot)
+            if ( [ "${_targetarch}" = "armv6l" ] && [ "${_hostarch}" = "armv7l" ] ) ; then
+                return
+            fi
+            if [ "${_targetarch}" = "armv5tel" -a \
+                \( "${_hostarch}" = "armv6l" -o "${_hostarch}" = "armv7l" \) ] ; then
+                return
+            fi
             _cpu=arm
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             QEMU_BIN=qemu-arm-static
             ;;
-        aarch64*)
+        aarch64)
             _cpu=aarch64
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             QEMU_BIN=qemu-aarch64-static
             ;;
-        ppc64le*)
+        ppc64le)
             _cpu=ppc64le
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
             QEMU_BIN=qemu-ppc64le-static
             ;;
-        ppc64*)
+        ppc64)
             _cpu=ppc64
             _magic="\x7fELF\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             QEMU_BIN=qemu-ppc64-static
             ;;
-        ppc*)
+        ppc)
+            if [ "$_hostarch" = "ppc64" ] ; then
+                return
+            fi
             _cpu=ppc
             _magic="\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             QEMU_BIN=qemu-ppc-static
             ;;
-        mipsel*)
+        mipsel)
+            if [ "$_hostarch" = "mips64el" ] ; then
+                return
+            fi
             _cpu=mipsel
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             QEMU_BIN=qemu-mipsel-static
             ;;
-        x86_64*)
+        x86_64)
             _cpu=x86_64
             _magic="\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             QEMU_BIN=qemu-x86_64-static
             ;;
-        i686*)
+        i686)
+            if [ "$_hostarch" = "x86_64" ] ; then
+                return
+            fi
             _cpu=i386
             _magic="\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
