@@ -645,7 +645,7 @@ menu_rootpassword() {
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
                     INFOBOX "Passwords do not match! Please enter again." 6 60
-                    unset _firstpass _secondpass
+                    unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
                 set_option ROOTPASSWORD "${_firstpass}"
@@ -710,7 +710,7 @@ menu_useraccount() {
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
                     INFOBOX "Passwords do not match! Please enter again." 6 60
-                    unset _firstpass _secondpass
+                    unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
                 set_option USERPASSWORD "${_firstpass}"
