@@ -1355,7 +1355,7 @@ menu_source() {
     DIALOG --title " Select installation source " \
         --menu "$MENULABEL" 8 70 0 \
         "Local" "Packages from ISO image" \
-        "Network" "Base system only, downloaded from official reposity"
+        "Network" "Base system only, downloaded from official repository"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
         "Network") src="net";
@@ -1369,11 +1369,13 @@ menu_source() {
 }
 
 menu() {
+    local AFTER_HOSTNAME
     if [ -z "$DEFITEM" ]; then
         DEFITEM="Keyboard"
     fi
 
     if xbps-uhelper arch | grep -qe '-musl$'; then
+        AFTER_HOSTNAME="Timezone"
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
@@ -1391,6 +1393,7 @@ menu() {
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     else
+        AFTER_HOSTNAME="Locale"
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
@@ -1423,7 +1426,7 @@ menu() {
         "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
         "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
         "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Hostname";;
-        "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="Locale";;
+        "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="$AFTER_HOSTNAME";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
