@@ -627,15 +627,15 @@ set_hostname() {
 }
 
 menu_rootpassword() {
-    local _firstpass _secondpass _desc
+    local _firstpass _secondpass _again _desc
 
     while true; do
         if [ -z "${_firstpass}" ]; then
             _desc="Enter the root password"
         else
-            _desc="$_desc again"
+            _again=" again"
         fi
-        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
+        DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
@@ -663,7 +663,7 @@ set_rootpassword() {
 }
 
 menu_useraccount() {
-    local _firstpass _secondpass _desc
+    local _firstpass _secondpass _desc _again
     local _groups _status _group _checklist
     local _preset
 
@@ -698,9 +698,9 @@ menu_useraccount() {
         if [ -z "${_firstpass}" ]; then
             _desc="Enter the password for login '$(get_option USERLOGIN)'"
         else
-            _desc="$_desc again"
+            _again=" again"
         fi
-        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
+        DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
