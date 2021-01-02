@@ -186,25 +186,21 @@ register_binfmt() {
             _cpu=arm
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-arm-static
             ;;
         aarch64)
             _cpu=aarch64
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-aarch64-static
             ;;
         ppc64le)
             _cpu=ppc64le
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
-            QEMU_BIN=qemu-ppc64le-static
             ;;
         ppc64)
             _cpu=ppc64
             _magic="\x7fELF\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-ppc64-static
             ;;
         ppc)
             if [ "$_hostarch" = "ppc64" ] ; then
@@ -213,7 +209,6 @@ register_binfmt() {
             _cpu=ppc
             _magic="\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-ppc-static
             ;;
         mipsel)
             if [ "$_hostarch" = "mips64el" ] ; then
@@ -222,13 +217,11 @@ register_binfmt() {
             _cpu=mipsel
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-mipsel-static
             ;;
         x86_64)
             _cpu=x86_64
             _magic="\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-x86_64-static
             ;;
         i686)
             if [ "$_hostarch" = "x86_64" ] ; then
@@ -237,7 +230,6 @@ register_binfmt() {
             _cpu=i386
             _magic="\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-i386-static
             ;;
         *)
             die "Unknown target architecture!"
@@ -246,6 +238,7 @@ register_binfmt() {
 
     # For builds that do not match the host architecture, the correct
     # qemu binary will be required.
+    QEMU_BIN="qemu-${_cpu}-static"
     if ! $QEMU_BIN -version >/dev/null 2>&1; then
         die "$QEMU_BIN binary is missing in your system, exiting."
     fi
