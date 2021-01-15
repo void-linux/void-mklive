@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# vim: set ts=4 sw=4 et:
+
 # This contains the COMPLETE list of binaries that this script needs
 # to function.  The only exception is the QEMU binary since it is not
 # known in advance which one wil be required.

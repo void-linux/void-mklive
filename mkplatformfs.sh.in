@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# vim: set ts=4 sw=4 et:
+#
 #-
 # Copyright (c) 2017 Google
 # All rights reserved.
