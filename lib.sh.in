@@ -297,6 +297,7 @@ set_target_arch_from_platform() {
         GCP*) XBPS_TARGET_ARCH="x86_64";;
         pinebookpro*) XBPS_TARGET_ARCH="aarch64";;
         pinephone*) XBPS_TARGET_ARCH="aarch64";;
+        rock64*) XBPS_TARGET_ARCH="aarch64";;
         *) die "$PROGNAME: Unable to compute target architecture from platform";;
     esac
 
@@ -317,6 +318,13 @@ set_cachedir() {
     # The package artifacts are cacheable, but they need to be isolated
     # from the host cache.
     : "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
+}
+
+rk33xx_flash_uboot() {
+    local dir="$1"
+    local dev="$2"
+    dd if="${dir}/idbloader.img" of="${dev}" seek=64 conv=notrunc,fsync >/dev/null 2>&1
+    dd if="${dir}/u-boot.itb" of="${dev}" seek=16384 conv=notrunc,fsync >/dev/null 2>&1
 }
 
 # These should all resolve even if they won't have the appropriate
