@@ -251,8 +251,8 @@ register_binfmt() {
     fi
 
     # Only register if the map is incomplete
-    if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
-        echo ":qemu-$_cpu:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+    if [ ! -f "/proc/sys/fs/binfmt_misc/$QEMU_BIN" ] ; then
+        echo ":$QEMU_BIN:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
     fi
 
     # If the static binary isn't in the chroot then the chroot will
