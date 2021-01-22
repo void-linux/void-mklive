@@ -1194,6 +1194,8 @@ install_packages() {
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     chroot $TARGETDIR xbps-reconfigure -a
+    # run any clean up routine defined in base-files
+    chroot $TARGETDIR xbps-reconfigure -f base-files
 }
 
 enable_dhcpd() {
