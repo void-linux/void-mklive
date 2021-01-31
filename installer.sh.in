@@ -1327,6 +1327,12 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         unset USERLOGIN
     fi
 
+    POLKITRULE=$TARGETDIR/etc/polkit-1/rules.d/void-live.rules
+    if [ -f $POLKITRULE ]; then
+        rm -f $POLKITRULE
+    fi
+    unset POLKITRULE
+
     # enable text console for grub if chosen
     if [ "$(get_option TEXTCONSOLE)" = "1" ]; then
         sed -i $TARGETDIR/etc/default/grub \
