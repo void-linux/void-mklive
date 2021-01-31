@@ -1325,6 +1325,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         unset USERLOGIN
     fi
 
+    # clean up polkit rule - it's only useful in live systems
+    rm -f $TARGETDIR/etc/polkit-1/rules.d/void-live.rules
+
     # enable text console for grub if chosen
     if [ "$(get_option TEXTCONSOLE)" = "1" ]; then
         sed -i $TARGETDIR/etc/default/grub \
