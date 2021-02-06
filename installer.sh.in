@@ -838,7 +838,7 @@ configure_wifi() {
         DIALOG --msgbox "Invalid SSID." ${MSGBOXSIZE}
         return 1
     elif [ -z "$enc" -o "$enc" != "wep" -a "$enc" != "wpa" ]; then
-        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSXBOXSIZE}
+        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSGBOXSIZE}
         return 1
     elif [ -z "$pass" ]; then
         DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
