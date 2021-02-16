@@ -136,7 +136,7 @@ cleanup_chroot() {
     umount_pseudofs
 
     # If a QEMU binary was copied in, remove that as well
-    if [ -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
+    if [ -n "$QEMU_BIN" ] && [ -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
         rm "$ROOTFS/usr/bin/$QEMU_BIN"
     fi
 }
