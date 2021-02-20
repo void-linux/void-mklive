@@ -189,6 +189,7 @@ VAI_configure_autoinstall() {
     bootpartitionsize="500M"
     disk="$(lsblk -ipo NAME,TYPE,MOUNTPOINT | awk '{if ($2=="disk") {disks[$1]=0; last=$1} if ($3=="/") {disks[last]++}} END {for (a in disks) {if(disks[a] == 0){print a; break}}}')"
     hostname="$(ip -4 -o -r a | awk -F'[ ./]' '{x=$7} END {print x}')"
+    # XXX: Set a manual swapsize here if the default doesn't fit your use case
     swapsize="$(awk -F"\n" '/MemTotal/ {split($0, b, " "); print b[2] }' /proc/meminfo)";
     target="/mnt"
     timezone="America/Chicago"
