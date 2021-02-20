@@ -134,11 +134,6 @@ cleanup_chroot() {
 
     # Un-Mount the pseudofs mounts if they were mounted
     umount_pseudofs
-
-    # If a QEMU binary was copied in, remove that as well
-    if [ -n "$QEMU_BIN" ] && [ -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
-        rm "$ROOTFS/usr/bin/$QEMU_BIN"
-    fi
 }
 
 register_binfmt() {
@@ -251,19 +246,8 @@ register_binfmt() {
     fi
 
     # Only register if the map is incomplete
-    if [ ! -f "/proc/sys/fs/binfmt_misc/$QEMU_BIN" ] ; then
-        echo ":$QEMU_BIN:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
-    fi
-
-    # If the static binary isn't in the chroot then the chroot will
-    # fail.  The kernel knows about the map but without the static
-    # version there's no interpreter in the chroot, only the
-    # dynamically linked one in the host.  To simplify things we just
-    # use the static one always and make sure it shows up at the same
-    # place in the host and the chroot.
-    if [ ! -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
-        install -m755 -D "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin/$QEMU_BIN" ||
-            die "Could not install $QEMU_BIN to $ROOTFS/usr/bin/"
+    if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
+        echo ":qemu-$_cpu:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:F" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
     fi
 }
 
