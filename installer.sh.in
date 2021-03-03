@@ -1328,6 +1328,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # clean up polkit rule - it's only useful in live systems
     rm -f $TARGETDIR/etc/polkit-1/rules.d/void-live.rules
 
+    # remove agetty services for devices that are not present
+    for service in /var/service/agetty-*; do
+        if [ ! -e /dev/"$(cut -d'-' -f2 <<< "$service")" ]; then
+            rm -v "$service"
+        fi
+    done
+
     # enable text console for grub if chosen
     if [ "$(get_option TEXTCONSOLE)" = "1" ]; then
         sed -i $TARGETDIR/etc/default/grub \
