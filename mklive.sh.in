@@ -95,10 +95,6 @@ copy_void_keys() {
     cp keys/*.plist "$1"/var/db/xbps/keys
 }
 
-copy_void_conf() {
-    install -Dm644 data/void-vpkgs.conf "$1"/usr/share/xbps.d/void-virtualpkgs.conf
-}
-
 copy_dracut_files() {
     mkdir -p "$1"/usr/lib/dracut/modules.d/01vmklive
     cp dracut/vmklive/* "$1"/usr/lib/dracut/modules.d/01vmklive/
@@ -110,15 +106,12 @@ copy_autoinstaller_files() {
 }
 
 install_prereqs() {
-    copy_void_conf "$VOIDHOSTDIR"
     XBPS_ARCH=$ARCH "$XBPS_INSTALL_CMD" -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} \
          -c "$XBPS_HOST_CACHEDIR" -y $REQUIRED_PKGS
     [ $? -ne 0 ] && die "Failed to install required software, exiting..."
 }
 
 install_packages() {
-    copy_void_conf "$ROOTFS"
-
     XBPS_ARCH=$BASE_ARCH "${XBPS_INSTALL_CMD}" -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -yn $PACKAGE_LIST $INITRAMFS_PKGS
     [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
