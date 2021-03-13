@@ -6,13 +6,12 @@ DATECODE=$(date "+%Y%m%d")
 make
 
 ARCHS="$(echo x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl})"
-PLATFORMS="$(echo rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl})"
-SBC_IMGS="$(echo rpi{,2,3}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl})"
+PLATFORMS="$(echo rpi{,2,3}{,-musl})"
+SBC_IMGS="$(echo rpi{,2,3}{,-musl})"
 
 make rootfs-all ARCHS="$ARCHS" REPOSITORY="$REPOSITORY" DATECODE="$DATECODE"
 make platformfs-all PLATFORMS="$PLATFORMS" REPOSITORY="$REPOSITORY" DATECODE="$DATECODE"
 make images-all-sbc SBC_IMGS="$SBC_IMGS" REPOSITORY="$REPOSITORY" DATECODE="$DATECODE"
-make pxe-all REPOSITORY="$REPOSITORY"
 
 MKLIVE_REPO=(-r /hostdir/binpkgs -r /hostdir/binpkgs/nonfree -r /hostdir/musl -r /hostdir/binpkgs/musl/nonfree)
 ./build-x86-images.sh -a i686 -b base "${MKLIVE_REPO[@]}"
@@ -34,4 +33,4 @@ mv "*${DATECODE}*.gz" "$DATECODE/"
 mv "*${DATECODE}*.iso" "$DATECODE/"
 
 cd "$DATECODE" || exit 1
-sha256sum -- * > sha256sums.txt
+sha256sum --tag -- * > sha256sums.txt
