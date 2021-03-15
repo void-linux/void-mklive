@@ -121,6 +121,13 @@ case "$PLATFORM" in
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
+# Default for bigger boot partion on pinebookpro since it needs to fit
+# at least 2 Kernels + initramfs
+case "$PLATFORM" in
+    pinebookpro*)
+        : "${BOOT_FSSIZE:=256MiB}"
+        ;;
+esac
 # By default we build all platform images with a 64MiB boot partition
 # formated FAT16, and an approximately 1.9GiB root partition formated
 # ext4.  More exotic combinations are of course possible, but this
