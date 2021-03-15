@@ -292,8 +292,8 @@ ci20*)
     dd if="${ROOTFS}/boot/u-boot.img" of="${LOOPDEV}" obs=1K seek=14 >/dev/null 2>&1
     ;;
 pinebookpro*)
-    dd if="${ROOTFS}/boot/idbloader.img" of="${LOOPDEV}" seek=64 conv=notrunc,fsync >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/u-boot.itb" of="${LOOPDEV}" seek=16384 conv=notrunc,fsync >/dev/null 2>&1
+    dd if="${ROOTFS}/usr/lib/pinebookpro-uboot/idbloader.img" of="${LOOPDEV}" seek=64 conv=notrunc,fsync >/dev/null 2>&1
+    dd if="${ROOTFS}/usr/lib/pinebookpro-uboot/u-boot.itb" of="${LOOPDEV}" seek=16384 conv=notrunc,fsync >/dev/null 2>&1
     run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f pinebookpro-kernel"
     cleanup_chroot
     ;;
