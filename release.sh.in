@@ -5,7 +5,7 @@ DATECODE=$(date "+%Y%m%d")
 
 make
 
-ARCHS="$(echo x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl})"
+ARCHS="$(echo x86_64{,-musl} i686 armv{6,7}l{,-musl} aarch64{,-musl})"
 PLATFORMS="$(echo rpi{,2,3}{,-musl})"
 SBC_IMGS="$(echo rpi{,2,3}{,-musl})"
 
