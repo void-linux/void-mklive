@@ -3,3 +3,4 @@ packer_cache
 crash.log
 *.box
 templates/
+cloud-generic
