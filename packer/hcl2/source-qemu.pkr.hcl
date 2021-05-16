@@ -10,5 +10,4 @@ source "qemu" "x86_64" {
   ssh_password = "void"
   ssh_timeout = "20m"
   ssh_username = "void"
-  shutdown_command = "echo 'void' | sudo -S shutdown -P now"
 }
