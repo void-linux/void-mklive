@@ -282,7 +282,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:o:p:v:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -294,7 +294,6 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         I) INCLUDE_DIRECTORY="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
-        S) ROOTFS_FREESIZE="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         p) PACKAGE_LIST="$OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
