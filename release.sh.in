@@ -19,13 +19,9 @@ MKLIVE_REPO=(-r /hostdir/binpkgs -r /hostdir/binpkgs/nonfree -r /hostdir/musl -r
 
 ./build-x86-images.sh -a x86_64 -b base "${MKLIVE_REPO[@]}"
 ./build-x86-images.sh -a x86_64 -b xfce "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64 -b cinnamon "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64 -b lxde "${MKLIVE_REPO[@]}"
 
 ./build-x86-images.sh -a x86_64-musl -b base "${MKLIVE_REPO[@]}"
 ./build-x86-images.sh -a x86_64-musl -b xfce "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64-musl -b cinnamon "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64-musl -b lxde "${MKLIVE_REPO[@]}"
 
 mkdir "$DATECODE"
 mv "*${DATECODE}*.xz" "$DATECODE/"
