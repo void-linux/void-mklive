@@ -117,14 +117,14 @@ PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|rpi4|GCP|pinebookpro|pinephone|rock64|*-musl);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|rpi4|GCP|pinebookpro|pinephone|rock64|rockpro64|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
 # Default for bigger boot partion on rk33xx devices since it needs to
 # fit at least 2 Kernels + initramfs
 case "$PLATFORM" in
-    pinebookpro*|rock64*)
+    pinebookpro*|rock64*|rockpro64*)
         : "${BOOT_FSSIZE:=256MiB}"
         ;;
 esac
@@ -190,7 +190,7 @@ _EOF
         # root filesystem.  This is the generally preferred disk
         # layout for new platforms.
         case "$PLATFORM" in
-            pinebookpro*|rock64*)
+            pinebookpro*|rock64*|rockpro64*)
                 # rk33xx devices use GPT and need more space reserved
                 sfdisk "$FILENAME" <<_EOF
 label: gpt
@@ -316,6 +316,12 @@ DTBPATH=""
 _EOF
     mkdir -p "${ROOTFS}/boot/extlinux"
     run_cmd_chroot "${ROOTFS}" "/etc/kernel.d/post-install/60-extlinux"
+    cleanup_chroot
+    ;;
+rockpro64*)
+    rk33xx_flash_uboot "${ROOTFS}/usr/lib/rockpro64-uboot" "$LOOPDEV"
+    # populate the extlinux.conf file
+    cat >"${ROOTFS}/etc/default/extlinux" <<_EOF
     cleanup_chroot
     ;;
 pinebookpro*)
