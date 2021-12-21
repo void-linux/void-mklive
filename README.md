@@ -10,8 +10,8 @@ This repository contains utilities for Void Linux:
  * mkrootfs  (The Void Linux rootfs maker for ARM platforms)
  * mknet (Script to generate netboot tarballs for Void)
 
-#### Build Dependencies
- * make
+#### Build iso
+ * ./mklive.sh -o tchados.iso -I includedir -p 'xorg-minimal xorg-fonts xf86-video-intel xf86-input-libinput bspwm sxhkd alacritty dunst neovim fish-shell polybar rofi maim lightdm lightdm-gtk3-greeter pulsemixer pipewire feh neofetch zip unzip git gpick qutebrowser font-iosevka'
 
 #### Dependencies
  * Compression type for the initramfs image
