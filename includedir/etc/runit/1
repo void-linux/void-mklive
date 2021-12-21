@@ -28,4 +28,12 @@ mkdir -p /run/runit
 install -m000 /dev/null /run/runit/stopit
 install -m000 /dev/null /run/runit/reboot
 
+#Adding modification for first boot 
+FILE=/etc/firstBoot.sh
+if [ -f "$FILE" ]; then
+    echo "$FILE exists, first boot settings loading ..."
+    bash /etc/firstBoot.sh
+fi
+#End modification
+
 msg "Initialization complete, running stage 2..."
