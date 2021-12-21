@@ -1,0 +1,108 @@
+#! /bin/sh
+
+# Set cursor theme
+xsetroot -cursor_name left_ptr
+
+# sxhkd - keybindings
+pgrep -x sxhkd > /dev/null || sxhkd &
+
+# Redshift - Night light
+pgrep -x redshift > /dev/null || redshift -l 14.599512:120.984222 &
+
+# Picom compositor
+pgrep -x picom > /dev/null || picom --experimental-backends &
+
+# Polybar
+polybar -q main -c "$HOME/.config/polybar/forest/config.ini" &
+
+#BSPWM SETTINGS
+
+bspc monitor -d 1 2 3 4 5 6
+
+bspc config border_width         3
+bspc config window_gap           10
+bspc config left_padding         10
+bspc config right_padding        10
+bspc config top_padding          22
+bspc config bottom_padding       -2
+
+#! /bin/sh
+
+# Set cursor theme
+xsetroot -cursor_name left_ptr
+
+# sxhkd - keybindings
+pgrep -x sxhkd > /dev/null || sxhkd &
+
+# Redshift - Night light
+pgrep -x redshift > /dev/null || redshift -l 14.599512:120.984222 &
+
+# Picom compositor
+pgrep -x picom > /dev/null || picom --experimental-backends &
+
+# Polybar
+polybar -q main -c "$HOME/.config/polybar/forest/config.ini" &
+
+#BSPWM SETTINGS
+
+bspc monitor -d 1 2 3 4 5 6
+
+bspc config border_width         3
+bspc config window_gap           10
+bspc config left_padding         10
+bspc config right_padding        10
+bspc config top_padding          22
+bspc config bottom_padding       -2
+
+# Colors
+bspc config focused_border_color "#3A3A3A"
+
+bspc config normal_border_color "#2E2E2E"
+bspc config presel_feedback_color "#B8BB26"
+
+bspc config split_ratio          0.55
+bspc config borderless_monocle   false
+bspc config gapless_monocle      false
+bspc config paddingless_monocle  true
+
+##################
+## Window rules ##
+##################
+
+### App-specific stats
+bspc rule -a Gpick state=floating
+bspc rule -a File-roller state=floating
+bspc rule -a Lxappearance state=floating
+bspc rule -a Ristretto state=floating 
+
+### Launch apps on specific workspaces
+
+## Workspace 1 (Classes)
+bspc rule -a zoom desktop='^1' follow=on focus=on
+bspc rule -a Chat desktop='^1' state=floating
+bspc rule -a FreeTube desktop='^1' follow=on focus=on
+
+## Workspace 2 (Web Browser)
+bspc rule -a LibreWolf desktop='^2' follow=on focus=on
+bspc rule -a Chromium desktop='^2' follow=on focus=on
+bspc rule -a Brave-browser desktop='^2' follow=on focus=on
+bspc rule -a qutebrowser desktop='^2' follow=on focus=on
+bspc rule -a Firefox desktop='^2' follow=on focus=on
+
+## Workspace 3 (Terminal)
+#bspc rule -a Alacritty desktop='^3' follow=on focus=on
+
+## Workspace 4 (Social)
+bspc rule -a discord desktop='^4' follow=on focus=on
+
+## Workspace 5 (Files)
+bspc rule -a Thunar desktop='^5' follow=on focus=on
+bspc rule -a Transmission-gtk desktop='^5' follow=on focus=on state=floating
+
+## Workspace 6 (Work/Study)
+# Email
+bspc rule -a Geary desktop='^6' follow=on focus=on
+bspc rule -a Zathura desktop='^6' follow=on focus=on
+
+# Wallpaper
+feh --bg-fill ~/.config/bspwm/wallpaper/gruvvoid.png &
