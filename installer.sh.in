@@ -1067,7 +1067,7 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        if [ "$fstype" = "f2fs" ]; then
+        if [ "$fstype" = "f2fs" -o "$fstype" = "btrfs" -o "$fstype" = "xfs" ]; then
             fspassno=0
         else
             fspassno=1
@@ -1092,7 +1092,12 @@ failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        echo "UUID=$uuid $mntpt $fstype defaults 0 2" >>$TARGET_FSTAB
+        if [ "$fstype" = "f2fs" -o "$fstype" = "btrfs" -o "$fstype" = "xfs" ]; then
+            fspassno=0
+        else
+            fspassno=2
+        fi
+        echo "UUID=$uuid $mntpt $fstype defaults 0 $fspassno" >>$TARGET_FSTAB
     done
 }
 
