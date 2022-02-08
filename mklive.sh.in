@@ -51,9 +51,9 @@ mount_pseudofs() {
     done
 }
 umount_pseudofs() {
-    umount -f "$ROOTFS"/sys >/dev/null 2>&1
-    umount -f "$ROOTFS"/dev >/dev/null 2>&1
-    umount -f "$ROOTFS"/proc >/dev/null 2>&1
+    umount -Rf "$ROOTFS"/sys >/dev/null 2>&1
+    umount -Rf "$ROOTFS"/dev >/dev/null 2>&1
+    umount -Rf "$ROOTFS"/proc >/dev/null 2>&1
 }
 error_out() {
     umount_pseudofs
