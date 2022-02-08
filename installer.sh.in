@@ -1100,7 +1100,7 @@ mount_filesystems() {
     for f in sys proc dev; do
         [ ! -d $TARGETDIR/$f ] && mkdir $TARGETDIR/$f
         echo "Mounting $TARGETDIR/$f..." >$LOG
-        mount --bind /$f $TARGETDIR/$f >$LOG 2>&1
+        mount --rbind /$f $TARGETDIR/$f >$LOG 2>&1
     done
 }
 
