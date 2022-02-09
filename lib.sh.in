@@ -99,7 +99,7 @@ umount_pseudofs() {
     # contingency where the psuedofs mounts are not present.
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
-            umount -f "$ROOTFS/$f" >/dev/null 2>&1
+            umount -R -f "$ROOTFS/$f" >/dev/null 2>&1
         done
     fi
     umount -f "$ROOTFS/tmp" >/dev/null 2>&1
