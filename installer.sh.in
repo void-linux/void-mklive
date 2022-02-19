@@ -66,6 +66,9 @@ if [ -e /sys/firmware/efi/systab ]; then
     else
         EFI_TARGET=x86_64-efi
     fi
+    # efivarfs may already have been mounted by elogind.
+    mountpoint -q /sys/firmware/efi/efivars \
+        || mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 fi
 
 # dialog colors
