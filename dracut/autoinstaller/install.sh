@@ -67,7 +67,8 @@ VAI_install_base_system() {
 
     # Install additional packages
     if [  -n "${pkgs}" ] ; then
-        XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt "${pkgs}"
+        # shellcheck disable=SC2086
+        XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt ${pkgs}
     fi
 }
 
