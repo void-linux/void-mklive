@@ -116,14 +116,14 @@ PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|*-musl);;
+    rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|rockpro64|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
 # Default for bigger boot partion on rk33xx devices since it needs to
 # fit at least 2 Kernels + initramfs
 case "$PLATFORM" in
-    pinebookpro*|rock64*)
+    pinebookpro*|rock64*|rockpro64*)
         : "${BOOT_FSSIZE:=256MiB}"
         ;;
 esac
@@ -176,7 +176,7 @@ fi
 # root filesystem.  This is the generally preferred disk
 # layout for new platforms.
 case "$PLATFORM" in
-	pinebookpro*|rock64*)
+	pinebookpro*|rock64*|rockpro64*)
 		# rk33xx devices use GPT and need more space reserved
 		sfdisk "$FILENAME" <<_EOF
 label: gpt
@@ -270,6 +270,22 @@ rock64*)
 TIMEOUT=10
 # Defaults to current kernel cmdline if left empty
 CMDLINE="panic=10 coherent_pool=1M console=ttyS2,1500000 root=UUID=${ROOT_UUID} rw"
+# set this to use a DEVICETREEDIR line in place of an FDT line
+USE_DEVICETREEDIR="yes"
+# relative dtb path supplied to FDT line, as long as above is unset
+DTBPATH=""
+_EOF
+    mkdir -p "${ROOTFS}/boot/extlinux"
+    run_cmd_chroot "${ROOTFS}" "/etc/kernel.d/post-install/60-extlinux"
+    cleanup_chroot
+    ;;
+rockpro64*)
+    rk33xx_flash_uboot "${ROOTFS}/usr/lib/rockpro64-uboot" "$LOOPDEV"
+    # populate the extlinux.conf file
+    cat >"${ROOTFS}/etc/default/extlinux" <<_EOF
+TIMEOUT=10
+# Defaults to current kernel cmdline if left empty
+CMDLINE="panic=10 coherent_pool=1M console=ttyS2,115200 root=UUID=${ROOT_UUID} rw"
 # set this to use a DEVICETREEDIR line in place of an FDT line
 USE_DEVICETREEDIR="yes"
 # relative dtb path supplied to FDT line, as long as above is unset
