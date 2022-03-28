@@ -752,13 +752,18 @@ menu_useraccount() {
 }
 
 set_useraccount() {
-    [ -z "$USERLOGIN_DONE" ] && return
-    [ -z "$USERPASSWORD_DONE" ] && return
-    [ -z "$USERNAME_DONE" ] && return
-    [ -z "$USERGROUPS_DONE" ] && return
-    useradd -R $TARGETDIR -m -G $(get_option USERGROUPS) \
-        -c "$(get_option USERNAME)" $(get_option USERLOGIN)
-    echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
+    local USERLOGIN=$(get_option USERLOGIN)
+    local USERPASSWORD=$(get_option USERPASSWORD)
+    local USERNAME=$(get_option USERNAME)
+    local USERGROUPS=$(get_option USERGROUPS)
+
+    [ -z "$USERLOGIN" ] && return
+    [ -z "$USERPASSWORD" ] && return
+    [ -z "$USERNAME" ] && return
+    [ -z "$USERGROUPS" ] && return
+    useradd -R $TARGETDIR -m -G $USERGROUPS \
+        -c "$USERNAME" $USERLOGIN
+    echo "$USERLOGIN:$USERPASSWORD" | \
         chpasswd -R $TARGETDIR -c SHA512
 }
 
@@ -814,8 +819,14 @@ set_bootloader() {
 }
 
 test_network() {
-    rm -f xtraeme.asc && \
-        xbps-uhelper fetch http://alpha.de.repo.voidlinux.org/live/xtraeme.asc >$LOG 2>&1
+    # Pick a peace of data to download to ensure that a network connection is
+    # available.
+    local _file="http://alpha.de.repo.voidlinux.org/live/xtraeme.asc"
+
+    # Download with XBPS, remove it directly afterwards
+    xbps-uhelper fetch "$file" >$LOG 2>&1 || rm -f xtraeme.asc
+
+    # If next error `$?` is 0, no error detected. Network is reachable.
     if [ $? -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
@@ -1235,6 +1246,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     create_filesystems
 
     # If source not set use defaults.
+    SOURCE_DONE="$(get_option SOURCE)"
     if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
         copy_rootfs
         . /etc/default/live.conf
