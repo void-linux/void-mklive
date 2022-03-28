@@ -1340,6 +1340,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # install bootloader.
     set_bootloader
+
+    # execute postinstall script.
+    POSTINSTALL=$(get_option POSTINSTALL)
+    if [ -n "$POSTINSTALL" ]; then
+        source "$POSTINSTALL"
+    fi
+
     sync && sync && sync
 
     # unmount all filesystems.
