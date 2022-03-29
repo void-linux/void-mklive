@@ -821,13 +821,15 @@ set_bootloader() {
 test_network() {
     # Pick a peace of data to download to ensure that a network connection is
     # available.
-    local _file="http://alpha.de.repo.voidlinux.org/live/xtraeme.asc"
+    local file="http://alpha.de.repo.voidlinux.org/live/xtraeme.asc"
 
-    # Download with XBPS, remove it directly afterwards
-    xbps-uhelper fetch "$file" >$LOG 2>&1 || rm -f xtraeme.asc
+    # Download file with XBPS, remove it directly afterwards
+    xbps-uhelper fetch "$file" >$LOG 2>&1
+    local status=$?
+    rm -f xtraeme.asc
 
     # If next error `$?` is 0, no error detected. Network is reachable.
-    if [ $? -eq 0 ]; then
+    if [ $status -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
         return 1
