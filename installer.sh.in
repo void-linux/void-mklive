@@ -1387,27 +1387,47 @@ menu_import() {
     DIALOG --inputbox "Enter a path to the configuration file:" \
             ${INPUTSIZE} "$_preset"
     if [ $? -eq 0 ]; then
-        cat "$(cat $ANSWER)" > "$CONF_FILE"
+        local file="$(cat $ANSWER)"
 
+        echo "Import settings from $file" >$LOG
+        cp "$file" "$CONF_FILE" >$LOG 2>&1
+        if [ $? -ne 0 ]; then
+            DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
+        failed to import settings! check $LOG for errors." ${MSGBOXSIZE}
+            return
+        fi
+
+        DIALOG --msgbox "Settings successfully imported!" ${MSGBOXSIZE}
         IMPORT_DONE=1
-        break
-    else
-        return
     fi
 }
 
 menu_export() {
     local _preset="$HOME/void-installer.conf"
 
-    DIALOG --inputbox "Enter a file where settings will be stored:" \
+    DIALOG --inputbox "Enter a file path where settings will be stored:" \
             ${INPUTSIZE} "$_preset"
     if [ $? -eq 0 ]; then
-        cat "$CONF_FILE" > "$(cat $ANSWER)"
+        local file="$(cat $ANSWER)"
 
+        if [ -f "$file" ]; then
+            DIALOG --yesno "${BOLD}${RED}WARNING: this file already exists.${RESET}\n\n
+${BOLD}Do you really want to override this file?${RESET}" ${YESNOSIZE}
+            if [ $? -ne 0 ]; then
+                return
+            fi
+        fi
+
+        echo "Export settings to $file" >$LOG
+        cp "$CONF_FILE" "$file" >$LOG 2>&1
+        if [ $? -ne 0 ]; then
+            DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
+        failed to export settings! check $LOG for errors." ${MSGBOXSIZE}
+            return
+        fi
+
+        DIALOG --msgbox "Settings successfully exported!" ${MSGBOXSIZE}
         EXPORT_DONE=1
-        break
-    else
-        return
     fi
 }
 
@@ -1422,8 +1442,8 @@ menu() {
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
-            --menu "$MENULABEL" 10 70 0 \
-            "Import" "Import settings from a configuration file" \
+            --menu "$MENULABEL" 10 80 0 \
+            "Import" "Import settings from a configuration file (Optional)" \
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
@@ -1434,7 +1454,7 @@ menu() {
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
-            "Export" "Export current settings to a file" \
+            "Export" "Export current settings to a file (Optional)" \
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     else
@@ -1442,8 +1462,8 @@ menu() {
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
-            --menu "$MENULABEL" 10 70 0 \
-            "Import" "Import settings from a configuration file" \
+            --menu "$MENULABEL" 10 80 0 \
+            "Import" "Import settings from a configuration file (Optional)" \
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
@@ -1455,7 +1475,7 @@ menu() {
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
-            "Export" "Export current settings to a file" \
+            "Export" "Export current settings to a file (Optional)" \
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     fi
