@@ -92,6 +92,7 @@ INPUTSIZE="8 60"
 MSGBOXSIZE="8 70"
 YESNOSIZE="$INPUTSIZE"
 WIDGET_SIZE="10 70"
+FSELECT_SIZE="10 60"
 
 DIALOG() {
     rm -f $ANSWER
@@ -1382,18 +1383,18 @@ menu_source() {
 }
 
 menu_import() {
-    local _preset=""
+    local _preset="$HOME/void-installer.conf" file=
 
-    DIALOG --inputbox "Enter a path to the configuration file:" \
-            ${INPUTSIZE} "$_preset"
+    DIALOG --title "Select a path to the configuration file" \
+        --fselect "$_preset" ${FSELECT_SIZE}
     if [ $? -eq 0 ]; then
-        local file="$(cat $ANSWER)"
+        file="$(cat $ANSWER)"
 
         echo "Import settings from $file" >$LOG
         cp "$file" "$CONF_FILE" >$LOG 2>&1
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
-        failed to import settings! check $LOG for errors." ${MSGBOXSIZE}
+                failed to import settings! check $LOG for errors." ${MSGBOXSIZE}
             return
         fi
 
@@ -1403,32 +1404,37 @@ menu_import() {
 }
 
 menu_export() {
-    local _preset="$HOME/void-installer.conf"
+    local _preset="$HOME/void-installer.conf" file=
 
-    DIALOG --inputbox "Enter a file path where settings will be stored:" \
-            ${INPUTSIZE} "$_preset"
-    if [ $? -eq 0 ]; then
-        local file="$(cat $ANSWER)"
-
-        if [ -f "$file" ]; then
-            DIALOG --yesno "${BOLD}${RED}WARNING: this file already exists.${RESET}\n\n
+    while true; do
+        DIALOG --title "Select a file where settings will be stored" \
+            --fselect "$_preset" ${FSELECT_SIZE}
+        if [ $? -eq 0 ]; then
+            # Check if file already exists.
+            file="$(cat $ANSWER)"
+            if [ -f "$file" ]; then
+                DIALOG --yesno \
+                    "${BOLD}${RED}WARNING: this file already exists.${RESET}\n\n
 ${BOLD}Do you really want to override this file?${RESET}" ${YESNOSIZE}
-            if [ $? -ne 0 ]; then
-                return
+                if [ $? -ne 0 ]; then
+                    continue
+                fi
             fi
+            break  # override this file
         fi
+        return # abort export process
+    done
 
-        echo "Export settings to $file" >$LOG
-        cp "$CONF_FILE" "$file" >$LOG 2>&1
-        if [ $? -ne 0 ]; then
-            DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
-        failed to export settings! check $LOG for errors." ${MSGBOXSIZE}
-            return
-        fi
-
-        DIALOG --msgbox "Settings successfully exported!" ${MSGBOXSIZE}
-        EXPORT_DONE=1
+    echo "Export settings to $file" >$LOG
+    cp "$CONF_FILE" "$file" >$LOG 2>&1
+    if [ $? -ne 0 ]; then
+        DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
+            failed to export settings! check $LOG for errors." ${MSGBOXSIZE}
+        return
     fi
+
+    DIALOG --msgbox "Settings successfully exported!" ${MSGBOXSIZE}
+    EXPORT_DONE=1
 }
 
 menu() {
