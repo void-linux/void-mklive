@@ -376,6 +376,13 @@ show_partitions() {
                 [ "$fstype" = "LVM2_member" ] && continue
                 fssize=$(lsblk -nr /dev/$part|awk '{print $4}'|head -1)
                 echo "/dev/$part"
+
+                # Get fs type from configuration if available. This ensures
+                # that the user is faced with the proper fs type if he
+                # installs the system.
+                # Same for other devices...
+                fsconf=$(grep "MOUNTPOINT /dev/$part" "$CONF_FILE"|awk '{print $3}')
+                [ -n "$fsconf" ] && fstype=$fsconf
                 echo "size:${fssize:-unknown};fstype:${fstype:-none}"
             fi
         done
@@ -390,6 +397,9 @@ show_partitions() {
         fstype=$(lsblk -nfr $p|awk '{print $2}'|head -1)
         fssize=$(lsblk -nr $p|awk '{print $4}'|head -1)
         echo "${p}"
+
+        fsconf=$(grep "MOUNTPOINT ${p}" "$CONF_FILE"|awk '{print $3}')
+        [ -n "$fsconf" ] && fstype=$fsconf
         echo "size:${fssize:-unknown};fstype:${fstype:-none}"
     done
     # Software raid (md)
@@ -401,6 +411,9 @@ show_partitions() {
             [ "$fstype" = "LVM2_member" ] && continue
             fssize=$(lsblk -nr /dev/$part|awk '{print $4}')
             echo "$p"
+
+            fsconf=$(grep "MOUNTPOINT ${p}" "$CONF_FILE"|awk '{print $3}')
+            [ -n "$fsconf" ] && fstype=$fsconf
             echo "size:${fssize:-unknown};fstype:${fstype:-none}"
         fi
     done
@@ -411,13 +424,18 @@ show_partitions() {
         [ "$fstype" = "LVM2_member" ] && continue
         fssize=$(lsblk -nr /dev/cciss/$part|awk '{print $4}')
         echo "/dev/cciss/$part"
+
+        fsconf=$(grep "MOUNTPOINT /dev/cciss/$part" "$CONF_FILE"|awk '{print $3}')
+        [ -n "$fsconf" ] && fstype=$fsconf
         echo "size:${fssize:-unknown};fstype:${fstype:-none}"
     done
     if [ -e /sbin/lvs ]; then
         # LVM
         lvs --noheadings|while read lvname vgname perms size; do
             echo "/dev/mapper/${vgname}-${lvname}"
-            echo "size:${size};fstype:lvm"
+
+            fsconf=$(grep "/dev/mapper/${vgname}-${lvname}" "$CONF_FILE"|awk '{print $3}')
+            echo "size:${size};fstype:${fsconf:-lvm}"
         done
     fi
 }
