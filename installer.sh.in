@@ -36,6 +36,7 @@ USERLOGIN_DONE=
 USERPASSWORD_DONE=
 USERNAME_DONE=
 USERGROUPS_DONE=
+USERACCOUNT_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
@@ -752,18 +753,10 @@ menu_useraccount() {
 }
 
 set_useraccount() {
-    local USERLOGIN=$(get_option USERLOGIN)
-    local USERPASSWORD=$(get_option USERPASSWORD)
-    local USERNAME=$(get_option USERNAME)
-    local USERGROUPS=$(get_option USERGROUPS)
-
-    [ -z "$USERLOGIN" ] && return
-    [ -z "$USERPASSWORD" ] && return
-    [ -z "$USERNAME" ] && return
-    [ -z "$USERGROUPS" ] && return
-    useradd -R $TARGETDIR -m -G $USERGROUPS \
-        -c "$USERNAME" $USERLOGIN
-    echo "$USERLOGIN:$USERPASSWORD" | \
+    [ -z "$USERACCOUNT_DONE" ] && return
+    useradd -R $TARGETDIR -m -G $(get_option USERGROUPS) \
+        -c "$(get_option USERNAME)" $(get_option USERLOGIN)
+    echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
         chpasswd -R $TARGETDIR -c SHA512
 }
 
@@ -967,6 +960,18 @@ menu_network() {
         else
             configure_net $dev
         fi
+    fi
+}
+
+validate_useraccount() {
+    local USERLOGIN=$(get_option USERLOGIN)
+    local USERPASSWORD=$(get_option USERPASSWORD)
+    local USERNAME=$(get_option USERNAME)
+    local USERGROUPS=$(get_option USERGROUPS)
+
+    if [ -n "$USERLOGIN" ] && [ -n "$USERPASSWORD" ] \
+        && [ -n "$USERNAME" ] && [ -n "$USERGROUPS" ]; then
+        USERACCOUNT_DONE=1
     fi
 }
 
@@ -1225,6 +1230,16 @@ please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         DIALOG --msgbox "${BOLD}The disk to install the bootloader has not been \
 configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
+    fi
+
+    # Validate useraccount. All parameters must be set (name, password,
+    # login name, groups).
+    validate_useraccount
+    if [ -z "$USERACCOUNT_DONE" ]; then
+        DIALOG --yesno "${BOLD}The useraccount is not set up properly.${RESET}\n\n
+${BOLD}${RED}WARNING: no user will be created. You're only able to login with \
+with the root user in your new system.${RESET}\n\n
+${BOLD}Do you want to continue?${RESET}" 10 60       || return
     fi
 
     # Validate filesystems after making sure bootloader is done,
