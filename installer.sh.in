@@ -496,6 +496,7 @@ menu_filesystems() {
             echo "MOUNTPOINT $dev $1 $2 $3 $4" >>$CONF_FILE
         fi
     done
+    FILESYSTEMS_DONE=1
 }
 
 menu_partitions() {
