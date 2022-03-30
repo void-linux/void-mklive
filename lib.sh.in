@@ -82,7 +82,7 @@ mount_pseudofs() {
             # pseudofs isn't already mounted.  If it already is then
             # this is virtually impossible to troubleshoot because it
             # looks like the subsequent umount just isn't working.
-            mount -r --rbind /$f "$ROOTFS/$f"
+            mount -r --rbind /$f "$ROOTFS/$f" --make-rslave
         fi
     done
     if ! mountpoint -q "$ROOTFS/tmp" ; then
