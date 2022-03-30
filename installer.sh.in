@@ -1253,6 +1253,7 @@ configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE
     # Validate useraccount. All parameters must be set (name, password,
     # login name, groups).
     validate_useraccount
+
     if [ -z "$USERACCOUNT_DONE" ]; then
         DIALOG --yesno "${BOLD}The useraccount is not set up properly.${RESET}\n\n
 ${BOLD}${RED}WARNING: no user will be created. You're only able to login with \
@@ -1280,8 +1281,8 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # Create and mount filesystems
     create_filesystems
 
-    # If source not set use defaults.
     SOURCE_DONE="$(get_option SOURCE)"
+    # If source not set use defaults.
     if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
         copy_rootfs
         . /etc/default/live.conf
@@ -1330,6 +1331,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # Copy /etc/skel files for root.
     cp $TARGETDIR/etc/skel/.[bix]* $TARGETDIR/root
 
+    NETWORK_DONE="$(get_option NETWORK)"
     # network settings for target
     if [ -n "$NETWORK_DONE" ]; then
         local net="$(get_option NETWORK)"
