@@ -1385,6 +1385,20 @@ menu_source() {
 menu_import() {
     local _preset="$HOME/void-installer.conf" file=
 
+    # Disclaimer for the import functionality.
+    DIALOG --title "Import settings from a configuration file" --msgbox "\n
+${BOLD}${RED}This function is for advanced users. Don't use it if you don't
+understand what you're doing. If this is your first installation of Void Linux it is
+highly recommended to configure your installation manually.${RESET}\n\n
+If you import a configuration file it is recommended to change the passwords
+especially for the root user.\n\n
+Make sure that your system has the same partitions (with the same size) as
+described in the configuration file (as MOUNTPOINTs). Otherwise the
+installation will fail. Maybe you need to configure partitions manually,
+use the menu entry 'Partition' to do so.\n\n
+Also check if the disk for the boot loader installation is correct if the
+BOOTLOADER option is set in your configuration file.\n" 18 80
+
     DIALOG --title "Select a path to the configuration file" \
         --fselect "$_preset" ${FSELECT_SIZE}
     if [ $? -eq 0 ]; then
