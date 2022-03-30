@@ -40,6 +40,8 @@ BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
 FILESYSTEMS_DONE=
+IMPORT_DONE=
+EXPORT_DONE=
 
 TARGETDIR=/mnt/target
 LOG=/dev/tty8
@@ -90,6 +92,7 @@ INPUTSIZE="8 60"
 MSGBOXSIZE="8 70"
 YESNOSIZE="$INPUTSIZE"
 WIDGET_SIZE="10 70"
+FSELECT_SIZE="10 60"
 
 DIALOG() {
     rm -f $ANSWER
@@ -816,6 +819,7 @@ set_bootloader() {
 test_network() {
     rm -f xtraeme.asc && \
         xbps-uhelper fetch http://alpha.de.repo.voidlinux.org/live/xtraeme.asc >$LOG 2>&1
+
     if [ $? -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
@@ -1337,6 +1341,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # install bootloader.
     set_bootloader
+
+    # execute postinstall script.
+    POSTINSTALL=$(get_option POSTINSTALL)
+    if [ -n "$POSTINSTALL" ]; then
+        source "$POSTINSTALL"
+    fi
+
     sync && sync && sync
 
     # unmount all filesystems.
@@ -1371,6 +1382,75 @@ menu_source() {
     set_option SOURCE $src
 }
 
+menu_import() {
+    local _preset="$HOME/void-installer.conf" file=
+
+    # Disclaimer for the import functionality.
+    DIALOG --title "Import settings from a configuration file" --msgbox "\n
+${BOLD}${RED}This function is for advanced users. Don't use it if you don't
+understand what you're doing. If this is your first installation of Void Linux it is
+highly recommended to configure your installation manually.${RESET}\n\n
+If you import a configuration file it is recommended to change the passwords
+especially for the root user.\n\n
+Make sure that your system has the same partitions (with the same size) as
+described in the configuration file (as MOUNTPOINTs). Otherwise the
+installation will fail. Maybe you need to configure partitions manually,
+use the menu entry 'Partition' to do so.\n\n
+Also check if the disk for the boot loader installation is correct if the
+BOOTLOADER option is set in your configuration file.\n" 18 80
+
+    DIALOG --title "Select a path to the configuration file" \
+        --fselect "$_preset" ${FSELECT_SIZE}
+    if [ $? -eq 0 ]; then
+        file="$(cat $ANSWER)"
+
+        echo "Import settings from $file" >$LOG
+        cp "$file" "$CONF_FILE" >$LOG 2>&1
+        if [ $? -ne 0 ]; then
+            DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
+                failed to import settings! check $LOG for errors." ${MSGBOXSIZE}
+            return
+        fi
+
+        DIALOG --msgbox "Settings successfully imported!" ${MSGBOXSIZE}
+        IMPORT_DONE=1
+    fi
+}
+
+menu_export() {
+    local _preset="$HOME/void-installer.conf" file=
+
+    while true; do
+        DIALOG --title "Select a file where settings will be stored" \
+            --fselect "$_preset" ${FSELECT_SIZE}
+        if [ $? -eq 0 ]; then
+            # Check if file already exists.
+            file="$(cat $ANSWER)"
+            if [ -f "$file" ]; then
+                DIALOG --yesno \
+                    "${BOLD}${RED}WARNING: this file already exists.${RESET}\n\n
+${BOLD}Do you really want to override this file?${RESET}" ${YESNOSIZE}
+                if [ $? -ne 0 ]; then
+                    continue
+                fi
+            fi
+            break  # override this file
+        fi
+        return # abort export process
+    done
+
+    echo "Export settings to $file" >$LOG
+    cp "$CONF_FILE" "$file" >$LOG 2>&1
+    if [ $? -ne 0 ]; then
+        DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
+            failed to export settings! check $LOG for errors." ${MSGBOXSIZE}
+        return
+    fi
+
+    DIALOG --msgbox "Settings successfully exported!" ${MSGBOXSIZE}
+    EXPORT_DONE=1
+}
+
 menu() {
     local AFTER_HOSTNAME
     if [ -z "$DEFITEM" ]; then
@@ -1382,7 +1462,8 @@ menu() {
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
-            --menu "$MENULABEL" 10 70 0 \
+            --menu "$MENULABEL" 10 80 0 \
+            "Import" "Import settings from a configuration file (Optional)" \
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
@@ -1393,6 +1474,7 @@ menu() {
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
+            "Export" "Export current settings to a file (Optional)" \
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     else
@@ -1400,7 +1482,8 @@ menu() {
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
-            --menu "$MENULABEL" 10 70 0 \
+            --menu "$MENULABEL" 10 80 0 \
+            "Import" "Import settings from a configuration file (Optional)" \
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
@@ -1412,6 +1495,7 @@ menu() {
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
+            "Export" "Export current settings to a file (Optional)" \
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     fi
@@ -1426,6 +1510,7 @@ menu() {
     fi
 
     case $(cat $ANSWER) in
+        "Import") menu_import && [ -n "$IMPORT_DONE" ] && DEFITEM="Install";;
         "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
         "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
         "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Hostname";;
@@ -1437,7 +1522,8 @@ menu() {
                && DEFITEM="BootLoader";;
         "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
-        "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
+        "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Export";;
+        "Export") menu_export && [ -n "$EXPORT_DONE" ] && DEFITEM="Install";;
         "Install") menu_install;;
         "Exit") DIE;;
         *) DIALOG --yesno "Abort Installation?" ${YESNOSIZE} && DIE
