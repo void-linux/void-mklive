@@ -817,14 +817,14 @@ set_bootloader() {
     chroot $TARGETDIR grub-install $grub_args $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-        failed to install GRUB to $dev!\nCheck $LOG for errors." ${MSGBOXSIZE}
+failed to install GRUB to $dev!\nCheck $LOG for errors." ${MSGBOXSIZE}
         DIE 1
     fi
     echo "Running grub-mkconfig on $TARGETDIR..." >$LOG
     chroot $TARGETDIR grub-mkconfig -o /boot/grub/grub.cfg >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
-        failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
+failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
         DIE 1
     fi
 }
@@ -1250,17 +1250,6 @@ configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE
         return 1
     fi
 
-    # Validate useraccount. All parameters must be set (name, password,
-    # login name, groups).
-    validate_useraccount
-
-    if [ -z "$USERACCOUNT_DONE" ]; then
-        DIALOG --yesno "${BOLD}The useraccount is not set up properly.${RESET}\n\n
-${BOLD}${RED}WARNING: no user will be created. You're only able to login with \
-with the root user in your new system.${RESET}\n\n
-${BOLD}Do you want to continue?${RESET}" 10 60       || return
-    fi
-
     # Validate filesystems after making sure bootloader is done,
     # so that specific checks can be made based on the selection
     validate_filesystems || return 1
@@ -1269,6 +1258,17 @@ ${BOLD}Do you want to continue?${RESET}" 10 60       || return
         DIALOG --msgbox "${BOLD}Required filesystems were not configured, \
 please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
+    fi
+
+    # Validate useraccount. All parameters must be set (name, password,
+    # login name, groups).
+    validate_useraccount
+
+    if [ -z "$USERACCOUNT_DONE" ]; then
+        DIALOG --yesno "${BOLD}The useraccount is not set up properly.${RESET}\n\n
+${BOLD}${RED}WARNING: no user will be created. You're only able to login \
+with the root user in your new system.${RESET}\n\n
+${BOLD}Do you want to continue?${RESET}" 10 60 || return
     fi
 
     DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
