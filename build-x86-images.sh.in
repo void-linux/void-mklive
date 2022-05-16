@@ -28,32 +28,43 @@ build_variant() {
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal $GRUB_PKGS"
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
+    SERVICES="sshd"
 
     case $variant in
-        base) ;;
+        base)
+            SERVICES="$SERVICES dhcpcd acpid"
+        ;;
         enlightenment)
             PKGS="$PKGS $XORG_PKGS lxdm enlightenment terminology udisks2 firefox-esr"
+            SERVICES="$SERVICES acpid dhcpcd lxdm dbus polkitd"
         ;;
         xfce)
             PKGS="$PKGS $XORG_PKGS lxdm xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         mate)
             PKGS="$PKGS $XORG_PKGS lxdm mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         cinnamon)
             PKGS="$PKGS $XORG_PKGS lxdm cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         gnome)
             PKGS="$PKGS $XORG_PKGS gnome firefox-esr"
+            SERVICES="$SERVICES dbus elogind gdm NetworkManager polkitd"
         ;;
         kde)
             PKGS="$PKGS $XORG_PKGS kde5 konsole firefox-esr dolphin"
+            SERVICES="$SERVICES dbus elogind NetworkManager sddm"
         ;;
         lxde)
             PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            SERVICES="$SERVICES acpid dbus dhcpcd lxdm polkitd"
         ;;
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            SERVICES="$SERVICES elogind dbus dhcpcd lxdm polkitd"
         ;;
         *)
             >&2 echo "Unknown variant $variant"
@@ -61,7 +72,7 @@ build_variant() {
         ;;
     esac
 
-    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" ${REPO} "$@"
+    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" ${REPO} "$@"
 }
 
 if [ ! -x mklive.sh ]; then

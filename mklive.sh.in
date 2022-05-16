@@ -78,6 +78,7 @@ directory if unset).
  -o <file>          Output file name for the ISO image (auto if unset).
  -p "pkg pkgN ..."  Install additional packages into the ISO image.
  -I <includedir>    Include directory structure under given path into rootfs
+ -S "service serviceN ..." Services to enable
 
  -C "cmdline args"  Add additional kernel command line arguments.
  -T "title"         Modify the bootloader title.
@@ -138,6 +139,16 @@ install_packages() {
     fi
     # Cleanup and remove useless stuff.
     rm -rf "$ROOTFS"/var/cache/* "$ROOTFS"/run/* "$ROOTFS"/var/run/*
+}
+
+enable_services() {
+    SERVICE_LIST="$*"
+    for service in $SERVICE_LIST; do
+        if ! [ -e $ROOTFS/etc/sv/$service ]; then
+            die "service $service not in /etc/sv"
+        fi
+        ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
+    done
 }
 
 copy_include_directory() {
@@ -282,7 +293,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:s:o:p:v:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -293,6 +304,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:o:p:v:h" opt; do
         l) LOCALE="$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         I) INCLUDE_DIRECTORY="$OPTARG";;
+        S) SERVICE_LIST="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         p) PACKAGE_LIST="$OPTARG";;
@@ -395,6 +407,10 @@ mkdir -p "$ROOTFS"/etc
 
 print_step "Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
+
+: ${DEFAULT_SERVICE_LIST:=agetty-tty1 agetty-tty2 agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6 udevd}
+print_step "Enabling services: ${SERVICE_LIST} ..."
+enable_services ${DEFAULT_SERVICE_LIST} ${SERVICE_LIST}
 
 if [ -n "${INCLUDE_DIRECTORY}" ];then
     print_step "Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
