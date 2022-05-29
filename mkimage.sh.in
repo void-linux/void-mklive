@@ -196,7 +196,7 @@ _EOF
 label: gpt
 unit: sectors
 first-lba: 32768
-name=BootFS, size=${BOOT_FSSIZE}, type=L, bootable
+name=BootFS, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
 name=RootFS,                      type=L
 _EOF
                 ;;
