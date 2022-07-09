@@ -374,7 +374,7 @@ if [ -n "$LINUX_VERSION" ]; then
     _linux_series="$LINUX_VERSION"
     PACKAGE_LIST="$PACKAGE_LIST $LINUX_VERSION"
 else # Otherwise find latest stable version from linux meta-package
-    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux|head -1)
+    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')
 fi
 
 _kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
