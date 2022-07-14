@@ -606,7 +606,7 @@ menu_timezone() {
 set_timezone() {
     local TIMEZONE="$(get_option TIMEZONE)"
 
-    sed -i -e "s|#TIMEZONE=.*|TIMEZONE=$TIMEZONE|g" $TARGETDIR/etc/rc.conf
+    ln -sf "/usr/share/zoneinfo/${TIMEZONE}" "${TARGETDIR}/etc/localtime"
 }
 
 menu_hostname() {
