@@ -891,7 +891,8 @@ configure_net_dhcp() {
 
     iface_setup $dev
     if [ $? -eq 1 ]; then
-        dhcpcd -t 10 -w -4 -L $dev -e "wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" 2>&1 | tee $LOG | \
+        sv restart wpa_supplicant > $LOG 2>&1
+        dhcpcd -M -t 10 -w -4 -L $dev -e "wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" 2>&1 | tee $LOG | \
             DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
@@ -1303,6 +1304,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
                 cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
                 ln -sf /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
+                ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default/wpa_supplicant
             else
                 enable_dhcpd
             fi
