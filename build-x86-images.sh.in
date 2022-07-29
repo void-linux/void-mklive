@@ -30,7 +30,7 @@ build_variant() {
     fi
     IMG=void-live-${ARCH}-${DATE}${IMG_SUFFIX}.iso
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
-    PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse $GRUB_PKGS"
+    PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse iwd $GRUB_PKGS"
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
 
     case $variant in
