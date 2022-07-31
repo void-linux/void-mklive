@@ -95,10 +95,6 @@ copy_void_keys() {
     cp keys/*.plist "$1"/var/db/xbps/keys
 }
 
-copy_void_conf() {
-    install -Dm644 data/void-vpkgs.conf "$1"/usr/share/xbps.d/void-virtualpkgs.conf
-}
-
 copy_dracut_files() {
     mkdir -p "$1"/usr/lib/dracut/modules.d/01vmklive
     cp dracut/vmklive/* "$1"/usr/lib/dracut/modules.d/01vmklive/
@@ -110,15 +106,12 @@ copy_autoinstaller_files() {
 }
 
 install_prereqs() {
-    copy_void_conf "$VOIDHOSTDIR"
     XBPS_ARCH=$ARCH "$XBPS_INSTALL_CMD" -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} \
          -c "$XBPS_HOST_CACHEDIR" -y $REQUIRED_PKGS
     [ $? -ne 0 ] && die "Failed to install required software, exiting..."
 }
 
 install_packages() {
-    copy_void_conf "$ROOTFS"
-
     XBPS_ARCH=$BASE_ARCH "${XBPS_INSTALL_CMD}" -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -yn $PACKAGE_LIST $INITRAMFS_PKGS
     [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
@@ -253,9 +246,9 @@ generate_squashfs() {
     umount_pseudofs
 
     # Find out required size for the rootfs and create an ext3fs image off it.
-    ROOTFS_SIZE=$(du -sm "$ROOTFS"|awk '{print $1}')
+    ROOTFS_SIZE=$(du --apparent-size -sm "$ROOTFS"|awk '{print $1}')
     mkdir -p "$BUILDDIR/tmp/LiveOS"
-    truncate -s "$((ROOTFS_SIZE+ROOTFS_SIZE/6))M" \
+    truncate -s "$((ROOTFS_SIZE+ROOTFS_SIZE))M" \
 	    "$BUILDDIR"/tmp/LiveOS/ext3fs.img >/dev/null 2>&1
     mkdir -p "$BUILDDIR/tmp-rootfs"
     mkfs.ext3 -F -m1 "$BUILDDIR/tmp/LiveOS/ext3fs.img" >/dev/null 2>&1
@@ -289,7 +282,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:s:o:p:v:h" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -301,7 +294,6 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:S:o:p:v:h" opt; do
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         I) INCLUDE_DIRECTORY="$OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
-        S) ROOTFS_FREESIZE="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
         p) PACKAGE_LIST="$OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
@@ -375,7 +367,7 @@ XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} -S
 # Get linux version for ISO
 # If linux version option specified use
 if [ -n "$LINUX_VERSION" ]; then
-    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]*"; then
+    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]\+"; then
         die "-v option must be in format linux<version>"
     fi
 

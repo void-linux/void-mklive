@@ -168,9 +168,9 @@ info_msg "Reconfiguring packages for ${XBPS_TARGET_ARCH} ..."
 # This step sets up enough of the base-files that the chroot will work
 # and they can be reconfigured natively.  Without this step there
 # isn't enough configured for ld to work.  This step runs as the host
-# architecture, but on x86 some special extra steps have to be taken
-# to make this work.
-if [ -z "${XBPS_TARGET_ARCH##*86*}" ] && [ -z "${HOSTARCH##*86*}" ] ; then
+# architecture, but we may need to set up XBPS_ARCH for the target
+# architecture (but only when compatible).
+if is_target_native "$XBPS_TARGET_ARCH"; then
     run_cmd_target "xbps-reconfigure --rootdir $ROOTFS base-files"
 else
     run_cmd "xbps-reconfigure --rootdir $ROOTFS base-files"
@@ -180,12 +180,6 @@ fi
 # base-files completely.  Certain things just won't work in the first
 # pass, so this cleans up any issues that linger.
 run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
-
-# TODO: determine why these lines are here.  What is the harm in
-# having them and what do they remove.  Do they interact adversely
-# with the alien build support discussed above.
-rmdir "$ROOTFS/usr/lib32" 2>/dev/null
-rm -f "$ROOTFS/lib32" "$ROOTFS/lib64" "$ROOTFS/usr/lib64"
 
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.

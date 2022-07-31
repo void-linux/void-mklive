@@ -6,6 +6,33 @@
 readonly LIBTOOLS="cp echo cat printf which mountpoint mount umount modprobe"
 readonly HOSTARCH=$(xbps-uhelper arch)
 
+is_target_native() {
+    # Because checking whether the target is runnable is ugly, stuff
+    # it into a single function. That makes it easy to check anywhere.
+    local target_arch
+
+    target_arch="$1"
+    # this will cover most
+    if [ "${target_arch%-musl}" = "${HOSTARCH%-musl}" ]; then
+        return 0
+    fi
+
+    case "$HOSTARCH" in
+        # ppc64le has no 32-bit variant, only runs its own stuff
+        ppc64le*) return 1 ;;
+        # x86_64 also runs i686
+        x86_64*) test -z "${target_arch##*86*}" ;;
+        # aarch64 also runs armv*
+        aarch64*) test -z "${target_arch##armv*}" ;;
+        # bigendian ppc64 also runs ppc
+        ppc64*) test "${target_arch%-musl}" = "ppc" ;;
+        # anything else is just their own
+        *) return 1 ;;
+    esac
+
+    return $?
+}
+
 info_msg() {
     # This function handles the printing that is bold within all
     # scripts.  This is a convenience function so that the rather ugly
@@ -80,9 +107,7 @@ umount_pseudofs() {
 
 run_cmd_target() {
     info_msg "Running $* for target $XBPS_TARGET_ARCH ..."
-    if [ "$XBPS_TARGET_ARCH" = "${HOSTARCH}" ] ||
-           [ -z "${XBPS_TARGET_ARCH##*86*}" ] &&
-               [ -z "${HOSTARCH##*86*}" ] ; then
+    if is_target_native "$XBPS_TARGET_ARCH"; then
         # This is being run on the same architecture as the host,
         # therefore we should set XBPS_ARCH.
         if ! eval XBPS_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
@@ -134,11 +159,6 @@ cleanup_chroot() {
 
     # Un-Mount the pseudofs mounts if they were mounted
     umount_pseudofs
-
-    # If a QEMU binary was copied in, remove that as well
-    if [ -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
-        rm "$ROOTFS/usr/bin/$QEMU_BIN"
-    fi
 }
 
 register_binfmt() {
@@ -165,58 +185,71 @@ register_binfmt() {
 
     # In the special case where the build is native we can return
     # without doing anything else
-    if [ "${HOSTARCH%-musl}" = "${XBPS_TARGET_ARCH%-musl}" ] ; then
+    # This is only a basic check for identical archs, with more careful
+    # checks below for cases like ppc64 -> ppc and x86_64 -> i686.
+    _hostarch="${HOSTARCH%-musl}"
+    _targetarch="${XBPS_TARGET_ARCH%-musl}"
+    if [ "$_hostarch" = "$_targetarch" ] ; then
         return
     fi
 
-    case "${XBPS_TARGET_ARCH}" in
+    case "${_targetarch}" in
         armv*)
+            # TODO: detect aarch64 hosts that run 32 bit ARM without qemu (some cannot)
+            if ( [ "${_targetarch}" = "armv6l" ] && [ "${_hostarch}" = "armv7l" ] ) ; then
+                return
+            fi
+            if [ "${_targetarch}" = "armv5tel" -a \
+                \( "${_hostarch}" = "armv6l" -o "${_hostarch}" = "armv7l" \) ] ; then
+                return
+            fi
             _cpu=arm
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-arm-static
             ;;
-        aarch64*)
+        aarch64)
             _cpu=aarch64
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-aarch64-static
             ;;
-        ppc64le*)
+        ppc64le)
             _cpu=ppc64le
             _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
-            QEMU_BIN=qemu-ppc64le-static
             ;;
-        ppc64*)
+        ppc64)
             _cpu=ppc64
             _magic="\x7fELF\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-ppc64-static
             ;;
-        ppc*)
+        ppc)
+            if [ "$_hostarch" = "ppc64" ] ; then
+                return
+            fi
             _cpu=ppc
             _magic="\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
-            QEMU_BIN=qemu-ppc-static
             ;;
-        mipsel*)
+        mipsel)
+            if [ "$_hostarch" = "mips64el" ] ; then
+                return
+            fi
             _cpu=mipsel
             _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00"
             _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-mipsel-static
             ;;
-        x86_64*)
+        x86_64)
             _cpu=x86_64
             _magic="\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-x86_64-static
             ;;
-        i686*)
+        i686)
+            if [ "$_hostarch" = "x86_64" ] ; then
+                return
+            fi
             _cpu=i386
             _magic="\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00"
             _mask="\xff\xff\xff\xff\xff\xfe\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-            QEMU_BIN=qemu-i386-static
             ;;
         *)
             die "Unknown target architecture!"
@@ -225,6 +258,7 @@ register_binfmt() {
 
     # For builds that do not match the host architecture, the correct
     # qemu binary will be required.
+    QEMU_BIN="qemu-${_cpu}-static"
     if ! $QEMU_BIN -version >/dev/null 2>&1; then
         die "$QEMU_BIN binary is missing in your system, exiting."
     fi
@@ -238,18 +272,7 @@ register_binfmt() {
 
     # Only register if the map is incomplete
     if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
-        echo ":qemu-$_cpu:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
-    fi
-
-    # If the static binary isn't in the chroot then the chroot will
-    # fail.  The kernel knows about the map but without the static
-    # version there's no interpreter in the chroot, only the
-    # dynamically linked one in the host.  To simplify things we just
-    # use the static one always and make sure it shows up at the same
-    # place in the host and the chroot.
-    if [ ! -x "$ROOTFS/usr/bin/$QEMU_BIN" ] ; then
-        install -m755 -D "$(which "$QEMU_BIN")" "$ROOTFS/usr/bin/$QEMU_BIN" ||
-            die "Could not install $QEMU_BIN to $ROOTFS/usr/bin/"
+        echo ":qemu-$_cpu:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:F" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
     fi
 }
 
@@ -262,19 +285,19 @@ set_target_arch_from_platform() {
         bananapi*) XBPS_TARGET_ARCH="armv7l";;
         beaglebone*) XBPS_TARGET_ARCH="armv7l";;
         cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l";;
-        dockstar*) XBPS_TARGET_ARCH="armv5tel";;
-        pogoplugv4*) XBPS_TARGET_ARCH="armv5tel" ;;
         odroid-u2*) XBPS_TARGET_ARCH="armv7l";;
         odroid-c2*) XBPS_TARGET_ARCH="aarch64";;
+        rpi4*) XBPS_TARGET_ARCH="aarch64";;
         rpi3*) XBPS_TARGET_ARCH="aarch64";;
         rpi2*) XBPS_TARGET_ARCH="armv7l";;
         rpi*) XBPS_TARGET_ARCH="armv6l";;
-        usbarmory*) XBPS_TARGET_ARCH="armv7l";;
         ci20*) XBPS_TARGET_ARCH="mipsel";;
         i686*) XBPS_TARGET_ARCH="i686";;
         x86_64*) XBPS_TARGET_ARCH="x86_64";;
         GCP*) XBPS_TARGET_ARCH="x86_64";;
         pinebookpro*) XBPS_TARGET_ARCH="aarch64";;
+        pinephone*) XBPS_TARGET_ARCH="aarch64";;
+        rock64*) XBPS_TARGET_ARCH="aarch64";;
         *) die "$PROGNAME: Unable to compute target architecture from platform";;
     esac
 
@@ -287,7 +310,6 @@ set_dracut_args_from_platform() {
     # In rare cases it is necessary to set platform specific dracut
     # args.  This is mostly the case on ARM platforms.
     case "$PLATFORM" in
-        pogoplugv4*) dracut_args="-o 'btrfs drm i18n resume terminfo'" ;;
         *) ;;
     esac
 }
@@ -296,6 +318,13 @@ set_cachedir() {
     # The package artifacts are cacheable, but they need to be isolated
     # from the host cache.
     : "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
+}
+
+rk33xx_flash_uboot() {
+    local dir="$1"
+    local dev="$2"
+    dd if="${dir}/idbloader.img" of="${dev}" seek=64 conv=notrunc,fsync >/dev/null 2>&1
+    dd if="${dir}/u-boot.itb" of="${dev}" seek=16384 conv=notrunc,fsync >/dev/null 2>&1
 }
 
 # These should all resolve even if they won't have the appropriate

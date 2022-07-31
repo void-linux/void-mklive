@@ -1,5 +1,7 @@
 #!/bin/bash
 
+useradd -m -s /bin/bash vagrant
+
 # Set up sudo
 echo '%vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
 echo 'Defaults:vagrant !requiretty' >> /etc/sudoers.d/vagrant
@@ -19,3 +21,11 @@ chown -R vagrant /home/vagrant/.ssh
 
 # Install NFS for Vagrant
 xbps-install -Sy nfs-utils
+
+passwd -dl vagrant
+passwd -dl void
+passwd -dl root
+
+rm -rf /var/cache/xbps
+
+shutdown -P now

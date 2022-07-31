@@ -24,3 +24,5 @@ passwd -dl void
 passwd -dl root
 
 rm -rf /var/cache/xbps
+
+shutdown -P now

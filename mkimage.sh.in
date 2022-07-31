@@ -110,6 +110,24 @@ elif [ ! -r "$ROOTFS_TARBALL" ]; then
     die "Cannot read rootfs tarball: $ROOTFS_TARBALL"
 fi
 
+# Setup the platform variable.  Here we want just the name and
+# optionally -musl if this is the musl variant.
+PLATFORM="${ROOTFS_TARBALL#void-}"
+PLATFORM="${PLATFORM%-PLATFORMFS*}"
+
+# Be absolutely certain the platform is supported before continuing
+case "$PLATFORM" in
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|rpi4|GCP|pinebookpro|pinephone|rock64|*-musl);;
+    *) die "The $PLATFORM is not supported, exiting..."
+esac
+
+# Default for bigger boot partion on rk33xx devices since it needs to
+# fit at least 2 Kernels + initramfs
+case "$PLATFORM" in
+    pinebookpro*|rock64*)
+        : "${BOOT_FSSIZE:=256MiB}"
+        ;;
+esac
 # By default we build all platform images with a 64MiB boot partition
 # formated FAT16, and an approximately 1.9GiB root partition formated
 # ext4.  More exotic combinations are of course possible, but this
@@ -123,11 +141,6 @@ fi
 readonly REQTOOLS="sfdisk partx losetup mount truncate mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
 check_tools
 
-# Setup the platform variable.  Here we want just the name and
-# optionally -musl if this is the musl variant.
-PLATFORM="${ROOTFS_TARBALL#void-}"
-PLATFORM="${PLATFORM%-PLATFORMFS*}"
-
 # This is an awful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then
@@ -140,12 +153,6 @@ fi
 if [ -z "$FILENAME" ]; then
     FILENAME="void-${PLATFORM}-$(date +%Y%m%d).img"
 fi
-
-# Be absolutely certain the platform is supported before continuing
-case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|usbarmory|GCP|pinebookpro|*-musl);;
-    *) die "The $PLATFORM is not supported, exiting..."
-esac
 
 # Create the base image.  This was previously accomplished with dd,
 # but truncate is markedly faster.
@@ -165,17 +172,6 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 
-BOOT_START=2048
-ROOT_START=
-case "$PLATFORM" in
-    pinebookpro*)
-        BOOT_START=32768
-        # Without this, sfdisk creates root partition starting at
-        # 2048, overlapping u-boot reserved space and boot partition.
-        ROOT_START=$BOOT_START
-        ;;
-esac
-
 case "$PLATFORM" in
     cubieboard2|cubietruck|ci20*|odroid-c2*)
         # These platforms use a single partition for the entire filesystem.
@@ -193,11 +189,26 @@ _EOF
         # partition (64M by default) and the rest of the space as the
         # root filesystem.  This is the generally preferred disk
         # layout for new platforms.
-        sfdisk "${FILENAME}" <<_EOF
-label: dos
-${BOOT_START},${BOOT_FSSIZE},b,*
-${ROOT_START},+,L
+        case "$PLATFORM" in
+            pinebookpro*|rock64*)
+                # rk33xx devices use GPT and need more space reserved
+                sfdisk "$FILENAME" <<_EOF
+label: gpt
+unit: sectors
+first-lba: 32768
+name=BootFS, size=${BOOT_FSSIZE}, type=L, bootable
+name=RootFS,                      type=L
 _EOF
+                ;;
+            *)
+                # The rest use MBR and need less space reserved
+                sfdisk "${FILENAME}" <<_EOF
+label: dos
+2048,${BOOT_FSSIZE},b,*
+,+,L
+_EOF
+                ;;
+        esac
         LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
         # Normally we need to quote to prevent argument splitting, but
         # we explicitly want argument splitting here.
@@ -213,12 +224,13 @@ _EOF
             # a small amount.
             ext[34]) disable_journal="-O ^has_journal";;
         esac
-        mkfs.${ROOT_FSTYPE} "$disable_journal" "${LOOPDEV}p2" >/dev/null 2>&1
+        mkfs.${ROOT_FSTYPE} ${disable_journal:+"$disable_journal"} "${LOOPDEV}p2" >/dev/null 2>&1
         mount "${LOOPDEV}p2" "$ROOTFS"
         mkdir -p "${ROOTFS}/boot"
         mount "${LOOPDEV}p1" "${ROOTFS}/boot"
         BOOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
         ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p2")
+        ROOT_PARTUUID=$(blkid -o value -s PARTUUID "${LOOPDEV}p2")
         ;;
 esac
 
@@ -286,17 +298,35 @@ odroid-u2*)
     dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" seek=63 >/dev/null 2>&1
     dd if="${ROOTFS}/boot/E4412_S.tzsw.signed.bin" of="${LOOPDEV}" seek=2111 >/dev/null 2>&1
     ;;
-usbarmory*)
-    dd if="${ROOTFS}/boot/u-boot.imx" of="${LOOPDEV}" bs=512 seek=2 conv=fsync >/dev/null 2>&1
-    ;;
 ci20*)
     dd if="${ROOTFS}/boot/u-boot-spl.bin" of="${LOOPDEV}" obs=512 seek=1 >/dev/null 2>&1
     dd if="${ROOTFS}/boot/u-boot.img" of="${LOOPDEV}" obs=1K seek=14 >/dev/null 2>&1
     ;;
+rock64*)
+    rk33xx_flash_uboot "${ROOTFS}/usr/lib/rock64-uboot" "$LOOPDEV"
+    # populate the extlinux.conf file
+    cat >"${ROOTFS}/etc/default/extlinux" <<_EOF
+TIMEOUT=10
+# Defaults to current kernel cmdline if left empty
+CMDLINE="panic=10 coherent_pool=1M console=ttyS2,1500000 root=UUID=${ROOT_UUID} rw"
+# set this to use a DEVICETREEDIR line in place of an FDT line
+USE_DEVICETREEDIR="yes"
+# relative dtb path supplied to FDT line, as long as above is unset
+DTBPATH=""
+_EOF
+    mkdir -p "${ROOTFS}/boot/extlinux"
+    run_cmd_chroot "${ROOTFS}" "/etc/kernel.d/post-install/60-extlinux"
+    cleanup_chroot
+    ;;
 pinebookpro*)
-    dd if="${ROOTFS}/boot/idbloader.img" of="${LOOPDEV}" seek=64 conv=notrunc,fsync >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/u-boot.itb" of="${LOOPDEV}" seek=16384 conv=notrunc,fsync >/dev/null 2>&1
+    rk33xx_flash_uboot "${ROOTFS}/usr/lib/pinebookpro-uboot" "$LOOPDEV"
     run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f pinebookpro-kernel"
+    cleanup_chroot
+    ;;
+pinephone*)
+    sed -i "s/CMDLINE=\"\(.*\)\"\$/CMDLINE=\"\1 root=PARTUUID=${ROOT_PARTUUID}\"/" "${ROOTFS}/etc/default/pinephone-uboot-config"
+    dd if="${ROOTFS}/boot/u-boot-sunxi-with-spl.bin" of="${LOOPDEV}" bs=1024 seek=8 conv=notrunc,fsync >/dev/null 2>&1
+    run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f pinephone-kernel"
     cleanup_chroot
     ;;
 GCP*)

@@ -674,15 +674,15 @@ set_hostname() {
 }
 
 menu_rootpassword() {
-    local _firstpass _secondpass _desc
+    local _firstpass _secondpass _again _desc
 
     while true; do
         if [ -z "${_firstpass}" ]; then
             _desc="Enter the root password"
         else
-            _desc="$_desc again"
+            _again=" again"
         fi
-        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
+        DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
@@ -692,7 +692,7 @@ menu_rootpassword() {
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
                     INFOBOX "Passwords do not match! Please enter again." 6 60
-                    unset _firstpass _secondpass
+                    unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
                 set_option ROOTPASSWORD "${_firstpass}"
@@ -710,7 +710,7 @@ set_rootpassword() {
 }
 
 menu_useraccount() {
-    local _firstpass _secondpass _desc
+    local _firstpass _secondpass _desc _again
     local _groups _status _group _checklist
     local _preset
 
@@ -745,9 +745,9 @@ menu_useraccount() {
         if [ -z "${_firstpass}" ]; then
             _desc="Enter the password for login '$(get_option USERLOGIN)'"
         else
-            _desc="$_desc again"
+            _again=" again"
         fi
-        DIALOG --insecure --passwordbox "${_desc}" ${INPUTSIZE}
+        DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             if [ -z "${_firstpass}" ]; then
                 _firstpass="$(cat $ANSWER)"
@@ -757,7 +757,7 @@ menu_useraccount() {
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
                     INFOBOX "Passwords do not match! Please enter again." 6 60
-                    unset _firstpass _secondpass
+                    unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
                 set_option USERPASSWORD "${_firstpass}"
@@ -958,7 +958,7 @@ configure_wifi() {
         DIALOG --msgbox "Invalid SSID." ${MSGBOXSIZE}
         return 1
     elif [ -z "$enc" -o "$enc" != "wep" -a "$enc" != "wpa" ]; then
-        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSXBOXSIZE}
+        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSGBOXSIZE}
         return 1
     elif [ -z "$pass" ]; then
         DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
@@ -1038,13 +1038,13 @@ configure_net_static() {
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to bring $dev interface." ${MSGBOXSIZE}
         return 1
     fi
-    echo "running: ip addr add $ip dev $dev"
+    echo "running: ip addr add $ip dev $dev" >$LOG
     ip addr add $ip dev $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to set ip to the $dev interface." ${MSGBOXSIZE}
         return 1
     fi
-    ip route add $gw dev $dev >$LOG 2>&1
+    ip route add default via $gw >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to setup your gateway." ${MSGBOXSIZE}
         return 1
@@ -1195,10 +1195,10 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
             esac
             TITLE="Check $LOG for details ..."
-            if [ "$(get_option USELUKS)" = "1" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "0" ];  then
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$mntpt" = "/" ] && [ "$(get_option USELVM)" = "0" ];  then
                 INFOBOX "Preparing LUKS on $dev" 6 60
-                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat $dev --key-file=- >$LOG 2>&1
-                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen $dev croot --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat "$dev" --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen "$dev" croot --key-file=- >$LOG 2>&1
                 if [ $? -ne 0 ]; then
                     DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 failed prepare LUKS $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
@@ -1206,10 +1206,10 @@ failed prepare LUKS $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
                 fi
                 dev=$deve
             fi
-            if [ "$(get_option USELUKS)" = "1" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "1" ];  then
+            if [ "$(get_option USELUKS)" = "1" ] && [ "$mntpt" = "/" ] && [ "$(get_option USELVM)" = "1" ];  then
                 INFOBOX "Preparing LUKS and LVM on $dev" 6 60
-                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat $dev --key-file=- >$LOG 2>&1
-                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen $dev cpool --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksFormat "$dev" --key-file=- >$LOG 2>&1
+                printf %s "$(get_option LUKSPASSWORD)"| sed 's/^LUKS//' | cryptsetup luksOpen "$dev" cpool --key-file=- >$LOG 2>&1
                 if [ $? -ne 0 ]; then
                     DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
 failed prepare LUKS $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
@@ -1232,7 +1232,7 @@ failed prepare LVM $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
                 # dev=/dev/mapper/crootl
                 dev=$deve
             fi
-            if [ "$(get_option USELUKS)" = "0" ] && [ $mntpt = '/' ] && [ "$(get_option USELVM)" = "1" ];  then
+            if [ "$(get_option USELUKS)" = "0" ] && [ "$mntpt" = "/" ] && [ "$(get_option USELVM)" = "1" ];  then
                 INFOBOX "Preparing LVM on $dev" 6 60
                 vgcreate lpool $dev
                 fsi=$((${#fssize}-1))
@@ -1438,7 +1438,7 @@ configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE
 please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
     fi
-    # if lvm say the / size
+
     DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
 ${BOLD}${TARGETFS}${RESET}\n
 ${BOLD}${RED}WARNING: data on partitions will be COMPLETELY DESTROYED for new \
@@ -1540,6 +1540,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         unset USERLOGIN
     fi
 
+    # clean up polkit rule - it's only useful in live systems
+    rm -f $TARGETDIR/etc/polkit-1/rules.d/void-live.rules
+
     # enable text console for grub if chosen
     if [ "$(get_option TEXTCONSOLE)" = "1" ]; then
         sed -i $TARGETDIR/etc/default/grub \
@@ -1587,7 +1590,7 @@ menu_source() {
     DIALOG --title " Select installation source " \
         --menu "$MENULABEL" 8 70 0 \
         "Local" "Packages from ISO image" \
-        "Network" "Base system only, downloaded from official reposity"
+        "Network" "Base system only, downloaded from official repository"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
         "Network") src="net";
@@ -1601,11 +1604,13 @@ menu_source() {
 }
 
 menu() {
+    local AFTER_HOSTNAME
     if [ -z "$DEFITEM" ]; then
         DEFITEM="Keyboard"
     fi
 
     if xbps-uhelper arch | grep -qe '-musl$'; then
+        AFTER_HOSTNAME="Timezone"
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
@@ -1625,6 +1630,7 @@ menu() {
             "Install" "Start installation with saved settings" \
             "Exit" "Exit installation"
     else
+        AFTER_HOSTNAME="Locale"
         DIALOG --default-item $DEFITEM \
             --extra-button --extra-label "Settings" \
             --title " Void Linux installation menu " \
@@ -1659,7 +1665,7 @@ menu() {
         "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
         "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
         "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Hostname";;
-        "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="Locale";;
+        "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="$AFTER_HOSTNAME";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
@@ -1694,7 +1700,7 @@ Welcome to the Void Linux installation. A simple and minimal \
 Linux distribution made from scratch and built from the source package tree \
 available for XBPS, a new alternative binary package system.\n\n
 The installation should be pretty straightforward. If you are in trouble \
-please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.freenode.org${RESET}.\n\n
+please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.libera.chat${RESET}.\n\n
 ${BOLD}https://www.voidlinux.org${RESET}\n\n" 16 80
 
 while true; do
