@@ -1039,7 +1039,7 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             fi
             # Add entry for target fstab
             uuid=$(blkid -o value -s UUID "$dev")
-            echo "UUID=$uuid none swap sw 0 0" >>$TARGET_FSTAB
+            echo "UUID=$uuid none swap defaults 0 0" >>$TARGET_FSTAB
             continue
         fi
 
