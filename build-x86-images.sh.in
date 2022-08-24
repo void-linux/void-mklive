@@ -57,7 +57,7 @@ build_variant() {
             PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
         ;;
         lxqt)
-            PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 qupzilla"
+            PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
         ;;
         *)
             >&2 echo "Unknown variant $variant"
