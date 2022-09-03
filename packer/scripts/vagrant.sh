@@ -3,7 +3,7 @@
 useradd -m -s /bin/bash vagrant
 
 # Set up sudo
-echo '%vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
+echo '%vagrant ALL=(ALL:ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
 echo 'Defaults:vagrant !requiretty' >> /etc/sudoers.d/vagrant
 chmod 0440 /etc/sudoers.d/vagrant
 

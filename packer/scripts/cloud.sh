@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "void ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-void
+echo "void ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-void
 echo "Defaults:void !requiretty" >> /etc/sudoers.d/99-void
 chmod 0440 /etc/sudoers.d/99-void
 mv /etc/sudoers.d/{,10-}wheel
