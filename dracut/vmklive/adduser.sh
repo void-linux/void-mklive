@@ -32,7 +32,7 @@ chroot ${NEWROOT} sh -c "echo "$USERNAME:voidlinux" | chpasswd -c SHA512"
 
 # Enable sudo permission by default.
 if [ -f ${NEWROOT}/etc/sudoers ]; then
-    echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> ${NEWROOT}/etc/sudoers
+    echo "${USERNAME} ALL=(ALL:ALL) NOPASSWD: ALL" > "${NEWROOT}/etc/sudoers.d/99-void-live"
 fi
 
 if [ -d ${NEWROOT}/etc/polkit-1 ]; then

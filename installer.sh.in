@@ -1246,7 +1246,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
-        sed -i -e "/$USERNAME ALL=.*/d" $TARGETDIR/etc/sudoers
+        rm -f $TARGETDIR/etc/sudoers.d/99-void-live
         TITLE="Check $LOG for details ..."
         INFOBOX "Rebuilding initramfs for target ..." 4 60
         echo "Rebuilding initramfs for target ..." >$LOG
@@ -1311,16 +1311,15 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         fi
     fi
 
-    if [ -f $TARGETDIR/etc/sudoers ]; then
+    if [ -d $TARGETDIR/etc/sudoers.d ]; then
         USERLOGIN="$(get_option USERLOGIN)"
         if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
             # enable sudo for primary user USERLOGIN who is not member of wheel
-            echo "# Enable sudo for login '$USERLOGIN'" >> $TARGETDIR/etc/sudoers
-            echo "$USERLOGIN ALL=(ALL) ALL" >> $TARGETDIR/etc/sudoers
+            echo "# Enable sudo for login '$USERLOGIN'" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
+            echo "$USERLOGIN ALL=(ALL:ALL) ALL" >> "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
         else
             # enable the sudoers entry for members of group wheel
-            sed -i $TARGETDIR/etc/sudoers \
-                -e "s;#.*%wheel ALL=(ALL) ALL;%wheel ALL=(ALL) ALL;"
+            echo "%wheel ALL=(ALL:ALL) ALL" > "$TARGETDIR/etc/sudoers.d/wheel"
         fi
         unset USERLOGIN
     fi
