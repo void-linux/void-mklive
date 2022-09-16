@@ -288,6 +288,7 @@ set_target_arch_from_platform() {
         pinephone*) XBPS_TARGET_ARCH="aarch64";;
         rock64*) XBPS_TARGET_ARCH="aarch64";;
         rockpro64*) XBPS_TARGET_ARCH="aarch64";;
+        asahi*) XBPS_TARGET_ARCH="aarch64";;
         *) die "$PROGNAME: Unable to compute target architecture from platform";;
     esac
 
