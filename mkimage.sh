@@ -116,7 +116,7 @@ PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|rockpro64|*-musl);;
+    rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|rockpro64|asahi|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -348,6 +348,12 @@ GCP*)
 
     # Cleanup the chroot from anything that was setup for the
     # run_cmd_chroot commands
+    cleanup_chroot
+    ;;
+asahi*)
+    mount_pseudofs
+    run_cmd_chroot "${ROOTFS}" "grub-install --target=arm64-efi --efi-directory=/boot --removable"
+    run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f linux-asahi"
     cleanup_chroot
     ;;
 esac
