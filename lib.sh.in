@@ -82,7 +82,7 @@ mount_pseudofs() {
             # pseudofs isn't already mounted.  If it already is then
             # this is virtually impossible to troubleshoot because it
             # looks like the subsequent umount just isn't working.
-            mount -r --bind /$f "$ROOTFS/$f"
+            mount -r --rbind /$f "$ROOTFS/$f"
         fi
     done
     if ! mountpoint -q "$ROOTFS/tmp" ; then
@@ -99,7 +99,7 @@ umount_pseudofs() {
     # contingency where the psuedofs mounts are not present.
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
-            umount -f "$ROOTFS/$f" >/dev/null 2>&1
+            umount -R -f "$ROOTFS/$f" >/dev/null 2>&1
         done
     fi
     umount -f "$ROOTFS/tmp" >/dev/null 2>&1
@@ -329,9 +329,9 @@ rk33xx_flash_uboot() {
 
 # These should all resolve even if they won't have the appropriate
 # repodata files for the selected architecture.
-: "${XBPS_REPOSITORY:=--repository=http://alpha.de.repo.voidlinux.org/current \
-                      --repository=http://alpha.de.repo.voidlinux.org/current/musl \
-                      --repository=http://alpha.de.repo.voidlinux.org/current/aarch64}"
+: "${XBPS_REPOSITORY:=--repository=https://repo-default.voidlinux.org/current \
+                      --repository=https://repo-default.voidlinux.org/current/musl \
+                      --repository=https://repo-default.voidlinux.org/current/aarch64}"
 
 
 

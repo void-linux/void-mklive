@@ -74,8 +74,8 @@ VAI_install_base_system() {
 VAI_prepare_chroot() {
     # Mount dev, bind, proc, etc into chroot
     mount -t proc proc "${target}/proc"
-    mount -t sysfs sys "${target}/sys"
-    mount -o rbind /dev "${target}/dev"
+    mount --rbind /sys "${target}/sys"
+    mount --rbind /dev "${target}/dev"
 }
 
 VAI_configure_sudo() {
@@ -202,10 +202,10 @@ VAI_configure_autoinstall() {
     XBPS_ARCH="$(xbps-uhelper arch)"
     case $XBPS_ARCH in
         *-musl)
-            xbpsrepository="https://alpha.de.repo.voidlinux.org/current/musl"
+            xbpsrepository="https://repo-default.voidlinux.org/current/musl"
             ;;
         *)
-            xbpsrepository="https://alpha.de.repo.voidlinux.org/current"
+            xbpsrepository="https://repo-default.voidlinux.org/current"
             ;;
     esac
 
