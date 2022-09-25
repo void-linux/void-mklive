@@ -47,13 +47,13 @@ print_step() {
 mount_pseudofs() {
     for f in sys dev proc; do
         mkdir -p "$ROOTFS"/$f
-        mount --bind /$f "$ROOTFS"/$f
+        mount --rbind /$f "$ROOTFS"/$f
     done
 }
 umount_pseudofs() {
-    umount -f "$ROOTFS"/sys >/dev/null 2>&1
-    umount -f "$ROOTFS"/dev >/dev/null 2>&1
-    umount -f "$ROOTFS"/proc >/dev/null 2>&1
+    umount -R -f "$ROOTFS"/sys >/dev/null 2>&1
+    umount -R -f "$ROOTFS"/dev >/dev/null 2>&1
+    umount -R -f "$ROOTFS"/proc >/dev/null 2>&1
 }
 error_out() {
     umount_pseudofs
@@ -304,7 +304,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:s:o:p:v:h" opt; do
     esac
 done
 shift $((OPTIND - 1))
-XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://alpha.de.repo.voidlinux.org/current --repository=http://alpha.de.repo.voidlinux.org/current/musl"
+XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=http://repo-default.voidlinux.org/current --repository=http://repo-default.voidlinux.org/current/musl"
 # Configure dracut to use overlayfs for the writable overlay.
 BOOT_CMDLINE="$BOOT_CMDLINE rd.live.overlay.overlayfs=1 "
 
@@ -374,7 +374,7 @@ if [ -n "$LINUX_VERSION" ]; then
     _linux_series="$LINUX_VERSION"
     PACKAGE_LIST="$PACKAGE_LIST $LINUX_VERSION"
 else # Otherwise find latest stable version from linux meta-package
-    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux|head -1)
+    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')
 fi
 
 _kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
