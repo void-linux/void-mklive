@@ -829,7 +829,11 @@ test_network() {
         NETWORK_DONE=1
         return 1
     fi
-    DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
+    if [ "$1" = "nm" ]; then
+        DIALOG --msgbox "Network Manager is enabled but network is inaccessible, please set it up externally with nmcli, nmtui, or the Network Manager tray applet." ${MSGBOXSIZE}
+    else
+        DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
+    fi
 }
 
 configure_wifi() {
@@ -956,6 +960,11 @@ configure_net_static() {
 
 menu_network() {
     local dev addr f DEVICES
+
+    if [ -e /var/service/NetworkManager ]; then
+        test_network nm
+        return
+    fi
 
     for f in $(ls /sys/class/net); do
         [ "$f" = "lo" ] && continue
