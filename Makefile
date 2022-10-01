@@ -1,5 +1,5 @@
 GITVER := $(shell git rev-parse --short HEAD)
-VERSION = 0.22
+VERSION = 0.23
 SHIN    += $(shell find -type f -name '*.sh.in')
 SCRIPTS += $(SHIN:.sh.in=.sh)
 DATECODE=$(shell date "+%Y%m%d")
