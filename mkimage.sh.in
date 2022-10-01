@@ -117,7 +117,7 @@ PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi|rpi2|rpi3|rpi4|GCP|pinebookpro|pinephone|rock64|*-musl);;
+    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
