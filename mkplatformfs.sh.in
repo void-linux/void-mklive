@@ -50,7 +50,7 @@ Usage: $PROGNAME [options] <platform> <base-tarball>
 
 Supported platforms: i686, x86_64, GCP, bananapi, beaglebone,
                      cubieboard2, cubietruck, odroid-c2, odroid-u2,
-                     rpi, rpi2 (armv7), rpi3 (aarch64), rpi4 (aarch64), ci20,
+                     rpi-armv6l, rpi-armv7l, rpi-aarch64, ci20,
                      pinebookpro, pinephone, rock64
 
 Options
@@ -117,9 +117,6 @@ case "$PLATFORM" in
     cubieboard2*|cubietruck*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-u2*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-c2*) PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
-    rpi4*) PKGS="$BASEPKG rpi4-base" ;;
-    rpi3*) PKGS="$BASEPKG rpi3-base" ;;
-    rpi2*) PKGS="$BASEPKG rpi2-base" ;;
     rpi*) PKGS="$BASEPKG rpi-base" ;;
     ci20*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     i686*) PKGS="$BASEPKG" ;;
