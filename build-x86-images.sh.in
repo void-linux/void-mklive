@@ -35,35 +35,35 @@ build_variant() {
             SERVICES="$SERVICES dhcpcd wpa_supplicant acpid"
         ;;
         enlightenment)
-            PKGS="$PKGS $XORG_PKGS lxdm enlightenment terminology udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxdm enlightenment terminology udisks2 firefox"
             SERVICES="$SERVICES acpid dhcpcd wpa_supplicant lxdm dbus polkitd"
         ;;
         xfce)
-            PKGS="$PKGS $XORG_PKGS lxdm xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxdm xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         mate)
-            PKGS="$PKGS $XORG_PKGS lxdm mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxdm mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         cinnamon)
-            PKGS="$PKGS $XORG_PKGS lxdm cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxdm cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
         ;;
         gnome)
-            PKGS="$PKGS $XORG_PKGS gnome firefox-esr"
+            PKGS="$PKGS $XORG_PKGS gnome firefox"
             SERVICES="$SERVICES dbus elogind gdm NetworkManager polkitd"
         ;;
         kde)
-            PKGS="$PKGS $XORG_PKGS kde5 konsole firefox-esr dolphin"
+            PKGS="$PKGS $XORG_PKGS kde5 konsole firefox dolphin"
             SERVICES="$SERVICES dbus elogind NetworkManager sddm"
         ;;
         lxde)
-            PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES acpid dbus dhcpcd wpa_supplicant lxdm polkitd"
         ;;
         lxqt)
-            PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr"
+            PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES elogind dbus dhcpcd wpa_supplicant lxdm polkitd"
         ;;
         *)
