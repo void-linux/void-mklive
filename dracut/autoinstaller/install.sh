@@ -81,7 +81,8 @@ VAI_prepare_chroot() {
 
 VAI_configure_sudo() {
     # Give wheel sudo
-    echo "%wheel ALL=(ALL:ALL) ALL" > "${target}/etc/sudoers.d/wheel"
+    echo "%wheel ALL=(ALL:ALL) ALL" > "${target}/etc/sudoers.d/00-wheel"
+    chmod 0440 "${target}/etc/sudoers.d/00-wheel"
 }
 
 VAI_correct_root_permissions() {
