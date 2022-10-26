@@ -653,7 +653,7 @@ menu_timezone() {
 set_timezone() {
     local TIMEZONE="$(get_option TIMEZONE)"
 
-    sed -i -e "s|#TIMEZONE=.*|TIMEZONE=$TIMEZONE|g" $TARGETDIR/etc/rc.conf
+    ln -sf "/usr/share/zoneinfo/${TIMEZONE}" "${TARGETDIR}/etc/localtime"
 }
 
 menu_hostname() {
@@ -942,14 +942,18 @@ menu_lvm() {
 }
 
 test_network() {
-    rm -f xtraeme.asc && \
-        xbps-uhelper fetch https://repo-default.voidlinux.org/live/xtraeme.asc >$LOG 2>&1
+    rm -f otime && \
+        xbps-uhelper fetch https://repo-default.voidlinux.org/current/otime >$LOG 2>&1
     if [ $? -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
         return 1
     fi
-    DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
+    if [ "$1" = "nm" ]; then
+        DIALOG --msgbox "Network Manager is enabled but network is inaccessible, please set it up externally with nmcli, nmtui, or the Network Manager tray applet." ${MSGBOXSIZE}
+    else
+        DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
+    fi
 }
 
 configure_wifi() {
@@ -959,8 +963,8 @@ configure_wifi() {
         "SSID:" 1 1 "" 1 16 30 0 \
         "Encryption:" 2 1 "" 2 16 4 3 \
         "Password:" 3 1 "" 3 16 63 0 || return 1
-    set -- $(cat $ANSWER)
-    ssid="$1"; enc="$2"; pass="$3";
+    readarray -t values <<<$(cat $ANSWER)
+    ssid="${values[0]}"; enc="${values[1]}"; pass="${values[2]}"
 
     if [ -z "$ssid" ]; then
         DIALOG --msgbox "Invalid SSID." ${MSGBOXSIZE}
@@ -972,19 +976,27 @@ configure_wifi() {
         DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
     fi
 
-    rm -f ${_wpasupconf%.conf}-${dev}.conf
-    cp -f ${_wpasupconf} ${_wpasupconf%.conf}-${dev}.conf
-    if [ "$enc" = "wep" ]; then
-        echo "network={" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  ssid=\"$ssid\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  wep_key0=\"$pass\"" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  wep_tx_keyidx=0" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "  auth_alg=SHARED" >> ${_wpasupconf%.conf}-${dev}.conf
-        echo "}" >> ${_wpasupconf%.conf}-${dev}.conf
+    # reset the configuration to the default, if necessary
+    # otherwise backup the configuration
+    if [ -f ${_wpasupconf}.orig ]; then
+        cp -f ${_wpasupconf}.orig ${_wpasupconf}
     else
-        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf%.conf}-${dev}.conf
+        cp -f ${_wpasupconf} ${_wpasupconf}.orig
+    fi
+    if [ "$enc" = "wep" ]; then
+        cat << EOF >> ${_wpasupconf}
+network={
+  ssid="$ssid"
+  wep_key0="$pass"
+  wep_tx_keyidx=0
+  auth_alg=SHARED
+}
+EOF
+    else
+        wpa_passphrase "$ssid" "$pass" >> ${_wpasupconf}
     fi
 
+    sv restart wpa_supplicant
     configure_net_dhcp $dev
     return $?
 }
@@ -1002,7 +1014,7 @@ configure_net() {
 }
 
 iface_setup() {
-    ip addr show dev $1|grep -q 'inet '
+    ip addr show dev $1 | grep -q -e 'inet ' -e 'inet6 '
     return $?
 }
 
@@ -1011,13 +1023,14 @@ configure_net_dhcp() {
 
     iface_setup $dev
     if [ $? -eq 1 ]; then
-        dhcpcd -t 10 -w -4 -L $dev -e "wpa_supplicant_conf=/etc/wpa_supplicant/wpa_supplicant-${dev}.conf" 2>&1 | tee $LOG | \
+        sv restart dhcpcd 2>&1 | tee $LOG | \
             DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
             return 1
         fi
-        iface_setup $dev
+        export -f iface_setup
+        timeout 10s bash -c "while true; do iface_setup $dev; sleep 0.25; done"
         if [ $? -eq 1 ]; then
             DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} DHCP request failed for $dev. Check $LOG for errors." ${MSGBOXSIZE}
             return 1
@@ -1067,6 +1080,11 @@ configure_net_static() {
 
 menu_network() {
     local dev addr f DEVICES
+
+    if [ -e /var/service/NetworkManager ]; then
+        test_network nm
+        return
+    fi
 
     for f in $(ls /sys/class/net); do
         [ "$f" = "lo" ] && continue
@@ -1188,7 +1206,7 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             fi
             # Add entry for target fstab
             uuid=$(blkid -o value -s UUID "$dev")
-            echo "UUID=$uuid none swap sw 0 0" >>$TARGET_FSTAB
+            echo "UUID=$uuid none swap defaults 0 0" >>$TARGET_FSTAB
             continue
         fi
 
@@ -1280,7 +1298,7 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        if [ "$fstype" = "f2fs" ]; then
+        if [ "$fstype" = "f2fs" -o "$fstype" = "btrfs" -o "$fstype" = "xfs" ]; then
             fspassno=0
         else
             fspassno=1
@@ -1315,7 +1333,12 @@ failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
         fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
-        echo "UUID=$uuid $mntpt $fstype defaults 0 2" >>$TARGET_FSTAB
+        if [ "$fstype" = "f2fs" -o "$fstype" = "btrfs" -o "$fstype" = "xfs" ]; then
+            fspassno=0
+        else
+            fspassno=2
+        fi
+        echo "UUID=$uuid $mntpt $fstype defaults 0 $fspassno" >>$TARGET_FSTAB
     done
 }
 
@@ -1469,7 +1492,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         # Remove live user.
         echo "Removing $USERNAME live user from targetdir ..." >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
-        sed -i -e "/$USERNAME ALL=.*/d" $TARGETDIR/etc/sudoers
+        rm -f $TARGETDIR/etc/sudoers.d/99-void-live
         TITLE="Check $LOG for details ..."
         INFOBOX "Rebuilding initramfs for target ..." 4 60
         echo "Rebuilding initramfs for target ..." >$LOG
@@ -1478,7 +1501,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         chroot $TARGETDIR dracut --no-hostonly --add-drivers "ahci" --force >>$LOG 2>&1
         INFOBOX "Removing temporary packages from target ..." 4 60
         echo "Removing temporary packages from target ..." >$LOG
-        xbps-remove -r $TARGETDIR -Ry dialog >>$LOG 2>&1
+        xbps-remove -r $TARGETDIR -Ry dialog xtools-minimal >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target
     else
         # mount required fs
@@ -1515,15 +1538,14 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             # network type empty??!!!
             :
         elif [ "$_type" = "dhcp" ]; then
-            if [ -f /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf ]; then
-                cp /etc/wpa_supplicant/wpa_supplicant-${_dev}.conf $TARGETDIR/etc/wpa_supplicant
-                ln -sf /etc/sv/dhcpcd-${_dev} $TARGETDIR/etc/runit/runsvdir/default/dhcpcd-${_dev}
-            else
-                enable_dhcpd
+            if $(echo $_dev|egrep -q "^wl.*" 2>/dev/null); then
+                cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
+                ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default/wpa_supplicant
             fi
+            enable_dhcpd
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
-            mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhdpcd.conf.orig
+            mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhcpcd.conf.orig
             echo "# Static IP configuration set by the void-installer for $_dev." \
                 >$TARGETDIR/etc/dhcpcd.conf
             echo "interface $_dev" >>$TARGETDIR/etc/dhcpcd.conf
@@ -1534,16 +1556,15 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         fi
     fi
 
-    if [ -f $TARGETDIR/etc/sudoers ]; then
+    if [ -d $TARGETDIR/etc/sudoers.d ]; then
         USERLOGIN="$(get_option USERLOGIN)"
         if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
             # enable sudo for primary user USERLOGIN who is not member of wheel
-            echo "# Enable sudo for login '$USERLOGIN'" >> $TARGETDIR/etc/sudoers
-            echo "$USERLOGIN ALL=(ALL) ALL" >> $TARGETDIR/etc/sudoers
+            echo "# Enable sudo for login '$USERLOGIN'" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
+            echo "$USERLOGIN ALL=(ALL:ALL) ALL" >> "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
         else
             # enable the sudoers entry for members of group wheel
-            sed -i $TARGETDIR/etc/sudoers \
-                -e "s;#.*%wheel ALL=(ALL) ALL;%wheel ALL=(ALL) ALL;"
+            echo "%wheel ALL=(ALL:ALL) ALL" > "$TARGETDIR/etc/sudoers.d/wheel"
         fi
         unset USERLOGIN
     fi

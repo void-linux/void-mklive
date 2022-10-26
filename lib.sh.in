@@ -82,7 +82,7 @@ mount_pseudofs() {
             # pseudofs isn't already mounted.  If it already is then
             # this is virtually impossible to troubleshoot because it
             # looks like the subsequent umount just isn't working.
-            mount -r --rbind /$f "$ROOTFS/$f"
+            mount -r --rbind /$f "$ROOTFS/$f" --make-rslave
         fi
     done
     if ! mountpoint -q "$ROOTFS/tmp" ; then
@@ -287,10 +287,9 @@ set_target_arch_from_platform() {
         cubieboard2*|cubietruck*) XBPS_TARGET_ARCH="armv7l";;
         odroid-u2*) XBPS_TARGET_ARCH="armv7l";;
         odroid-c2*) XBPS_TARGET_ARCH="aarch64";;
-        rpi4*) XBPS_TARGET_ARCH="aarch64";;
-        rpi3*) XBPS_TARGET_ARCH="aarch64";;
-        rpi2*) XBPS_TARGET_ARCH="armv7l";;
-        rpi*) XBPS_TARGET_ARCH="armv6l";;
+        rpi-aarch64*) XBPS_TARGET_ARCH="aarch64";;
+        rpi-armv7l*) XBPS_TARGET_ARCH="armv7l";;
+        rpi-armv6l*) XBPS_TARGET_ARCH="armv6l";;
         ci20*) XBPS_TARGET_ARCH="mipsel";;
         i686*) XBPS_TARGET_ARCH="i686";;
         x86_64*) XBPS_TARGET_ARCH="x86_64";;

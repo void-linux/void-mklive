@@ -1,14 +1,14 @@
 GITVER := $(shell git rev-parse --short HEAD)
-VERSION = 0.22
+VERSION = 0.23
 SHIN    += $(shell find -type f -name '*.sh.in')
 SCRIPTS += $(SHIN:.sh.in=.sh)
 DATECODE=$(shell date "+%Y%m%d")
 SHELL=/bin/bash
 
-T_PLATFORMS=rpi{,2,3,4}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} GCP{,-musl} pinebookpro{,-musl}
+T_PLATFORMS=rpi-{armv{6,7}l,aarch64}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} GCP{,-musl} pinebookpro{,-musl}
 T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
 
-T_SBC_IMGS=rpi{,2,3,4}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} pinebookpro{,-musl}
+T_SBC_IMGS=rpi-{armv{6,7}l,aarch64}{,-musl} beaglebone{,-musl} cubieboard2{,-musl} odroid-c2{,-musl} pinebookpro{,-musl}
 T_CLOUD_IMGS=GCP{,-musl}
 
 T_PXE_ARCHS=x86_64{,-musl}
