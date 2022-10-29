@@ -839,6 +839,9 @@ failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
 }
 
 test_network() {
+    # Reset the global variable to ensure that network is accessible for this test.
+    NETWORK_DONE=
+
     # Pick a peace of data to download to ensure that a network connection is
     # available.
     local file="https://repo-default.voidlinux.org/current/otime"
