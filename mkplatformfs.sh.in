@@ -50,7 +50,7 @@ Usage: $PROGNAME [options] <platform> <base-tarball>
 
 Supported platforms: i686, x86_64, GCP, bananapi, beaglebone,
                      cubieboard2, cubietruck, odroid-c2, odroid-u2,
-                     rpi, rpi2 (armv7), rpi3 (aarch64), rpi4 (aarch64), ci20,
+                     rpi-armv6l, rpi-armv7l, rpi-aarch64, ci20,
                      pinebookpro, pinephone, rock64
 
 Options
@@ -117,9 +117,6 @@ case "$PLATFORM" in
     cubieboard2*|cubietruck*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-u2*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     odroid-c2*) PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
-    rpi4*) PKGS="$BASEPKG rpi4-base" ;;
-    rpi3*) PKGS="$BASEPKG rpi3-base" ;;
-    rpi2*) PKGS="$BASEPKG rpi2-base" ;;
     rpi*) PKGS="$BASEPKG rpi-base" ;;
     ci20*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     i686*) PKGS="$BASEPKG" ;;
@@ -216,7 +213,7 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 # Now we can run the POST_CMD script. This user-supplied script gets the
 # $ROOTFS as a parameter.
 if [ -n "$POST_CMD" ]; then
-    info_msg "Running user supllied command: $POST_CMD"
+    info_msg "Running user supplied command: $POST_CMD"
     run_cmd $POST_CMD $ROOTFS
 fi
 
@@ -227,6 +224,7 @@ if [ "$COMPRESSION" = "y" ]; then
     # platform and the date on which the tarball was built.
     tarball=${FILENAME:-void-${PLATFORM}-PLATFORMFS-$(date '+%Y%m%d').tar.xz}
     run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $tarball "
+    [ $? -ne 0 ] && die "Failed to compress tarball"
 
     # Now that we have the tarball we don't need the rootfs anymore, so we
     # can get rid of it.

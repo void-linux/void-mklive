@@ -27,5 +27,4 @@ install() {
     inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
     inst_hook pre-pivot 02 "$moddir/getty-serial.sh"
     inst_hook pre-pivot 03 "$moddir/locale.sh"
-    inst_hook pre-pivot 04 "$moddir/services.sh"
 }

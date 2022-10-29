@@ -67,7 +67,8 @@ VAI_install_base_system() {
 
     # Install additional packages
     if [  -n "${pkgs}" ] ; then
-        XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt "${pkgs}"
+        # shellcheck disable=SC2086
+        XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt ${pkgs}
     fi
 }
 
@@ -80,7 +81,8 @@ VAI_prepare_chroot() {
 
 VAI_configure_sudo() {
     # Give wheel sudo
-    echo "%wheel ALL=(ALL) ALL" > "${target}/etc/sudoers.d/wheel"
+    echo "%wheel ALL=(ALL:ALL) ALL" > "${target}/etc/sudoers.d/00-wheel"
+    chmod 0440 "${target}/etc/sudoers.d/00-wheel"
 }
 
 VAI_correct_root_permissions() {
@@ -202,10 +204,10 @@ VAI_configure_autoinstall() {
     XBPS_ARCH="$(xbps-uhelper arch)"
     case $XBPS_ARCH in
         *-musl)
-            xbpsrepository="https://alpha.de.repo.voidlinux.org/current/musl"
+            xbpsrepository="https://repo-default.voidlinux.org/current/musl"
             ;;
         *)
-            xbpsrepository="https://alpha.de.repo.voidlinux.org/current"
+            xbpsrepository="https://repo-default.voidlinux.org/current"
             ;;
     esac
 
