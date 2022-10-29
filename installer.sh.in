@@ -846,7 +846,7 @@ test_network() {
     # Download file with XBPS, remove it directly afterwards
     xbps-uhelper fetch "$file" >$LOG 2>&1
     local status=$?
-    rm -f xtraeme.asc
+    rm -f otime
 
     # If error `$status` is 0, no error detected. Network is reachable.
     if [ $status -eq 0 ]; then
