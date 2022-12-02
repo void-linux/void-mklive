@@ -7,7 +7,7 @@ check() {
 }
 
 depends() {
-    echo network
+    echo network-legacy
 }
 
 install() {
