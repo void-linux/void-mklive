@@ -22,6 +22,13 @@ esac
 done
 shift $((OPTIND - 1))
 
+INCLUDEDIR=$(mktemp -d)
+trap "cleanup" INT TERM
+
+cleanup() {
+    rm -r "$INCLUDEDIR"
+}
+
 build_variant() {
     variant="$1"
     shift
@@ -74,11 +81,18 @@ build_variant() {
         ;;
     esac
 
-    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" ${REPO} "$@"
+    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
 }
 
 if [ ! -x mklive.sh ]; then
     echo mklive.sh not found >&2
+    exit 1
+fi
+
+if [ -x installer.sh ]; then
+    install -Dm755 installer.sh "$INCLUDEDIR"/usr/bin/void-installer
+else
+    echo installer.sh not found >&2
     exit 1
 fi
 
