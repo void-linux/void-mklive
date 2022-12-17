@@ -3,8 +3,6 @@
 XBPS_REPOSITORY="-r /hostdir/binpkgs -r /hostdir/binpkgs/musl -r /hostdir/binpkgs/aarch64"
 DATECODE=$(date "+%Y%m%d")
 
-make
-
 ARCHS="$(echo x86_64{,-musl} i686 armv{6,7}l{,-musl} aarch64{,-musl})"
 PLATFORMS="$(echo rpi-{armv{6,7}l,aarch64}{,-musl})"
 SBC_IMGS="$(echo rpi-{armv{6,7}l,aarch64}{,-musl})"

@@ -27,6 +27,8 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
+. ./version.sh
+
 readonly PROGNAME=$(basename "$0")
 readonly REQTOOLS="xbps-install tar"
 
@@ -77,7 +79,7 @@ _EOF
 #      SCRIPT EXECUTION STARTS HERE
 # ########################################
 
-while getopts "r:c:C:T:K:i:o:k:l:h" opt; do
+while getopts "r:c:C:T:K:i:o:k:l:Vh" opt; do
     case $opt in
         r) XBPS_REPOSITORY="--repository=$OPTARG $XBPS_REPOSITORY";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
@@ -89,6 +91,7 @@ while getopts "r:c:C:T:K:i:o:k:l:h" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         S) SPLASH_IMAGE="OPTARG";;
+        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0 ;;
         h) usage;;
     esac
 done

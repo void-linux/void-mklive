@@ -90,7 +90,11 @@ if [ ! -x mklive.sh ]; then
 fi
 
 if [ -x installer.sh ]; then
-    install -Dm755 installer.sh "$INCLUDEDIR"/usr/bin/void-installer
+    . ./version.sh
+    installer=$(mktemp)
+    sed "s/@@MKLIVE_VERSION@@/${MKLIVE_VERSION}/" installer.sh > "$installer"
+    install -Dm755 "$installer" "$INCLUDEDIR"/usr/bin/void-installer
+    rm "$installer"
 else
     echo installer.sh not found >&2
     exit 1
