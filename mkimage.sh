@@ -25,6 +25,8 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
+. ./version.sh
+
 readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
 
@@ -94,7 +96,7 @@ while getopts "b:B:o:r:s:x:h:V" opt; do
         r) ROOT_FSTYPE="$OPTARG";;
         s) IMGSIZE="$OPTARG";;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
+        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0;;
         h) usage;;
     esac
 done

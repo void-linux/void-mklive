@@ -25,6 +25,8 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
+. ./version.sh
+
 readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
 readonly REQTOOLS="xbps-install xbps-reconfigure tar xz"
@@ -87,7 +89,7 @@ while getopts "b:C:c:hr:x:o:V" opt; do
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
+        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0;;
     esac
 done
 shift $((OPTIND - 1))

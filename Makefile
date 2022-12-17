@@ -1,7 +1,4 @@
-GITVER := $(shell git rev-parse --short HEAD)
-VERSION = 0.23
-SHIN    += $(shell find -type f -name '*.sh.in')
-SCRIPTS += $(SHIN:.sh.in=.sh)
+SCRIPTS += $(shell find -type f -name '*.sh')
 DATECODE=$(shell date "+%Y%m%d")
 SHELL=/bin/bash
 
@@ -30,14 +27,7 @@ SUDO := sudo
 XBPS_REPOSITORY := -r https://repo-default.voidlinux.org/current -r https://repo-default.voidlinux.org/current/musl -r https://repo-default.voidlinux.org/current/aarch64
 COMPRESSOR_THREADS=2
 
-%.sh: %.sh.in
-	 sed -e "s|@@MKLIVE_VERSION@@|$(VERSION) $(GITVER)|g" $^ > $@
-	 chmod +x $@
-
-all: $(SCRIPTS)
-
-clean:
-	-rm -f *.sh
+all:
 
 distdir-$(DATECODE):
 	mkdir -p distdir-$(DATECODE)
@@ -89,4 +79,4 @@ pxe-all-print:
 void-%-NETBOOT-$(DATECODE).tar.gz: $(SCRIPTS) void-%-ROOTFS-$(DATECODE).tar.xz
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATECODE).tar.xz
 
-.PHONY: clean dist rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all
+.PHONY: all dist rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all

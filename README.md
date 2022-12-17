@@ -10,9 +10,6 @@ This repository contains utilities for Void Linux:
  * mkrootfs  (The Void Linux rootfs maker for ARM platforms)
  * mknet (Script to generate netboot tarballs for Void)
 
-## Build Dependencies
- * make
-
 ## Dependencies
  * Compression type for the initramfs image
    * liblz4 (for lz4, xz) (default)
@@ -22,11 +19,7 @@ This repository contains utilities for Void Linux:
 
 ## Usage
 
-Type
-
-    $ make
-
-and then see the usage output:
+See the usage output:
 
     $ ./mklive.sh -h
     $ ./mkrootfs.sh -h

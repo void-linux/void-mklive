@@ -29,6 +29,8 @@
 trap 'error_out $? $LINENO' INT TERM 0
 umask 022
 
+. ./version.sh
+
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
 readonly PROGNAME=$(basename "$0")
@@ -292,7 +294,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:Vh" opt; do
     case $opt in
         a) BASE_ARCH="$OPTARG";;
         b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -310,6 +312,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         v) LINUX_VERSION="$OPTARG";;
+        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0 ;;
         h) usage;;
 	*) usage;;
     esac
