@@ -22,13 +22,27 @@ esac
 done
 shift $((OPTIND - 1))
 
+INCLUDEDIR=$(mktemp -d)
+trap "cleanup" INT TERM
+
+cleanup() {
+    rm -r "$INCLUDEDIR"
+}
+
+enable_pipewire() {
+    PKGS="$PKGS pipewire"
+    mkdir -p "${INCLUDEDIR}"/etc/xdg/autostart/
+    ln -sf /usr/share/applications/pipewire.desktop "${INCLUDEDIR}"/etc/xdg/autostart/pipewire.desktop
+    ln -sf /usr/share/applications/pipewire-pulse.desktop "${INCLUDEDIR}"/etc/xdg/autostart/pipewire-pulse.desktop
+}
+
 build_variant() {
     variant="$1"
     shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal $GRUB_PKGS"
-    XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
+    XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf"
     SERVICES="sshd"
 
     case $variant in
@@ -38,34 +52,42 @@ build_variant() {
         enlightenment)
             PKGS="$PKGS $XORG_PKGS lxdm enlightenment terminology udisks2 firefox"
             SERVICES="$SERVICES acpid dhcpcd wpa_supplicant lxdm dbus polkitd"
+            enable_pipewire
         ;;
         xfce)
             PKGS="$PKGS $XORG_PKGS lxdm xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
+            enable_pipewire
         ;;
         mate)
             PKGS="$PKGS $XORG_PKGS lxdm mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
+            enable_pipewire
         ;;
         cinnamon)
             PKGS="$PKGS $XORG_PKGS lxdm cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lxdm NetworkManager polkitd"
+            enable_pipewire
         ;;
         gnome)
             PKGS="$PKGS $XORG_PKGS gnome firefox"
             SERVICES="$SERVICES dbus elogind gdm NetworkManager polkitd"
+            enable_pipewire
         ;;
         kde)
             PKGS="$PKGS $XORG_PKGS kde5 konsole firefox dolphin"
             SERVICES="$SERVICES dbus elogind NetworkManager sddm"
+            enable_pipewire
         ;;
         lxde)
             PKGS="$PKGS $XORG_PKGS lxde lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES acpid dbus dhcpcd wpa_supplicant lxdm polkitd"
+            enable_pipewire
         ;;
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt lxdm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES elogind dbus dhcpcd wpa_supplicant lxdm polkitd"
+            enable_pipewire
         ;;
         *)
             >&2 echo "Unknown variant $variant"
@@ -73,7 +95,7 @@ build_variant() {
         ;;
     esac
 
-    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" ${REPO} "$@"
+    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
 }
 
 if [ ! -x mklive.sh ]; then
