@@ -133,7 +133,6 @@ install_packages() {
     fi
     chroot "$ROOTFS" env -i xbps-reconfigure -a
 
-    install -Dm755 installer.sh "$ROOTFS"/usr/sbin/void-installer
     # Cleanup and remove useless stuff.
     rm -rf "$ROOTFS"/var/cache/* "$ROOTFS"/run/* "$ROOTFS"/var/run/*
 }
