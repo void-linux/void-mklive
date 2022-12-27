@@ -317,6 +317,12 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
 done
 shift $((OPTIND - 1))
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl"
+
+case $BASE_ARCH in
+    x86_64*|i686*) ;;
+    *) >&2 echo architecture $BASE_ARCH not supported by mklive.sh; exit 1;;
+esac
+
 # Configure dracut to use overlayfs for the writable overlay.
 BOOT_CMDLINE="$BOOT_CMDLINE rd.live.overlay.overlayfs=1 "
 
