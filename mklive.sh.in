@@ -188,13 +188,13 @@ generate_limine_boot() {
 	cp -f ${SPLASH_IMAGE} "$LIMINE_DIR"
 	
 	sed -i -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
-		 -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
+		 -e "s|@@SPLASHIMAGE@@|$(basename ${SPLASH_IMAGE})|" \
 		 -e "s|@@KERNVER@@|${KERNELVERSION}|" \
 		 -e "s|@@KEYMAP@@|${KEYMAP}|" \
 		 -e "s|@@ARCH@@|$BASE_ARCH|" \
 		 -e "s|@@LOCALE@@|${LOCALE}|" \
 		 -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
-		 -e "$LIMINE_DIR"/limine.cfg      
+		 "$LIMINE_DIR"/limine.cfg      
  }
 
 generate_squashfs() {
