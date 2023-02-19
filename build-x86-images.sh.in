@@ -24,6 +24,7 @@ shift $((OPTIND - 1))
 
 build_variant() {
     variant="$1"
+    shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal $GRUB_PKGS"
@@ -81,5 +82,5 @@ if [ ! -x mklive.sh ]; then
 fi
 
 for image in $IMAGES; do
-    build_variant "$image"
+    build_variant "$image" "$@"
 done
