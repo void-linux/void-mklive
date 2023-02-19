@@ -575,7 +575,8 @@ menu_locale() {
 
 set_locale() {
     if [ -f $TARGETDIR/etc/default/libc-locales ]; then
-        local LOCALE=$(get_option LOCALE)
+        local LOCALE="$(get_option LOCALE)"
+        : "${LOCALE:=C.UTF-8}"
         sed -i -e "s|LANG=.*|LANG=$LOCALE|g" $TARGETDIR/etc/locale.conf
         # Uncomment locale from /etc/default/libc-locales and regenerate it.
         sed -e "/${LOCALE}/s/^\#//" -i $TARGETDIR/etc/default/libc-locales
@@ -742,6 +743,10 @@ menu_useraccount() {
             else
                 _status=on
             fi
+            # ignore the groups of existing users and package groups
+            if [[ "${_gid}" -ge 1000 || "${_group}" = "_"* ]]; then
+                continue
+            fi
             if [ -z "${_checklist}" ]; then
                 _checklist="${_group} ${_group}:${_gid} ${_status}"
             else
@@ -764,8 +769,8 @@ set_useraccount() {
     [ -z "$USERPASSWORD_DONE" ] && return
     [ -z "$USERNAME_DONE" ] && return
     [ -z "$USERGROUPS_DONE" ] && return
-    useradd -R $TARGETDIR -m -G $(get_option USERGROUPS) \
-        -c "$(get_option USERNAME)" $(get_option USERLOGIN)
+    useradd -R "$TARGETDIR" -m -G "$(get_option USERGROUPS)" \
+        -c "$(get_option USERNAME)" "$(get_option USERLOGIN)"
     echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
         chpasswd -R $TARGETDIR -c SHA512
 }
