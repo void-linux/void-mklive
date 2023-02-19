@@ -304,10 +304,10 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
         l) LOCALE="$OPTARG";;
         i) INITRAMFS_COMPRESSION="$OPTARG";;
         I) INCLUDE_DIRECTORY="$OPTARG";;
-        S) SERVICE_LIST="$OPTARG";;
+        S) SERVICE_LIST="$SERVICE_LIST $OPTARG";;
         s) SQUASHFS_COMPRESSION="$OPTARG";;
         o) OUTPUT_FILE="$OPTARG";;
-        p) PACKAGE_LIST="$OPTARG";;
+        p) PACKAGE_LIST="$PACKAGE_LIST $OPTARG";;
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         v) LINUX_VERSION="$OPTARG";;
@@ -437,5 +437,3 @@ generate_iso_image
 
 hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
 info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."
-
-
