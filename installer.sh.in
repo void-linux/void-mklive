@@ -1454,6 +1454,7 @@ menu() {
         # Show settings
         cp $CONF_FILE /tmp/conf_hidden.$$;
         sed -i "s/^ROOTPASSWORD.*/ROOTPASSWORD <-hidden->/" /tmp/conf_hidden.$$
+        sed -i "s/^USERPASSWORD.*/USERPASSWORD <-hidden->/" /tmp/conf_hidden.$$
         DIALOG --title "Saved settings for installation" --textbox /tmp/conf_hidden.$$ 14 60
         rm /tmp/conf_hidden.$$
         return
