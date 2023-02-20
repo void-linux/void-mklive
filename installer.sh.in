@@ -660,7 +660,7 @@ menu_rootpassword() {
 }
 
 set_rootpassword() {
-    echo "root:$(get_option ROOTPASSWORD)" | chpasswd -R $TARGETDIR -c SHA512
+    echo "root:$(get_option ROOTPASSWORD)" | chroot $TARGETDIR chpasswd -c SHA512
 }
 
 menu_useraccount() {
@@ -769,10 +769,10 @@ set_useraccount() {
     [ -z "$USERPASSWORD_DONE" ] && return
     [ -z "$USERNAME_DONE" ] && return
     [ -z "$USERGROUPS_DONE" ] && return
-    useradd -R "$TARGETDIR" -m -G "$(get_option USERGROUPS)" \
+    chroot $TARGETDIR useradd -m -G "$(get_option USERGROUPS)" \
         -c "$(get_option USERNAME)" "$(get_option USERLOGIN)"
     echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
-        chpasswd -R $TARGETDIR -c SHA512
+        chroot $TARGETDIR chpasswd -c SHA512
 }
 
 menu_bootloader() {
