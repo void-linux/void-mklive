@@ -624,7 +624,8 @@ menu_hostname() {
 }
 
 set_hostname() {
-    echo $(get_option HOSTNAME) > $TARGETDIR/etc/hostname
+    local hostname="$(get_option HOSTNAME)"
+    echo "${hostname:-void}" > $TARGETDIR/etc/hostname
 }
 
 menu_rootpassword() {
