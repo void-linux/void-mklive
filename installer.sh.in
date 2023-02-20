@@ -40,6 +40,7 @@ BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
 FILESYSTEMS_DONE=
+MIRROR_DONE=
 
 TARGETDIR=/mnt/target
 LOG=/dev/tty8
@@ -1217,6 +1218,10 @@ install_packages() {
     mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
     cp -a /usr/share/xbps.d $TARGETDIR/usr/share/
     cp /var/db/xbps/keys/*.plist $TARGETDIR/var/db/xbps/keys
+    if [ -n "$MIRROR_DONE" ]; then
+        mkdir -p $TARGETDIR/etc
+        cp -a /etc/xbps.d $TARGETDIR/etc
+    fi
     mkdir -p $TARGETDIR/boot/grub
 
     _arch=$(xbps-uhelper arch)
@@ -1291,7 +1296,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         chroot $TARGETDIR dracut --no-hostonly --add-drivers "ahci" --force >>$LOG 2>&1
         INFOBOX "Removing temporary packages from target ..." 4 60
         echo "Removing temporary packages from target ..." >$LOG
-        xbps-remove -r $TARGETDIR -Ry dialog xtools-minimal >>$LOG 2>&1
+        xbps-remove -r $TARGETDIR -Ry dialog xtools-minimal xmirror >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target
     else
         # mount required fs
@@ -1405,6 +1410,10 @@ menu_source() {
     set_option SOURCE $src
 }
 
+menu_mirror() {
+    xmirror 2>$LOG && MIRROR_DONE=1
+}
+
 menu() {
     local AFTER_HOSTNAME
     if [ -z "$DEFITEM" ]; then
@@ -1420,6 +1429,7 @@ menu() {
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
+            "Mirror" "Select XBPS mirror" \
             "Hostname" "Set system hostname" \
             "Timezone" "Set system time zone" \
             "RootPassword" "Set system root password" \
@@ -1438,6 +1448,7 @@ menu() {
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
+            "Mirror" "Select XBPS mirror" \
             "Hostname" "Set system hostname" \
             "Locale" "Set system locale" \
             "Timezone" "Set system time zone" \
@@ -1462,7 +1473,8 @@ menu() {
     case $(cat $ANSWER) in
         "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
         "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
-        "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Hostname";;
+        "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Mirror";;
+        "Mirror") menu_mirror && [ -n "$MIRROR_DONE" ] && DEFITEM="Hostname";;
         "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="$AFTER_HOSTNAME";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
