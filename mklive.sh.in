@@ -221,16 +221,16 @@ generate_squashfs() {
 }
 
 generate_iso_image() {
-"$VOIDHOSTDIR"/usr/bin/xorriso -as mkisofs \
-		 -iso-level 3 -rock -joliet \
-		 -max-iso9660-filenames -omit-period \
-		 -omit-version-number -relaxed-filenames -allow-lowercase \
-		 -volid "VOID_LIVE" \
-		 -b boot/limine/limine-cd.bin \
-		 -no-emul-boot -boot-load-size 4 -boot-info-table \
-		 --efi-boot boot/limine/limine-cd-efi.bin \
-		 -efi-boot-part --efi-boot-image --protective-msdos-label \
-		 -output "$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
+	"$VOIDHOSTDIR"/usr/bin/xorriso -as mkisofs \
+		  -iso-level 3 -rock -joliet \
+		  -max-iso9660-filenames -omit-period \
+		  -omit-version-number -relaxed-filenames -allow-lowercase \
+		  -volid "VOID_LIVE" \
+		  -b boot/limine/limine-cd.bin \
+		  -no-emul-boot -boot-load-size 4 -boot-info-table \
+		  --efi-boot boot/limine/limine-cd-efi.bin \
+		  -efi-boot-part --efi-boot-image --protective-msdos-label \
+		  -output "$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
 	
 	# Install the bootloader
 	"$VOIDHOSTDIR"/usr/bin/limine-deploy "$OUTPUT_FILE" || die "Failed to install bootloader"
@@ -387,5 +387,3 @@ generate_iso_image
 
 hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
 info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."
-
-
