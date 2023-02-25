@@ -26,35 +26,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
+readonly PROGNAME=$(basename "$0")
+readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
+readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
+readonly REQTOOLS="mv mkdir xbps-install rm truncate mkfs.vfat xbps-uchroot losetup mkfs.ext3 chmod grep du awk readlink dracut"
+
+# shellcheck source=./lib.sh
+. ./lib.sh
+
 trap 'error_out $? $LINENO' INT TERM 0
 umask 022
 
-readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
-readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
-readonly PROGNAME=$(basename "$0")
-
-info_msg() {
-    printf "\033[1m$@\n\033[m"
-}
 die() {
     info_msg "ERROR: $@"
     error_out 1 $LINENO
 }
+
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
     info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
 }
-mount_pseudofs() {
-    for f in sys dev proc; do
-        mkdir -p "$ROOTFS"/$f
-        mount --rbind /$f "$ROOTFS"/$f
-    done
-}
-umount_pseudofs() {
-    umount -R -f "$ROOTFS"/sys >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/dev >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/proc >/dev/null 2>&1
-}
+
 error_out() {
     umount_pseudofs
     [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
@@ -316,6 +308,9 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
     esac
 done
 shift $((OPTIND - 1))
+
+check_tools
+
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl"
 
 case $BASE_ARCH in
