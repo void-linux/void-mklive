@@ -34,23 +34,17 @@ readonly REQTOOLS="mv mkdir xbps-install rm truncate mkfs.vfat xbps-uchroot lose
 # shellcheck source=./lib.sh
 . ./lib.sh
 
-trap 'error_out $? $LINENO' INT TERM 0
+trap 'clean_builddir && die "An unchecked exception has occured!"' INT TERM
 umask 022
-
-die() {
-    info_msg "ERROR: $@"
-    error_out 1 $LINENO
-}
 
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
     info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
 }
 
-error_out() {
+clean_builddir() {
     umount_pseudofs
     [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
-    exit "${1:=0}"
 }
 
 usage() {
