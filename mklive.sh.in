@@ -34,17 +34,15 @@ readonly REQTOOLS="mv mkdir xbps-install rm truncate mkfs.vfat xbps-uchroot lose
 # shellcheck source=./lib.sh
 . ./lib.sh
 
+# Die is a function provided in lib.sh which handles the cleanup of
+# the mounts and removal of temporary directories if the running
+# program exists unexpectedly.
 trap 'clean_builddir && die "An unchecked exception has occured!"' INT TERM
 umask 022
 
-print_step() {
-    CURRENT_STEP=$((CURRENT_STEP+1))
-    info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
-}
-
 clean_builddir() {
     umount_pseudofs
-    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
+    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR" 
 }
 
 usage() {
@@ -364,7 +362,7 @@ STEP_COUNT=9
 
 mkdir -p "$ROOTFS" "$VOIDHOSTDIR" "$ISOLINUX_DIR" "$GRUB_DIR"
 
-print_step "Synchronizing XBPS repository data..."
+info_msg "=> Synchronizing XBPS repository data..."
 copy_void_keys "$ROOTFS"
 copy_void_keys "$VOIDHOSTDIR"
 XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r "$ROOTFS" ${XBPS_REPOSITORY} -S
@@ -392,41 +390,41 @@ fi
 
 : ${OUTPUT_FILE="void-live-${BASE_ARCH}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
-print_step "Installing software to generate the image: ${REQUIRED_PKGS} ..."
+info_msg "=> Installing software to generate the image: ${REQUIRED_PKGS} ..."
 install_prereqs
 
 mkdir -p "$ROOTFS"/etc
 [ -s data/motd ] && cp data/motd "$ROOTFS"/etc
 [ -s data/issue ] && cp data/issue "$ROOTFS"/etc
 
-print_step "Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
+info_msg "=> Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
 : ${DEFAULT_SERVICE_LIST:=agetty-tty1 agetty-tty2 agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6 udevd}
-print_step "Enabling services: ${SERVICE_LIST} ..."
+info_msg "=> Enabling services: ${SERVICE_LIST} ..."
 enable_services ${DEFAULT_SERVICE_LIST} ${SERVICE_LIST}
 
 if [ -n "${INCLUDE_DIRECTORY}" ];then
-    print_step "Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
+    info_msg "=> Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
     copy_include_directory
 fi
 
-print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
+info_msg  "=> Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
 
-print_step "Generating isolinux support for PC-BIOS systems..."
+info_msg  "=> Generating isolinux support for PC-BIOS systems..."
 generate_isolinux_boot
 
-print_step "Generating GRUB support for EFI systems..."
+info_msg  "=> Generating GRUB support for EFI systems..."
 generate_grub_efi_boot
 
-print_step "Cleaning up rootfs..."
+info_msg  "=> Cleaning up rootfs..."
 cleanup_rootfs
 
-print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
+info_msg  "=> Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
 
-print_step "Generating ISO image..."
+info_msg  "=> Generating ISO image..."
 generate_iso_image
 
 hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
