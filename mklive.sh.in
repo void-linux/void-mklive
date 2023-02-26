@@ -31,12 +31,12 @@ readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux g
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
 readonly REQTOOLS="mv mkdir xbps-install rm truncate mkfs.vfat xbps-uchroot losetup mkfs.ext3 chmod grep du awk readlink dracut"
 
+# This source pulls in all the functions from lib.sh.
 # shellcheck source=./lib.sh
 . ./lib.sh
 
-# Die is a function provided in lib.sh which handles the cleanup of
-# the mounts and removal of temporary directories if the running
-# program exists unexpectedly.
+# bailout() will remove the BUILDDIR if the user has not
+# specified otherwise and print as message if program exists unexpectedly.
 trap 'bailout' INT TERM
 umask 022
 
@@ -302,10 +302,12 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
 done
 shift $((OPTIND - 1))
 
+# Check for the existance of required executables in the host system.
 check_tools
 
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl"
 
+# mklive only supports x86_64 and i686 with glibc or musl, abort on other archs
 case $BASE_ARCH in
     x86_64*|i686*) ;;
     *) >&2 echo architecture $BASE_ARCH not supported by mklive.sh; exit 1;;
