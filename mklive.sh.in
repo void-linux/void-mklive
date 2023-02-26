@@ -37,12 +37,13 @@ readonly REQTOOLS="mv mkdir xbps-install rm truncate mkfs.vfat xbps-uchroot lose
 # Die is a function provided in lib.sh which handles the cleanup of
 # the mounts and removal of temporary directories if the running
 # program exists unexpectedly.
-trap 'clean_builddir && die "An unchecked exception has occured!"' INT TERM
+trap 'bailout' INT TERM
 umask 022
 
-clean_builddir() {
+bailout() {
     umount_pseudofs
-    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR" 
+    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
+    info_msg "An unchecked exception has occured!" && exit 1 
 }
 
 usage() {
