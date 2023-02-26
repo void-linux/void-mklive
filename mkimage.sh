@@ -124,7 +124,7 @@ esac
 # fit at least 2 Kernels + initramfs
 case "$PLATFORM" in
     pinebookpro*|rock64*|rockpro64*)
-        : "${BOOT_FSSIZE:=256MiB}"
+        : "${BOOT_FSSIZE:=512MiB}"
         ;;
 esac
 # By default we build all platform images with a 256MiB boot partition
