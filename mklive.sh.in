@@ -41,8 +41,8 @@ trap 'bailout "FATAL: An unchecked exception has occured!"' INT TERM
 umask 022
 
 bailout () {
-	 umount_pseudofs
-    [ -d "$BUILDDIR" ] && [ -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
+	umount_pseudofs
+	[ -d "$BUILDDIR" ] && [ -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
 	info_msg "$@" && exit 1
 }
 
