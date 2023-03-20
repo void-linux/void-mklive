@@ -24,5 +24,6 @@ passwd -dl void
 passwd -dl root
 
 rm -rf /var/cache/xbps
+rm -f /etc/ssh/ssh_host*
 
 shutdown -P now
