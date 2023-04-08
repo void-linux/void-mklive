@@ -13,21 +13,17 @@ T_CLOUD_IMGS=GCP{,-musl}
 
 T_PXE_ARCHS=x86_64{,-musl}
 
-T_MASTERDIRS=x86_64{,-musl} i686
-
 ARCHS=$(shell echo $(T_ARCHS))
 PLATFORMS=$(shell echo $(T_PLATFORMS))
 SBC_IMGS=$(shell echo $(T_SBC_IMGS))
 CLOUD_IMGS=$(shell echo $(T_CLOUD_IMGS))
 PXE_ARCHS=$(shell echo $(T_PXE_ARCHS))
-MASTERDIRS=$(shell echo $(T_MASTERDIRS))
 
 ALL_ROOTFS=$(foreach arch,$(ARCHS),void-$(arch)-ROOTFS-$(DATECODE).tar.xz)
 ALL_PLATFORMFS=$(foreach platform,$(PLATFORMS),void-$(platform)-PLATFORMFS-$(DATECODE).tar.xz)
 ALL_SBC_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATECODE).img.xz)
 ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATECODE).tar.gz)
 ALL_PXE_ARCHS=$(foreach arch,$(PXE_ARCHS),void-$(arch)-NETBOOT-$(DATECODE).tar.gz)
-ALL_MASTERDIRS=$(foreach arch,$(MASTERDIRS), masterdir-$(arch))
 
 SUDO := sudo
 
@@ -93,12 +89,4 @@ pxe-all-print:
 void-%-NETBOOT-$(DATECODE).tar.gz: $(SCRIPTS) void-%-ROOTFS-$(DATECODE).tar.xz
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATECODE).tar.xz
 
-masterdir-all-print:
-	@echo $(ALL_MASTERDIRS) | sed "s: :\n:g"
-
-masterdir-all: $(ALL_MASTERDIRS)
-
-masterdir-%:
-	$(SUDO) docker build --build-arg REPOSITORY=$(XBPS_REPOSITORY) --build-arg ARCH=$* -t voidlinux/masterdir-$*:$(DATECODE) .
-
-.PHONY: clean dist rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all masterdir-all-print masterdir-all masterdir-push-all
+.PHONY: clean dist rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all
