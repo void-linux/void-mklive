@@ -26,39 +26,24 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
-trap 'error_out $? $LINENO' INT TERM 0
-umask 022
-
+readonly PROGNAME=$(basename "$0")
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
-readonly PROGNAME=$(basename "$0")
+readonly REQTOOLS="mv chmod sed chroot umount mount install find mkdir xbps-pkgdb xbps-remove xbps-install xbps-uchroot xbps-reconfigure rm truncate mkfs.vfat  losetup mkfs.ext3 grep du awk readlink dracut"
 
-info_msg() {
-    printf "\033[1m$@\n\033[m"
-}
-die() {
-    info_msg "ERROR: $@"
-    error_out 1 $LINENO
-}
-print_step() {
-    CURRENT_STEP=$((CURRENT_STEP+1))
-    info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
-}
-mount_pseudofs() {
-    for f in sys dev proc; do
-        mkdir -p "$ROOTFS"/$f
-        mount --rbind /$f "$ROOTFS"/$f
-    done
-}
-umount_pseudofs() {
-    umount -R -f "$ROOTFS"/sys >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/dev >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/proc >/dev/null 2>&1
-}
-error_out() {
-    umount_pseudofs
-    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
-    exit "${1:=0}"
+# This source pulls in all the functions from lib.sh.
+# shellcheck source=./lib.sh
+. ./lib.sh
+
+# bailout() will remove the BUILDDIR if the user has not
+# specified otherwise and print as message if program exists unexpectedly.
+trap 'bailout "FATAL: An unchecked exception has occured!"' INT TERM
+umask 022
+
+bailout () {
+	umount_pseudofs
+	[ -d "$BUILDDIR" ] && [ -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
+	info_msg "$@" && exit 1
 }
 
 usage() {
@@ -109,19 +94,19 @@ copy_autoinstaller_files() {
 install_prereqs() {
     XBPS_ARCH=$ARCH "$XBPS_INSTALL_CMD" -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} \
          -c "$XBPS_HOST_CACHEDIR" -y $REQUIRED_PKGS
-    [ $? -ne 0 ] && die "Failed to install required software, exiting..."
+    [ $? -ne 0 ] && bailout "Failed to install required software, exiting..."
 }
 
 install_packages() {
     XBPS_ARCH=$BASE_ARCH "${XBPS_INSTALL_CMD}" -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -yn $PACKAGE_LIST $INITRAMFS_PKGS
-    [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
+    [ $? -ne 0 ] && bailout "Missing required binary packages, exiting..."
 
     mount_pseudofs
 
     LANG=C XBPS_ARCH=$BASE_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -y $PACKAGE_LIST $INITRAMFS_PKGS
-    [ $? -ne 0 ] && die "Failed to install $PACKAGE_LIST"
+    [ $? -ne 0 ] && bailout "Failed to install $PACKAGE_LIST"
 
     xbps-reconfigure -r "$ROOTFS" -f base-files >/dev/null 2>&1
     chroot "$ROOTFS" env -i xbps-reconfigure -f base-files
@@ -145,7 +130,7 @@ enable_services() {
     SERVICE_LIST="$*"
     for service in $SERVICE_LIST; do
         if ! [ -e $ROOTFS/etc/sv/$service ]; then
-            die "service $service not in /etc/sv"
+            bailout "service $service not in /etc/sv"
         fi
         ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
     done
@@ -162,7 +147,7 @@ generate_initramfs() {
     copy_autoinstaller_files "$ROOTFS"
     chroot "$ROOTFS" env -i /usr/bin/dracut -N --"${INITRAMFS_COMPRESSION}" \
         --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd" $KERNELVERSION
-    [ $? -ne 0 ] && die "Failed to generate the initramfs"
+    [ $? -ne 0 ] && bailout "Failed to generate the initramfs"
 
     mv "$ROOTFS"/boot/initrd "$BOOT_DIR"
     cp "$ROOTFS"/boot/vmlinuz-$KERNELVERSION "$BOOT_DIR"/vmlinuz
@@ -233,7 +218,7 @@ generate_grub_efi_boot() {
     if [ $? -ne 0 ]; then
         umount "$GRUB_EFI_TMPDIR"
         losetup --detach "${LOOP_DEVICE}"
-        die "Failed to generate EFI loader"
+        bailout "Failed to generate EFI loader"
     fi
     mkdir -p "${GRUB_EFI_TMPDIR}"/EFI/BOOT
     cp -f "$VOIDHOSTDIR"/tmp/bootia32.efi "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTIA32.EFI
@@ -245,7 +230,7 @@ generate_grub_efi_boot() {
     if [ $? -ne 0 ]; then
         umount "$GRUB_EFI_TMPDIR"
         losetup --detach "${LOOP_DEVICE}"
-        die "Failed to generate EFI loader"
+        bailout "Failed to generate EFI loader"
     fi
     cp -f "$VOIDHOSTDIR"/tmp/bootx64.efi "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX64.EFI
     umount "$GRUB_EFI_TMPDIR"
@@ -269,7 +254,7 @@ generate_squashfs() {
     mkdir -p "$IMAGEDIR/LiveOS"
 
     "$VOIDHOSTDIR"/usr/bin/mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
-        -comp "${SQUASHFS_COMPRESSION}" || die "Failed to generate squashfs image"
+        -comp "${SQUASHFS_COMPRESSION}" || bailout "Failed to generate squashfs image"
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
 
     # Remove rootfs and temporary dirs, we don't need them anymore.
@@ -287,7 +272,7 @@ generate_iso_image() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot -e boot/grub/efiboot.img -isohybrid-gpt-basdat -no-emul-boot \
         -isohybrid-mbr "$SYSLINUX_DATADIR"/isohdpfx.bin \
-        -output "$OUTPUT_FILE" "$IMAGEDIR" || die "Failed to generate ISO image"
+        -output "$OUTPUT_FILE" "$IMAGEDIR" || bailout "Failed to generate ISO image"
 }
 
 #
@@ -316,8 +301,13 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:h" opt; do
     esac
 done
 shift $((OPTIND - 1))
+
+# Check for the existance of required executables in the host system.
+check_tools
+
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl"
 
+# mklive only supports x86_64 and i686 with glibc or musl, abort on other archs
 case $BASE_ARCH in
     x86_64*|i686*) ;;
     *) >&2 echo architecture $BASE_ARCH not supported by mklive.sh; exit 1;;
@@ -344,7 +334,7 @@ PACKAGE_LIST="$BASE_SYSTEM_PKG $PACKAGE_LIST"
 
 # Check for root permissions.
 if [ "$(id -u)" -ne 0 ]; then
-    die "Must be run as root, exiting..."
+    bailout "Must be run as root, exiting..."
 fi
 
 if [ -n "$ROOTDIR" ]; then
@@ -359,9 +349,6 @@ VOIDHOSTDIR="$BUILDDIR/void-host"
 BOOT_DIR="$IMAGEDIR/boot"
 ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
-CURRENT_STEP=0
-STEP_COUNT=9
-[ -n "${INCLUDE_DIRECTORY}" ] && STEP_COUNT=$((STEP_COUNT+1))
 
 : ${SYSLINUX_DATADIR:="$VOIDHOSTDIR"/usr/lib/syslinux}
 : ${GRUB_DATADIR:="$VOIDHOSTDIR"/usr/share/grub}
@@ -375,7 +362,7 @@ STEP_COUNT=9
 
 mkdir -p "$ROOTFS" "$VOIDHOSTDIR" "$ISOLINUX_DIR" "$GRUB_DIR"
 
-print_step "Synchronizing XBPS repository data..."
+info_msg "=> Synchronizing XBPS repository data..."
 copy_void_keys "$ROOTFS"
 copy_void_keys "$VOIDHOSTDIR"
 XBPS_ARCH=$BASE_ARCH $XBPS_INSTALL_CMD -r "$ROOTFS" ${XBPS_REPOSITORY} -S
@@ -385,7 +372,7 @@ XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} -S
 # If linux version option specified use
 if [ -n "$LINUX_VERSION" ]; then
     if ! echo "$LINUX_VERSION" | grep "linux[0-9._]\+"; then
-        die "-v option must be in format linux<version>"
+        bailout "-v option must be in format linux<version>"
     fi
 
     _linux_series="$LINUX_VERSION"
@@ -398,46 +385,46 @@ _kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R}
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
 
 if [ "$?" -ne "0" ]; then
-    die "Failed to find kernel package version"
+    bailout "Failed to find kernel package version"
 fi
 
 : ${OUTPUT_FILE="void-live-${BASE_ARCH}-${KERNELVERSION}-$(date +%Y%m%d).iso"}
 
-print_step "Installing software to generate the image: ${REQUIRED_PKGS} ..."
+info_msg "=> Installing software to generate the image: ${REQUIRED_PKGS} ..."
 install_prereqs
 
 mkdir -p "$ROOTFS"/etc
 [ -s data/motd ] && cp data/motd "$ROOTFS"/etc
 [ -s data/issue ] && cp data/issue "$ROOTFS"/etc
 
-print_step "Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
+info_msg "=> Installing void pkgs into the rootfs: ${PACKAGE_LIST} ..."
 install_packages
 
 : ${DEFAULT_SERVICE_LIST:=agetty-tty1 agetty-tty2 agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6 udevd}
-print_step "Enabling services: ${SERVICE_LIST} ..."
+info_msg "=> Enabling services: ${SERVICE_LIST} ..."
 enable_services ${DEFAULT_SERVICE_LIST} ${SERVICE_LIST}
 
 if [ -n "${INCLUDE_DIRECTORY}" ];then
-    print_step "Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
+    info_msg "=> Copying directory structure into the rootfs: ${INCLUDE_DIRECTORY} ..."
     copy_include_directory
 fi
 
-print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
+info_msg  "=> Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
 
-print_step "Generating isolinux support for PC-BIOS systems..."
+info_msg  "=> Generating isolinux support for PC-BIOS systems..."
 generate_isolinux_boot
 
-print_step "Generating GRUB support for EFI systems..."
+info_msg  "=> Generating GRUB support for EFI systems..."
 generate_grub_efi_boot
 
-print_step "Cleaning up rootfs..."
+info_msg  "=> Cleaning up rootfs..."
 cleanup_rootfs
 
-print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
+info_msg  "=> Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
 generate_squashfs
 
-print_step "Generating ISO image..."
+info_msg  "=> Generating ISO image..."
 generate_iso_image
 
 hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
