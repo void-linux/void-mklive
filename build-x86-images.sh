@@ -7,19 +7,22 @@ set -eu
 PROGNAME=$(basename "$0")
 ARCH=$(uname -m)
 IMAGES="base enlightenment xfce mate cinnamon gnome kde lxde lxqt"
+TRIPLET=
 REPO=
-DATE=$(date +%Y%m%d)
+DATE=$(date -u +%Y%m%d)
 
 help() {
-    echo "$PROGNAME: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-r repo]" >&2
+    echo "$PROGNAME: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-d date] [-t arch-date-variant] [-r repo]" >&2
 }
 
-while getopts "a:b:hr:V" opt; do
+while getopts "a:b:d:t:hr:V" opt; do
 case $opt in
     a) ARCH="$OPTARG";;
     b) IMAGES="$OPTARG";;
+    d) DATE="$OPTARG";;
     h) help; exit 0;;
     r) REPO="-r $OPTARG $REPO";;
+    t) TRIPLET="$OPTARG";;
     V) version; exit 0;;
     *) help; exit 1;;
 esac
@@ -116,6 +119,14 @@ else
     exit 1
 fi
 
-for image in $IMAGES; do
-    build_variant "$image" "$@"
-done
+if [ -n "$TRIPLET" ]; then
+    VARIANT="${TRIPLET##*-}"
+    REST="${TRIPLET%-*}"
+    DATE="${REST##*-}"
+    ARCH="${REST%-*}"
+    build_variant "$VARIANT" "$@"
+else
+    for image in $IMAGES; do
+        build_variant "$image" "$@"
+    done
+fi
