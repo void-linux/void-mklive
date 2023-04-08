@@ -1,0 +1,130 @@
+name: Build void images
+
+on:
+  workflow_dispatch:
+    inputs:
+      datecode:
+        description: "Override datecode for images"
+        required: false
+        type: string
+      mirror:
+        description: "Mirror to use"
+        default: "https://repo-ci.voidlinux.org/current"
+        required: false
+        type: string
+      live_archs:
+        description: "Archs to build live ISOs for"
+        default: "x86_64 x86_64-musl i686"
+        required: false
+        type: string
+      live_flavors:
+        description: "Flavors to build live ISOs for"
+        default: "base xfce"
+        required: false
+        type: string
+      rootfs:
+        description: "Archs to build ROOTFSes for"
+        default: "x86_64 x86_64-musl i686 armv6l armv6l-musl armv7l armv7l-musl aarch64 aarch64-musl"
+        required: false
+        type: string
+      platformfs:
+        description: "Platforms to build PLATFORMFSes for"
+        default: "rpi-armv6l rpi-armv6l-musl rpi-armv7l rpi-armv7l-musl rpi-aarch64 rpi-aarch64-musl"
+        required: false
+        type: string
+      sbc_imgs:
+        description: "Platforms to build SBC images for"
+        default: "rpi-armv6l rpi-armv6l-musl rpi-armv7l rpi-armv7l-musl rpi-aarch64 rpi-aarch64-musl"
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    container:
+      image: 'ghcr.io/void-linux/void-linux:20230204RC01-full-x86_64'
+      options: --privileged
+      volumes:
+        - /dev:/dev
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        DATECODE: "${{ inputs.datecode }}"
+        LIVE_ARCHS: "${{ inputs.live_archs }}"
+        LIVE_FLAVORS: "${{ inputs.live_flavors }}"
+        ROOTFS_ARCHS: "${{ inputs.rootfs }}"
+        PLATFORMS: "${{ inputs.platformfs }}"
+        SBC_IMGS: "${{ inputs.sbc_imgs }}"
+        REPO: "${{ inputs.mirror }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: |
+          # Switch to repo-ci mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org/current|'"$REPO"'|g' /etc/xbps.d/*-repository-*.conf
+          # Sync and upgrade once, assume error comes from xbps update
+          xbps-install -Syu || xbps-install -yu xbps
+          # Upgrade again (in case there was a xbps update)
+          xbps-install -yu
+          # Install depedencies
+          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+      - name: Prepare environment
+        run: |
+          echo "DATECODE=$(date -u "+%Y%m%d")" >> $GITHUB_ENV
+          echo "MKLIVE_REV=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+      - name: Build live ISOs
+        run: |
+          if ! [[ "$LIVE_ARCHS" = "none" || "$LIVE_FLAVORS" = "none" ]]; then
+              make live-iso-all{-print,} \
+                  LIVE_ARCHS="$LIVE_ARCHS" LIVE_FLAVORS="$LIVE_FLAVORS" \
+                  SUDO= REPOSITORY="$REPO" DATECODE=$DATECODE
+          else
+              echo "Nothing to do..."
+          fi
+      - name: Build ROOTFSes
+        run: |
+          if ! [ "$ROOTFS_ARCHS" = "none" ]; then
+              make rootfs-all{-print,} \
+                  SUDO= ARCHS="$ROOTFS_ARCHS" REPOSITORY="$REPO" DATECODE=$DATECODE
+          else
+              echo "Nothing to do..."
+          fi
+      - name: Build PLATFORMFSes
+        run: |
+          if ! [ "$PLATFORMS" = "none" ]; then
+              make platformfs-all{-print,} \
+                  SUDO= PLATFORMS="$PLATFORMS" REPOSITORY="$REPO" DATECODE=$DATECODE
+          else
+              echo "Nothing to do..."
+          fi
+      - name: Build SBC images
+        run: |
+          if ! [ "$SBC_IMGS" = "none" ]; then
+              make images-all-sbc{-print,} \
+                  SUDO= SBC_IMGS="$SBC_IMGS" REPOSITORY="$REPO" DATECODE=$DATECODE
+          else
+              echo "Nothing to do..."
+          fi
+      - name: Prepare artifacts for upload
+        run: |
+          make dist checksum DATECODE=$DATECODE
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: void-live-${{ env.DATECODE }}
+          path: distdir-${{ env.DATECODE }}/*
+          if-no-files-found: error
