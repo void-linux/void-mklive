@@ -1394,7 +1394,9 @@ menu_source() {
         "Local") src="local";;
         "Network") src="net";
             if [ -z "$NETWORK_DONE" ]; then
-                menu_network;
+                if test_network; then
+                    menu_network
+                fi
             fi;;
         *) return 1;;
     esac
