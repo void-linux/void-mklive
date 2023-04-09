@@ -1,30 +1,68 @@
 #!/bin/bash
 
-XBPS_REPOSITORY="-r /hostdir/binpkgs -r /hostdir/binpkgs/musl -r /hostdir/binpkgs/aarch64"
-DATECODE=$(date "+%Y%m%d")
+set -e
 
-ARCHS="$(echo x86_64{,-musl} i686 armv{6,7}l{,-musl} aarch64{,-musl})"
-PLATFORMS="$(echo rpi-{armv{6,7}l,aarch64}{,-musl})"
-SBC_IMGS="$(echo rpi-{armv{6,7}l,aarch64}{,-musl})"
+usage() {
+	echo "release.sh start [-l LIVE_ARCHS] [-f LIVE_VARIANTS] [-a ROOTFS_ARCHS]"
+	echo "    [-p PLATFORMS] [-i SBC_IMGS] [-d DATE] [-r REPOSITORY] -- [gh args...]"
+	echo "release.sh dl [gh args...]"
+	echo "release.sh sign DATE SHASUMFILE"
+	exit 1
+}
 
-make rootfs-all ARCHS="$ARCHS" XBPS_REPOSITORY="$XBPS_REPOSITORY" DATECODE="$DATECODE"
-make platformfs-all PLATFORMS="$PLATFORMS" XBPS_REPOSITORY="$XBPS_REPOSITORY" DATECODE="$DATECODE"
-make images-all-sbc SBC_IMGS="$SBC_IMGS" XBPS_REPOSITORY="$XBPS_REPOSITORY" DATECODE="$DATECODE"
+check_programs() {
+	for prog; do
+		if ! type $prog &>/dev/null; then
+			echo "missing program: $prog"
+			exit 1
+		fi
+	done
+}
 
-MKLIVE_REPO=(-r /hostdir/binpkgs -r /hostdir/binpkgs/nonfree -r /hostdir/musl -r /hostdir/binpkgs/musl/nonfree)
-./build-x86-images.sh -a i686 -b base "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a i686 -b xfce "${MKLIVE_REPO[@]}"
+start_build() {
+	check_programs gh
+	ARGS=()
+	while getopts "a:d:f:i:l:p:r:" opt; do
+		case $opt in
+			a) ARGS+=(-f rootfs="$OPTARG") ;;
+			d) ARGS+=(-f datecode="$OPTARG") ;;
+			f) ARGS+=(-f live_flavors="$OPTARG") ;;
+			i) ARGS+=(-f sbc_imgs="$OPTARG") ;;
+			l) ARGS+=(-f live_archs="$OPTARG") ;;
+			p) ARGS+=(-f platformfs="$OPTARG") ;;
+			r) ARGS+=(-f mirror="$OPTARG") ;;
+			?) usage;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	gh workflow run gen-images.yml "${ARGS[@]}" "$@"
+}
 
-./build-x86-images.sh -a x86_64 -b base "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64 -b xfce "${MKLIVE_REPO[@]}"
+# this assumes that the latest successful build is the one to download
+# wish it could be better but alas:
+# https://github.com/cli/cli/issues/4001
+download_build() {
+	check_programs gh
+	run="$(gh run list -s success -w gen-images.yml --json databaseId -q '.[].databaseId' "$@" | sort -r | head -1)"
+	echo "Downloading artifacts from run ${run} [this may take a while] ..."
+	gh run download "$run" -p 'void-live*' "$@"
+	echo "Done."
+}
 
-./build-x86-images.sh -a x86_64-musl -b base "${MKLIVE_REPO[@]}"
-./build-x86-images.sh -a x86_64-musl -b xfce "${MKLIVE_REPO[@]}"
+sign_build() {
+	check_programs pwgen signify
+	DATE="$1"
+	SUMFILE="$2"
+	mkdir -p release
+	KEYFILE="release/void-release-$DATE.key"
+	pwgen -cny 25 1 > "$KEYFILE"
+	signify -G -p "${KEYFILE//key/pub}" -s "${KEYFILE//key/sec}" -c "This key is only valid for images with date $DATE."
+	signify -S -e -s "${KEYFILE//key/sec}" -m "$SUMFILE" -x "${SUMFILE//txt/sig}"
+}
 
-mkdir "$DATECODE"
-mv "*${DATECODE}*.xz" "$DATECODE/"
-mv "*${DATECODE}*.gz" "$DATECODE/"
-mv "*${DATECODE}*.iso" "$DATECODE/"
-
-cd "$DATECODE" || exit 1
-sha256sum --tag -- * > sha256sums.txt
+case "$1" in
+	st*) shift; start_build "$@" ;;
+	d*) shift; download_build "$@" ;;
+	si*) shift; sign_build "$@" ;;
+	*) usage ;;
+esac
