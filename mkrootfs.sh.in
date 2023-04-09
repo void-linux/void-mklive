@@ -210,7 +210,7 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
 # Finally we can compress the tarball, the name will include the
 # architecture and the date on which the tarball was built.
-: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date '+%Y%m%d').tar.xz}"
+: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date -u '+%Y%m%d').tar.xz}"
 run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $FILENAME "
 
 # Now that we have the tarball we don't need the rootfs anymore, so we

@@ -151,7 +151,7 @@ fi
 # will include the platform the image is being built for and the date
 # on which it was built.
 if [ -z "$FILENAME" ]; then
-    FILENAME="void-${PLATFORM}-$(date +%Y%m%d).img"
+    FILENAME="void-${PLATFORM}-$(date -u +%Y%m%d).img"
 fi
 
 # Create the base image.  This was previously accomplished with dd,
