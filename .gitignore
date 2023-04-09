@@ -9,3 +9,5 @@ xbps-cachedir*
 stamps*
 !dracut/*/*.sh
 !packer/scripts/*.sh
+void-live-*/
+release/
