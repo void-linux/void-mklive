@@ -261,7 +261,7 @@ else
 fi
 
 # Compress the artifacts for distribution
-OUTPUT_FILE="void-${XBPS_TARGET_ARCH}-NETBOOT-$(date +%Y%m%d).tar.gz"
+OUTPUT_FILE="void-${XBPS_TARGET_ARCH}-NETBOOT-$(date -u +%Y%m%d).tar.gz"
 info_msg "Compressing results to $OUTPUT_FILE"
 cd "$BOOT_DIR" || die "Could not enter image dir"
 tar -zcvf "$CURDIR/$OUTPUT_FILE" .

@@ -222,7 +222,7 @@ fi
 if [ "$COMPRESSION" = "y" ]; then
     # Finally we can compress the tarball, the name will include the
     # platform and the date on which the tarball was built.
-    tarball=${FILENAME:-void-${PLATFORM}-PLATFORMFS-$(date '+%Y%m%d').tar.xz}
+    tarball=${FILENAME:-void-${PLATFORM}-PLATFORMFS-$(date -u '+%Y%m%d').tar.xz}
     run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $tarball "
     [ $? -ne 0 ] && die "Failed to compress tarball"
 
