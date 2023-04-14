@@ -10,3 +10,4 @@ xbps-cachedir*
 stamps*
 !dracut/*/*.sh
 !packer/scripts/*.sh
+!setupscripts/**
