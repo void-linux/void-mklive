@@ -1168,7 +1168,7 @@ umount_filesystems() {
     umount $TARGETDIR >$LOG 2>&1
 }
 
-install_packages() {
+install_packages_services() {
     local PKGS=()
     local SERVICES=()
 
@@ -1196,6 +1196,10 @@ install_packages() {
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     chroot $TARGETDIR xbps-reconfigure -a
+
+    for service in "${SERVICES[@]}"; do
+        enable_service "$service"
+    done
 }
 
 enable_service() {
@@ -1237,8 +1241,8 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     create_filesystems
     # mount required fs
     mount_filesystems
-    # network install, use packages.
-    install_packages
+    # install packages and enable services
+    install_packages_services
 
     INFOBOX "Applying installer settings..." 4 60
 
