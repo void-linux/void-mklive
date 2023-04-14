@@ -1238,8 +1238,8 @@ install_packages() {
     chroot $TARGETDIR xbps-reconfigure -a
 }
 
-enable_dhcpd() {
-    ln -sf /etc/sv/dhcpcd $TARGETDIR/etc/runit/runsvdir/default/dhcpcd
+enable_service() {
+    ln -sf /etc/sv/$1 $TARGETDIR/etc/runit/runsvdir/default/$1
 }
 
 menu_install() {
@@ -1339,7 +1339,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
                 cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
                 ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default/wpa_supplicant
             fi
-            enable_dhcpd
+            enable_service dhcpcd
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhcpcd.conf.orig
@@ -1349,7 +1349,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
             echo "static ip_address=$_ip" >>$TARGETDIR/etc/dhcpcd.conf
             echo "static routers=$_gw" >>$TARGETDIR/etc/dhcpcd.conf
             echo "static domain_name_servers=$_dns1 $_dns2" >>$TARGETDIR/etc/dhcpcd.conf
-            enable_dhcpd
+            enable_service dhcpcd
         fi
     fi
 
