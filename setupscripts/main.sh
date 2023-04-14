@@ -2,10 +2,22 @@
 
 # snippets used in individual variants to avoid repetition
 base() {
+    PKGS+=("base-system")
     if [ "$SETUP_TYPE" = "iso" ]; then
         PKGS+=("dialog" "cryptsetup" "lvm2" "mdadm" "void-docs-browse" "xtools-minimal" "grub-i386-efi" "grub-x86_64-efi")
         SERVICES+=("sshd")
+    elif [ "$SETUP_TYPE" = "system" ]; then
+        if [ -n "$EFI_SYSTEM" ]; then
+            if [ "$EFI_FW_BITS" -eq 32 ]; then
+                PKGS+=("grub-i386-efi")
+            else
+                PKGS+=("grub-x86_64-efi")
+            fi
+        else
+            PKGS+=("grub")
+        fi
     fi
+
 }
 
 xorg_base() {
