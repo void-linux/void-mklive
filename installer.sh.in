@@ -1171,9 +1171,11 @@ umount_filesystems() {
 run_setupscript() {
     local PKGSSTR="" SERVICESSTR=""
 
+    cd /
     export SETUP_TYPE=system
-    . ./setupscripts/main.sh
+    . /setupscripts/main.sh
     setup_variant base
+    cd -
 
     mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
     cp -a /usr/share/xbps.d $TARGETDIR/usr/share/
@@ -1187,7 +1189,7 @@ run_setupscript() {
     _arch=$(xbps-uhelper arch)
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -SyU ${PKGS[@]} 2>&1 | \
+        xbps-install  -r $TARGETDIR -SyU ${PKGSSTR} 2>&1 | \
         DIALOG --title "Installing packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then

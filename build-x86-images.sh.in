@@ -11,6 +11,13 @@ help() {
     echo "${0#/*}: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-r repo]" >&2
 }
 
+includedir=$(mktemp -d -p .)
+cleanup() {
+    rm -rf "$includedir"
+}
+trap "cleanup" INT TERM QUIT
+cp -r setupscripts "$includedir/"
+
 while getopts "a:b:hr:" opt; do
 case $opt in
     a) ARCH="$OPTARG";;
@@ -31,7 +38,7 @@ build_variant() {
     . ./setupscripts/main.sh
     setup_variant "$variant"
 
-    ./mklive.sh -a "$ARCH" -o "$IMG" -p "${PKGSSTR}" -S "${SERVICESSTR}" ${REPO} "$@"
+    ./mklive.sh -a "$ARCH" -o "$IMG" -p "${PKGSSTR}" -S "${SERVICESSTR}" -I ${includedir} ${REPO} "$@"
 }
 
 if [ ! -x mklive.sh ]; then
