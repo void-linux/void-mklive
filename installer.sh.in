@@ -36,6 +36,7 @@ USERLOGIN_DONE=
 USERPASSWORD_DONE=
 USERNAME_DONE=
 USERGROUPS_DONE=
+USERACCOUNT_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
@@ -694,7 +695,7 @@ menu_useraccount() {
     while true; do
         _preset=$(get_option USERNAME)
         [ -z "$_preset" ] && _preset="Void User"
-        DIALOG --inputbox "Enter a user name for login '$(get_option USERLOGIN)' :" \
+        DIALOG --inputbox "Enter a display name for login '$(get_option USERLOGIN)' :" \
             ${INPUTSIZE} "$_preset"
         if [ $? -eq 0 ]; then
             set_option USERNAME "$(cat $ANSWER)"
@@ -767,10 +768,7 @@ menu_useraccount() {
 }
 
 set_useraccount() {
-    [ -z "$USERLOGIN_DONE" ] && return
-    [ -z "$USERPASSWORD_DONE" ] && return
-    [ -z "$USERNAME_DONE" ] && return
-    [ -z "$USERGROUPS_DONE" ] && return
+    [ -z "$USERACCOUNT_DONE" ] && return
     chroot $TARGETDIR useradd -m -G "$(get_option USERGROUPS)" \
         -c "$(get_option USERNAME)" "$(get_option USERLOGIN)"
     echo "$(get_option USERLOGIN):$(get_option USERPASSWORD)" | \
@@ -987,6 +985,17 @@ menu_network() {
         else
             configure_net $dev
         fi
+    fi
+}
+
+validate_useraccount() {
+    # don't check that USERNAME has been set because it can be empty
+    local USERLOGIN=$(get_option USERLOGIN)
+    local USERPASSWORD=$(get_option USERPASSWORD)
+    local USERGROUPS=$(get_option USERGROUPS)
+
+    if [ -n "$USERLOGIN" ] && [ -n "$USERPASSWORD" ] && [ -n "$USERGROUPS" ]; then
+        USERACCOUNT_DONE=1
     fi
 }
 
@@ -1256,6 +1265,16 @@ please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
         return 1
     fi
 
+    # Validate useraccount. All parameters must be set (name, password, login name, groups).
+    validate_useraccount
+
+    if [ -z "$USERACCOUNT_DONE" ]; then
+        DIALOG --yesno "${BOLD}The user account is not set up properly.${RESET}\n\n
+${BOLD}${RED}WARNING: no user will be created. You will only be able to login \
+with the root user in your new system.${RESET}\n\n
+${BOLD}Do you want to continue?${RESET}" 10 60 || return
+    fi
+
     DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
 ${BOLD}${TARGETFS}${RESET}\n
 ${BOLD}${RED}WARNING: data on partitions will be COMPLETELY DESTROYED for new \
@@ -1474,7 +1493,7 @@ menu() {
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
-        "UserAccount") menu_useraccount && [ -n "$USERNAME_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
+        "UserAccount") menu_useraccount && [ -n "$USERLOGIN_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
                && DEFITEM="BootLoader";;
         "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
