@@ -360,6 +360,15 @@ show_disks() {
     done
 }
 
+get_partfs() {
+    # Get fs type from configuration if available. This ensures
+    # that the user is shown the proper fs type if they install the system.
+    local part="$1"
+    local default="${2:-none}"
+    local fstype=$(grep "MOUNTPOINT ${part}" "$CONF_FILE"|awk '{print $3}')
+    echo "${fstype:-$default}"
+}
+
 show_partitions() {
     local dev fstype fssize p part
 
@@ -377,7 +386,7 @@ show_partitions() {
                 [ "$fstype" = "LVM2_member" ] && continue
                 fssize=$(lsblk -nr /dev/$part|awk '{print $4}'|head -1)
                 echo "/dev/$part"
-                echo "size:${fssize:-unknown};fstype:${fstype:-none}"
+                echo "size:${fssize:-unknown};fstype:$(get_partfs "/dev/$part")"
             fi
         done
     done
@@ -391,7 +400,7 @@ show_partitions() {
         fstype=$(lsblk -nfr $p|awk '{print $2}'|head -1)
         fssize=$(lsblk -nr $p|awk '{print $4}'|head -1)
         echo "${p}"
-        echo "size:${fssize:-unknown};fstype:${fstype:-none}"
+        echo "size:${fssize:-unknown};fstype:$(get_partfs "$p")"
     done
     # Software raid (md)
     for p in $(ls -d /dev/md* 2>/dev/null|grep '[0-9]'); do
@@ -402,7 +411,7 @@ show_partitions() {
             [ "$fstype" = "LVM2_member" ] && continue
             fssize=$(lsblk -nr /dev/$part|awk '{print $4}')
             echo "$p"
-            echo "size:${fssize:-unknown};fstype:${fstype:-none}"
+            echo "size:${fssize:-unknown};fstype:$(get_partfs "$p")"
         fi
     done
     # cciss(4) devices
@@ -412,13 +421,13 @@ show_partitions() {
         [ "$fstype" = "LVM2_member" ] && continue
         fssize=$(lsblk -nr /dev/cciss/$part|awk '{print $4}')
         echo "/dev/cciss/$part"
-        echo "size:${fssize:-unknown};fstype:${fstype:-none}"
+        echo "size:${fssize:-unknown};fstype:$(get_partfs "/dev/cciss/$part")"
     done
     if [ -e /sbin/lvs ]; then
         # LVM
         lvs --noheadings|while read lvname vgname perms size; do
             echo "/dev/mapper/${vgname}-${lvname}"
-            echo "size:${size};fstype:lvm"
+            echo "size:${size};fstype:$(get_partfs "/dev/mapper/${vgname}-${lvname}" lvm)"
         done
     fi
 }
@@ -479,6 +488,7 @@ menu_filesystems() {
             echo "MOUNTPOINT $dev $1 $2 $3 $4" >>$CONF_FILE
         fi
     done
+    FILESYSTEMS_DONE=1
 }
 
 menu_partitions() {
