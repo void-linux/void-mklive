@@ -827,9 +827,15 @@ set_bootloader() {
 }
 
 test_network() {
+    # Reset the global variable to ensure that network is accessible for this test.
+    NETWORK_DONE=
+
     rm -f otime && \
         xbps-uhelper fetch https://repo-default.voidlinux.org/current/otime >$LOG 2>&1
-    if [ $? -eq 0 ]; then
+    local status=$?
+    rm -f otime
+
+    if [ "$status" -eq 0 ]; then
         DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
         NETWORK_DONE=1
         return 1
@@ -1335,6 +1341,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # Copy /etc/skel files for root.
     cp $TARGETDIR/etc/skel/.[bix]* $TARGETDIR/root
 
+    NETWORK_DONE="$(get_option NETWORK)"
     # network settings for target
     if [ -n "$NETWORK_DONE" ]; then
         local net="$(get_option NETWORK)"
