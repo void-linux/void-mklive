@@ -824,14 +824,14 @@ set_bootloader() {
     chroot $TARGETDIR grub-install $grub_args $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-        failed to install GRUB to $dev!\nCheck $LOG for errors." ${MSGBOXSIZE}
+failed to install GRUB to $dev!\nCheck $LOG for errors." ${MSGBOXSIZE}
         DIE 1
     fi
     echo "Running grub-mkconfig on $TARGETDIR..." >$LOG
     chroot $TARGETDIR grub-mkconfig -o /boot/grub/grub.cfg >$LOG 2>&1
     if [ $? -ne 0 ]; then
         DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
-        failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
+failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
         DIE 1
     fi
 }
