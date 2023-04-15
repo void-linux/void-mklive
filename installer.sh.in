@@ -1143,29 +1143,19 @@ mount_filesystems() {
 }
 
 umount_filesystems() {
-    local f
-
-    for f in sys/fs/fuse/connections sys proc dev; do
-        echo "Unmounting $TARGETDIR/$f..." >$LOG
-        umount $TARGETDIR/$f >$LOG 2>&1
-    done
-    local mnts="$(grep -E '^MOUNTPOINT.*$' $CONF_FILE | sort -r -k 5)"
+    local mnts="$(grep -E '^MOUNTPOINT.*swap.*$' $CONF_FILE | sort -r -k 5)"
     set -- ${mnts}
     while [ $# -ne 0 ]; do
-        local dev=$2; local fstype=$3; local mntpt=$5
+        local dev=$2; local fstype=$3
         shift 6
         if [ "$fstype" = "swap" ]; then
             echo "Disabling swap space on $dev..." >$LOG
             swapoff $dev >$LOG 2>&1
             continue
         fi
-        if [ "$mntpt" != "/" ]; then
-            echo "Unmounting $TARGETDIR/$mntpt..." >$LOG
-            umount $TARGETDIR/$mntpt >$LOG 2>&1
-        fi
     done
     echo "Unmounting $TARGETDIR..." >$LOG
-    umount $TARGETDIR >$LOG 2>&1
+    umount -R $TARGETDIR >$LOG 2>&1
 }
 
 log_and_count() {
