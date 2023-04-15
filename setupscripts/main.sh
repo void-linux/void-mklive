@@ -4,7 +4,7 @@
 base() {
     PKGS+=("base-system")
     if [ "$SETUP_TYPE" = "iso" ]; then
-        PKGS+=("dialog" "cryptsetup" "lvm2" "mdadm" "void-docs-browse" "xtools-minimal" "grub-i386-efi" "grub-x86_64-efi")
+        PKGS+=("dialog" "cryptsetup" "lvm2" "mdadm" "void-docs-browse" "xtools-minimal" "grub-i386-efi" "grub-x86_64-efi" "xmirror")
         SERVICES+=("sshd")
     elif [ "$SETUP_TYPE" = "system" ]; then
         if [ -n "$EFI_SYSTEM" ]; then
