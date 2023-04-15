@@ -1168,9 +1168,7 @@ umount_filesystems() {
     umount $TARGETDIR >$LOG 2>&1
 }
 
-perform_setupscript() {
-    local PKGS=()
-    local SERVICES=()
+run_setupscript() {
     local PKGSSTR="" SERVICESSTR=""
 
     export SETUP_TYPE=system
@@ -1243,7 +1241,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # mount required fs
     mount_filesystems
     # install packages and enable services
-    perform_setupscript
+    run_setupscript
 
     INFOBOX "Applying installer settings..." 4 60
 

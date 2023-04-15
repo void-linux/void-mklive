@@ -32,6 +32,8 @@ deduplicate() {
 # set PKGS, SERVICES and other variables based on which variant we want to set up for
 setup_variant() {
     variant="$1" # xfce, base, gnome, etc.
+    local PKGS=()
+    local SERVICES=()
     . "setupscripts/variants/$variant.sh"
     PKGSSTR=$(deduplicate "${PKGS[@]}")
     SERVICESSTR=$(deduplicate "${SERVICES[@]}")

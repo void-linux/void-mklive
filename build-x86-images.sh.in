@@ -26,8 +26,6 @@ build_variant() {
     variant="$1"
     shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
-    PKGS=()
-    SERVICES=()
 
     export SETUP_TYPE=iso
     . ./setupscripts/main.sh
