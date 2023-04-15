@@ -25,8 +25,14 @@ xorg_base() {
     PKGS+=("xorg-minimal" "xorg-input-drivers" "xorg-video-drivers" "setxkbmap" "xauth" "font-misc-misc" "terminus-font" "dejavu-fonts-ttf" "alsa-plugins-pulseaudio")
 }
 
+deduplicate() {
+    printf "%s\n" $@ | sort -u | tr '\n' ' '
+}
+
 # set PKGS, SERVICES and other variables based on which variant we want to set up for
 setup_variant() {
     variant="$1" # xfce, base, gnome, etc.
     . "setupscripts/variants/$variant.sh"
+    PKGSSTR=$(deduplicate "${PKGS[@]}")
+    SERVICESSTR=$(deduplicate "${SERVICES[@]}")
 }

@@ -1168,9 +1168,10 @@ umount_filesystems() {
     umount $TARGETDIR >$LOG 2>&1
 }
 
-install_packages_services() {
+perform_setupscript() {
     local PKGS=()
     local SERVICES=()
+    local PKGSSTR="" SERVICESSTR=""
 
     export SETUP_TYPE=system
     . ./setupscripts/main.sh
@@ -1197,7 +1198,7 @@ install_packages_services() {
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     chroot $TARGETDIR xbps-reconfigure -a
 
-    for service in "${SERVICES[@]}"; do
+    for service in ${SERVICESSTR}; do
         enable_service "$service"
     done
 }
@@ -1242,7 +1243,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # mount required fs
     mount_filesystems
     # install packages and enable services
-    install_packages_services
+    perform_setupscript
 
     INFOBOX "Applying installer settings..." 4 60
 

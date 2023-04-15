@@ -22,10 +22,6 @@ esac
 done
 shift $((OPTIND - 1))
 
-deduplicate() {
-    printf "%s\n" $@ | sort -u | tr '\n' ' '
-}
-
 build_variant() {
     variant="$1"
     shift
@@ -37,10 +33,6 @@ build_variant() {
     . ./setupscripts/main.sh
     setup_variant "$variant"
 
-    PKGSSTR=$(deduplicate "${PKGS[@]}")
-    SERVICESSTR=$(deduplicate "${SERVICES[@]}")
-
-    exit 1
     ./mklive.sh -a "$ARCH" -o "$IMG" -p "${PKGSSTR}" -S "${SERVICESSTR}" ${REPO} "$@"
 }
 
