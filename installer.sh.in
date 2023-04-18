@@ -745,8 +745,8 @@ menu_useraccount() {
             else
                 _status=on
             fi
-            # ignore the groups of existing users and package groups
-            if [[ "${_gid}" -ge 1000 || "${_group}" = "_"* ]]; then
+            # ignore the groups of root, existing users, and package groups
+            if [[ "${_gid}" -ge 1000 || "${_group}" = "_"* || "${_group}" = "root" ]]; then
                 continue
             fi
             if [ -z "${_checklist}" ]; then
