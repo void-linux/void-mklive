@@ -1037,7 +1037,7 @@ as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
 }
 
 create_filesystems() {
-    local mnts dev mntpt fstype fspassno mkfs size rv uuid
+    local mnts dev mntpt fstype fspassno mkfs size rv uuid mntopts
 
     mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE | sort -k 5)
     set -- ${mnts}
@@ -1098,6 +1098,32 @@ failed to create filesystem $fstype on $dev!\ncheck $LOG for errors." ${MSGBOXSI
 failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
             DIE 1
         fi
+        # Create subvolumes on Btrfs systems
+        if [ "$fstype" = "btrfs" ]; then
+            btrfs subvolume create $TARGETDIR/@ >$LOG 2>&1
+            btrfs subvolume create $TARGETDIR/@cache >$LOG 2>&1
+            btrfs subvolume create $TARGETDIR/@log >$LOG 2>&1
+            # Create @home subvolume when wihtout /home partition
+            if ! echo "$mnts" | grep -q "/home"; then
+                btrfs subvolume create $TARGETDIR/@home >$LOG 2>&1
+            fi
+            umount $TARGETDIR
+            # Remount root, create mountpoints
+            mount -t $fstype -o subvol=@ $dev $TARGETDIR >$LOG 2>&1
+            mkdir -p $TARGETDIR/var/cache
+            mount -t $fstype -o subvol=@cache $dev $TARGETDIR/var/cache >$LOG 2>&1
+            mkdir $TARGETDIR/var/log
+            mount -t $fstype -o subvol=@log $dev $TARGETDIR/var/log >$LOG 2>&1
+            if ! echo "$mnts" | grep -q "/home"; then
+                mkdir $TARGETDIR/home
+                mount -t $fstype -o subvol=@home $dev $TARGETDIR/home >$LOG 2>&1
+            fi
+            if [ $? -ne 0 ]; then
+                DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+failed to remount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+                DIE 1
+            fi
+        fi
         # Add entry to target fstab
         uuid=$(blkid -o value -s UUID "$dev")
         if [ "$fstype" = "f2fs" -o "$fstype" = "btrfs" -o "$fstype" = "xfs" ]; then
@@ -1105,7 +1131,18 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
         else
             fspassno=1
         fi
-        echo "UUID=$uuid $mntpt $fstype defaults 0 $fspassno" >>$TARGET_FSTAB
+        mntopts=defaults
+        if [ "$fstype" = "btrfs" ]; then
+            mntopts="$mntopts,compress=zstd"
+            echo "UUID=$uuid / $fstype $mntopts,subvol=@       0 $fspassno" >>$TARGET_FSTAB
+            echo "UUID=$uuid /var/cache $fstype $mntopts,subvol=@cache  0 $fspassno" >>$TARGET_FSTAB
+            echo "UUID=$uuid /var/log $fstype $mntopts,subvol=@log    0 $fspassno" >>$TARGET_FSTAB
+            if ! echo "$mnts" | grep -q "/home"; then
+                echo "UUID=$uuid /home $fstype $mntopts,subvol=@home 0 $fspassno" >>$TARGET_FSTAB
+            fi
+        else
+            echo "UUID=$uuid $mntpt $fstype $mntopts 0 $fspassno" >>$TARGET_FSTAB
+        fi
     done
 
     # mount all filesystems in target rootfs
@@ -1165,6 +1202,13 @@ umount_filesystems() {
         fi
     done
     echo "Unmounting $TARGETDIR..." >$LOG
+    if [ "$(findmnt -n -o FSTYPE -T $TARGETDIR)" = "btrfs" ]; then
+        umount $TARGETDIR/var/cache >$LOG 2>&1
+        umount $TARGETDIR/var/log >$LOG 2>&1
+        if ! echo "$mnts" | grep -q "/home"; then
+            umount $TARGETDIR/home >$LOG 2>&1
+        fi
+    fi
     umount $TARGETDIR >$LOG 2>&1
 }
 
