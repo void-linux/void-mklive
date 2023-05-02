@@ -1145,7 +1145,7 @@ mount_filesystems() {
 umount_filesystems() {
     local f
 
-    for f in sys/fs/fuse/connections sys proc dev; do
+    for f in sys/fs/fuse/connections sys/fs/cgroup/* sys/fs/cgroup sys/kernel/security sys proc dev/pts dev/shm dev; do
         echo "Unmounting $TARGETDIR/$f..." >$LOG
         umount $TARGETDIR/$f >$LOG 2>&1
     done
@@ -1168,53 +1168,14 @@ umount_filesystems() {
     umount $TARGETDIR >$LOG 2>&1
 }
 
-log_and_count() {
-    local progress whole tenth
-    while read line; do
-        echo "$line" >$LOG
-        copy_count=$((copy_count + 1))
-        progress=$((1000 * copy_count / copy_total))
-        if [ "$progress" != "$copy_progress" ]; then
-            whole=$((progress / 10))
-            tenth=$((progress % 10))
-            printf "Progress: %d.%d%% (%d of %d files)\n" $whole $tenth $copy_count $copy_total
-            copy_progress=$progress
-        fi
-    done
-}
+run_setupscript() {
+    local PKGSSTR="" SERVICESSTR=""
 
-copy_rootfs() {
-    local tar_in="--create --one-file-system --xattrs"
-    TITLE="Check $LOG for details ..."
-    INFOBOX "Counting files, please be patient ..." 4 60
-    copy_total=$(tar ${tar_in} -v -f /dev/null / 2>/dev/null | wc -l)
-    export copy_total copy_count=0 copy_progress=
-    clear
-    tar ${tar_in} -f - / 2>/dev/null | \
-        tar --extract --xattrs --xattrs-include='*' --preserve-permissions -v -f - -C $TARGETDIR | \
-        log_and_count | \
-        DIALOG --title "${TITLE}" \
-            --progressbox "Copying live image to target rootfs." 5 60
-    if [ $? -ne 0 ]; then
-        DIE 1
-    fi
-    unset copy_total copy_count copy_percent
-}
-
-install_packages() {
-    local _grub= _syspkg=
-
-    if [ -n "$EFI_SYSTEM" ]; then
-        if [ $EFI_FW_BITS -eq 32 ]; then
-            _grub="grub-i386-efi"
-        else
-            _grub="grub-x86_64-efi"
-        fi
-    else
-        _grub="grub"
-    fi
-
-    _syspkg="base-system"
+    cd /
+    export SETUP_TYPE=system
+    . /setupscripts/main.sh
+    setup_variant base
+    cd -
 
     mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
     cp -a /usr/share/xbps.d $TARGETDIR/usr/share/
@@ -1228,14 +1189,18 @@ install_packages() {
     _arch=$(xbps-uhelper arch)
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
-        DIALOG --title "Installing base system packages..." \
+        xbps-install  -r $TARGETDIR -SyU ${PKGSSTR} 2>&1 | \
+        DIALOG --title "Installing packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     chroot $TARGETDIR xbps-reconfigure -a
+
+    for service in ${SERVICESSTR}; do
+        enable_service "$service"
+    done
 }
 
 enable_service() {
@@ -1275,37 +1240,10 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # Create and mount filesystems
     create_filesystems
-
-    # If source not set use defaults.
-    if [ "$(get_option SOURCE)" = "local" -o -z "$SOURCE_DONE" ]; then
-        copy_rootfs
-        . /etc/default/live.conf
-        rm -f $TARGETDIR/etc/motd
-        rm -f $TARGETDIR/etc/issue
-        rm -f $TARGETDIR/usr/sbin/void-installer
-        # Remove modified sddm.conf to let sddm use the defaults.
-        rm -f $TARGETDIR/etc/sddm.conf
-        # Remove live user.
-        echo "Removing $USERNAME live user from targetdir ..." >$LOG
-        chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
-        rm -f $TARGETDIR/etc/sudoers.d/99-void-live
-        sed -i "s,GETTY_ARGS=\"--noclear -a $USERNAME\",GETTY_ARGS=\"--noclear\",g" $TARGETDIR/etc/sv/agetty-tty1/conf
-        TITLE="Check $LOG for details ..."
-        INFOBOX "Rebuilding initramfs for target ..." 4 60
-        echo "Rebuilding initramfs for target ..." >$LOG
-        # mount required fs
-        mount_filesystems
-        chroot $TARGETDIR dracut --no-hostonly --add-drivers "ahci" --force >>$LOG 2>&1
-        INFOBOX "Removing temporary packages from target ..." 4 60
-        echo "Removing temporary packages from target ..." >$LOG
-        xbps-remove -r $TARGETDIR -Ry dialog xtools-minimal xmirror >>$LOG 2>&1
-        rmdir $TARGETDIR/mnt/target
-    else
-        # mount required fs
-        mount_filesystems
-        # network install, use packages.
-        install_packages
-    fi
+    # mount required fs
+    mount_filesystems
+    # install packages and enable services
+    run_setupscript
 
     INFOBOX "Applying installer settings..." 4 60
 

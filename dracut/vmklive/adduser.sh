@@ -15,10 +15,6 @@ USERSHELL=$(getarg live.shell)
 [ -x $NEWROOT/bin/bash -a -z "$USERSHELL" ] && USERSHELL=/bin/bash
 [ -z "$USERSHELL" ] && USERSHELL=/bin/sh
 
-# Create /etc/default/live.conf to store USER.
-echo "USERNAME=$USERNAME" >> ${NEWROOT}/etc/default/live.conf
-chmod 644 ${NEWROOT}/etc/default/live.conf
-
 if ! grep -q ${USERSHELL} ${NEWROOT}/etc/shells ; then
     echo ${USERSHELL} >> ${NEWROOT}/etc/shells
 fi
