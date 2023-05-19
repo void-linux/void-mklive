@@ -2,6 +2,18 @@
 
 set -e
 
+# These are for all you erroring dracuts out there
+VAI_getarg() {
+	set +e
+	getarg "$@"
+	set -e
+}
+VAI_getargbool() {
+	set +e
+	getargbool "$@"
+	set -e
+}
+
 # These functions pulled from void's excellent mklive.sh
 VAI_info_msg() {
     printf "\033[1m%s\n\033[m" "$@"
@@ -212,8 +224,8 @@ VAI_configure_autoinstall() {
     esac
 
     # --------------- Pull config URL out of kernel cmdline -------------------------
-    if getargbool 0 autourl ; then
-        xbps-uhelper fetch "$(getarg autourl)>/etc/autoinstall.cfg"
+    if VAI_getargbool 0 autourl ; then
+        xbps-uhelper fetch "$(VAI_getarg autourl)>/etc/autoinstall.cfg"
 
     else
         mv /etc/autoinstall.default /etc/autoinstall.cfg
@@ -288,7 +300,7 @@ VAI_main() {
 }
 
 # If we are using the autoinstaller, launch it
-if getargbool 0 auto  ; then
+if VAI_getargbool 0 auto  ; then
     VAI_main
 fi
 
