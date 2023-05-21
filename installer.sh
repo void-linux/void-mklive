@@ -25,8 +25,6 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
-. ./version.sh
-
 # Make sure we don't inherit these from env.
 SOURCE_DONE=
 HOSTNAME_DONE=
