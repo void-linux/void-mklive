@@ -29,7 +29,7 @@
 trap 'error_out $? $LINENO' INT TERM 0
 umask 022
 
-. ./version.sh
+. ./lib.sh
 
 readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
@@ -312,9 +312,8 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:Vh" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         v) LINUX_VERSION="$OPTARG";;
-        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0 ;;
-        h) usage;;
-	*) usage;;
+        V) version; exit 0;;
+        *) usage;;
     esac
 done
 shift $((OPTIND - 1))

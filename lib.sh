@@ -33,6 +33,12 @@ is_target_native() {
     return $?
 }
 
+version() (
+    set +u
+    [ -n "$PROGNAME" ] && printf "%s " "$PROGNAME"
+    echo "$(cat ./version) ${MKLIVE_REV:-"$(git -c safe.directory="$(pwd)" rev-parse --short HEAD 2> /dev/null)"}"
+)
+
 info_msg() {
     # This function handles the printing that is bold within all
     # scripts.  This is a convenience function so that the rather ugly

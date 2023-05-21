@@ -2,21 +2,25 @@
 
 set -eu
 
+. ./lib.sh
+
+PROGNAME=$(basename "$0")
 ARCH=$(uname -m)
 IMAGES="base enlightenment xfce mate cinnamon gnome kde lxde lxqt"
 REPO=
 DATE=$(date +%Y%m%d)
 
 help() {
-    echo "${0#/*}: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-r repo]" >&2
+    echo "$PROGNAME: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-r repo]" >&2
 }
 
-while getopts "a:b:hr:" opt; do
+while getopts "a:b:hr:V" opt; do
 case $opt in
     a) ARCH="$OPTARG";;
     b) IMAGES="$OPTARG";;
     h) help; exit 0;;
     r) REPO="-r $OPTARG $REPO";;
+    V) version; exit 0;;
     *) help; exit 1;;
 esac
 done
@@ -90,7 +94,7 @@ if [ ! -x mklive.sh ]; then
 fi
 
 if [ -x installer.sh ]; then
-    . ./version.sh
+    MKLIVE_VERSION="$(PROGNAME='' version)"
     installer=$(mktemp)
     sed "s/@@MKLIVE_VERSION@@/${MKLIVE_VERSION}/" installer.sh > "$installer"
     install -Dm755 "$installer" "$INCLUDEDIR"/usr/bin/void-installer
