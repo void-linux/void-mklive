@@ -27,8 +27,6 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
-. ./version.sh
-
 readonly PROGNAME=$(basename "$0")
 readonly REQTOOLS="xbps-install tar"
 
@@ -91,8 +89,8 @@ while getopts "r:c:C:T:K:i:o:k:l:Vh" opt; do
         C) BOOT_CMDLINE="$OPTARG";;
         T) BOOT_TITLE="$OPTARG";;
         S) SPLASH_IMAGE="OPTARG";;
-        V) echo "$PROGNAME $MKLIVE_VERSION"; exit 0 ;;
-        h) usage;;
+        V) version; exit 0;;
+        *) usage;;
     esac
 done
 shift $((OPTIND - 1))
