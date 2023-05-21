@@ -43,6 +43,8 @@ build_variant() {
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
     SERVICES="sshd"
 
+    LIGHTDM_SESSION=''
+
     case $variant in
         base)
             SERVICES="$SERVICES dhcpcd wpa_supplicant acpid"
@@ -50,18 +52,22 @@ build_variant() {
         enlightenment)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter enlightenment terminology udisks2 firefox"
             SERVICES="$SERVICES acpid dhcpcd wpa_supplicant lightdm dbus polkitd"
+            LIGHTDM_SESSION=enlightenment
         ;;
         xfce)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            LIGHTDM_SESSION=xfce
         ;;
         mate)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            LIGHTDM_SESSION=mate
         ;;
         cinnamon)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            LIGHTDM_SESSION=cinnamon
         ;;
         gnome)
             PKGS="$PKGS $XORG_PKGS gnome firefox"
@@ -74,6 +80,7 @@ build_variant() {
         lxde)
             PKGS="$PKGS $XORG_PKGS lxde lightdm lightdm-gtk3-greeter gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES acpid dbus dhcpcd wpa_supplicant lightdm polkitd"
+            LIGHTDM_SESSION=LXDE
         ;;
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt sddm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
@@ -84,6 +91,11 @@ build_variant() {
             exit 1
         ;;
     esac
+
+    if [ -n "$LIGHTDM_SESSION" ]; then
+        mkdir -p "$INCLUDEDIR"/etc/lightdm
+        echo "$LIGHTDM_SESSION" > "$INCLUDEDIR"/etc/lightdm/.session
+    fi
 
     ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
 }
