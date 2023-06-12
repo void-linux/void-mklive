@@ -31,7 +31,7 @@ umask 022
 
 . ./lib.sh
 
-readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi squashfs-tools xorriso"
+readonly REQUIRED_PKGS="base-files libgcc dash coreutils sed tar gawk syslinux grub-i386-efi grub-x86_64-efi memtest86+ squashfs-tools xorriso"
 readonly INITRAMFS_PKGS="binutils xz device-mapper dhclient dracut-network openresolv"
 readonly PROGNAME=$(basename "$0")
 declare -a INCLUDE_DIRS=()
@@ -189,6 +189,8 @@ generate_isolinux_boot() {
     cp -f "$SYSLINUX_DATADIR"/vesamenu.c32 "$ISOLINUX_DIR"
     cp -f "$SYSLINUX_DATADIR"/libutil.c32 "$ISOLINUX_DIR"
     cp -f "$SYSLINUX_DATADIR"/chain.c32 "$ISOLINUX_DIR"
+    cp -f "$SYSLINUX_DATADIR"/reboot.c32 "$ISOLINUX_DIR"
+    cp -f "$SYSLINUX_DATADIR"/poweroff.c32 "$ISOLINUX_DIR"
     cp -f isolinux/isolinux.cfg.in "$ISOLINUX_DIR"/isolinux.cfg
     cp -f ${SPLASH_IMAGE} "$ISOLINUX_DIR"
 
@@ -200,6 +202,9 @@ generate_isolinux_boot() {
         -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
         -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
         "$ISOLINUX_DIR"/isolinux.cfg
+
+    # include memtest86+
+    cp -f "$VOIDHOSTDIR"/boot/memtest.bin "$BOOT_DIR"
 }
 
 generate_grub_efi_boot() {
@@ -252,6 +257,9 @@ generate_grub_efi_boot() {
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
     rm -rf "$GRUB_EFI_TMPDIR"
+
+    # include memtest86+
+    cp -f "$VOIDHOSTDIR"/boot/memtest.efi "$BOOT_DIR"
 }
 
 generate_squashfs() {
