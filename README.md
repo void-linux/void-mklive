@@ -49,7 +49,7 @@ that can change the behavior of the live system:
 - `live.autologin` will skip the initial login screen on `tty1`.
 - `live.user` will change the username of the non-root user from the default `anon`. The password remains `voidlinux`.
 - `live.shell` sets the default shell for the non-root user in the live environment.
-- `live.screenreader` enables the console screenreader `espeakup` in the live environment.
+- `live.accessibility` enables accessibility features like the console screenreader `espeakup` in the live environment.
 - `console` can be set to `ttyS0`, `hvc0`, or `hvsi0` to enable `agetty` on that serial console.
 - `locale.LANG` will set the `LANG` environment variable. Defaults to `en_US.UTF-8`.
 - `vconsole.keymap` will set the console keymap. Defaults to `us`.
