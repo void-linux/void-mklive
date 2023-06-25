@@ -41,7 +41,8 @@ build_variant() {
     shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
-    PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror espeakup $GRUB_PKGS"
+    A11Y_PKGS="espeakup void-live-audio"
+    PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror $A11Y_PKGS $GRUB_PKGS"
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
     SERVICES="sshd"
 
