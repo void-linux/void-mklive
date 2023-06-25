@@ -36,6 +36,18 @@ cleanup() {
     rm -r "$INCLUDEDIR"
 }
 
+setup_pipewire() {
+    PKGS="$PKGS pipewire alsa-pipewire"
+    mkdir -p "$INCLUDEDIR"/etc/xdg/autostart
+    ln -s /usr/share/applications/pipewire.desktop "$INCLUDEDIR"/etc/xdg/autostart/
+    mkdir -p "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d
+    ln -s /usr/share/examples/wireplumber/10-wireplumber.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
+    ln -s /usr/share/examples/pipewire/20-pipewire-pulse.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
+    mkdir -p "$INCLUDEDIR"/etc/alsa/conf.d
+    ln -s /usr/share/alsa/alsa.conf.d/50-pipewire.conf "$INCLUDEDIR"/etc/alsa/conf.d
+    ln -s /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf "$INCLUDEDIR"/etc/alsa/conf.d
+}
+
 build_variant() {
     variant="$1"
     shift
@@ -43,7 +55,7 @@ build_variant() {
     GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
     A11Y_PKGS="espeakup void-live-audio brltty"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror $A11Y_PKGS $GRUB_PKGS"
-    XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf alsa-plugins-pulseaudio"
+    XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf"
     SERVICES="sshd"
 
     LIGHTDM_SESSION=''
@@ -58,7 +70,7 @@ build_variant() {
             LIGHTDM_SESSION=enlightenment
         ;;
         xfce)
-            PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
+            PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin"
             SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
             LIGHTDM_SESSION=xfce
         ;;
@@ -98,6 +110,10 @@ build_variant() {
     if [ -n "$LIGHTDM_SESSION" ]; then
         mkdir -p "$INCLUDEDIR"/etc/lightdm
         echo "$LIGHTDM_SESSION" > "$INCLUDEDIR"/etc/lightdm/.session
+    fi
+
+    if [ "$variant" != base ]; then
+        setup_pipewire
     fi
 
     ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
