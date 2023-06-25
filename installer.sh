@@ -1325,9 +1325,12 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         INFOBOX "Removing temporary packages from target ..." 4 60
         echo "Removing temporary packages from target ..." >$LOG
         TO_REMOVE="dialog xtools-minimal"
-        # only remove espeakup if it wasn't enabled in the live environment
+        # only remove espeakup and brltty if it wasn't enabled in the live environment
         if ! [ -e "/var/service/espeakup" ]; then
             TO_REMOVE+=" espeakup"
+        fi
+        if ! [ -e "/var/service/brltty" ]; then
+            TO_REMOVE+=" brltty"
         fi
         xbps-remove -r $TARGETDIR -Ry $TO_REMOVE >>$LOG 2>&1
         rmdir $TARGETDIR/mnt/target

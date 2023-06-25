@@ -4,6 +4,7 @@
 
 type getargbool >/dev/null 2>&1 || . /lib/dracut-lib.sh
 
-if getargbool 0 live.accessibility && [ -d "${NEWROOT}/etc/sv/espeakup" ]; then
-	ln -s /etc/sv/espeakup "${NEWROOT}/etc/runit/runsvdir/current/"
+if getargbool 0 live.accessibility; then
+    [ -d "${NEWROOT}/etc/sv/espeakup" ] && ln -s "/etc/sv/espeakup" "${NEWROOT}/etc/runit/runsvdir/current/"
+    [ -d "${NEWROOT}/etc/sv/brltty" ] && ln -s "/etc/sv/brltty" "${NEWROOT}/etc/runit/runsvdir/current/"
 fi
