@@ -1,6 +1,6 @@
 UI vesamenu.c32
 PROMPT 0
-TIMEOUT 100
+TIMEOUT 150
 ONTIMEOUT linux
 
 MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
@@ -8,13 +8,13 @@ MENU AUTOBOOT BIOS default device boot in # second{,s}...
 MENU BACKGROUND @@SPLASHIMAGE@@
 MENU WIDTH 78
 MENU MARGIN 1
-MENU ROWS 4
+MENU ROWS 9
 MENU VSHIFT 2
-MENU TIMEOUTROW 8
+MENU TIMEOUTROW 13
 MENU TABMSGROW 2
-MENU CMDLINEROW 11
-MENU HELPMSGROW 16
-MENU HELPMSGENDROW 29
+MENU CMDLINEROW 16
+MENU HELPMSGROW 20
+MENU HELPMSGENDROW 34
 
 MENU COLOR title        * #FF5255FF *
 MENU COLOR border       * #00000000 #00000000 none
@@ -24,11 +24,35 @@ LABEL linux
 MENU LABEL @@BOOT_TITLE@@ @@KERNVER@@ @@ARCH@@
 KERNEL /boot/vmlinuz
 APPEND initrd=/boot/initrd root=live:CDLABEL=VOID_LIVE init=/sbin/init ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@
+
 LABEL linuxram
 MENU LABEL @@BOOT_TITLE@@ @@KERNVER@@ @@ARCH@@ (RAM)
 KERNEL /boot/vmlinuz
 APPEND initrd=/boot/initrd root=live:CDLABEL=VOID_LIVE init=/sbin/init ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ rd.live.ram
+
+LABEL linuxa11y
+MENU LABEL @@BOOT_TITLE@@ @@KERNVER@@ @@ARCH@@ with ^speech
+KERNEL /boot/vmlinuz
+APPEND initrd=/boot/initrd root=live:CDLABEL=VOID_LIVE init=/sbin/init ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ live.accessibility live.autologin
+
+LABEL linuxa11yram
+MENU LABEL @@BOOT_TITLE@@ @@KERNVER@@ @@ARCH@@ with speech (^RAM)
+KERNEL /boot/vmlinuz
+APPEND initrd=/boot/initrd root=live:CDLABEL=VOID_LIVE init=/sbin/init ro rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ live.accessibility live.autologin rd.live.ram
+
 LABEL c
 MENU LABEL Boot first HD found by BIOS
 COM32 chain.c32
 APPEND hd0
+
+LABEL memtest
+MENU LABEL Run Memtest86+ (RAM test)
+LINUX /boot/memtest.bin
+
+LABEL reboot
+MENU LABEL Reboot
+COM32 reboot.c32
+
+LABEL poweroff
+MENU LABEL Power Off
+COM32 poweroff.c32

@@ -94,8 +94,8 @@ while getopts "b:B:o:r:s:x:h:V" opt; do
         r) ROOT_FSTYPE="$OPTARG";;
         s) IMGSIZE="$OPTARG";;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
-        h) usage;;
+        V) version; exit 0;;
+        *) usage;;
     esac
 done
 shift $((OPTIND - 1))
@@ -151,7 +151,7 @@ fi
 # will include the platform the image is being built for and the date
 # on which it was built.
 if [ -z "$FILENAME" ]; then
-    FILENAME="void-${PLATFORM}-$(date +%Y%m%d).img"
+    FILENAME="void-${PLATFORM}-$(date -u +%Y%m%d).img"
 fi
 
 # Create the base image.  This was previously accomplished with dd,

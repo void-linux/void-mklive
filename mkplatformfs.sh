@@ -86,8 +86,8 @@ while getopts "b:p:k:c:C:r:x:o:nhV" opt; do
         x) COMPRESSOR_THREADS="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
         n) COMPRESSION="n" ;;
-        h) usage; exit 0 ;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0 ;;
+        V) version; exit 0;;
+        *) usage; exit 0 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -151,7 +151,7 @@ if [ ! -e "$BASE_TARBALL" ]; then
 fi
 
 info_msg "Expanding base tarball $BASE_TARBALL into $ROOTFS for $PLATFORM build."
-tar xf "$BASE_TARBALL" -C "$ROOTFS"
+tar xf "$BASE_TARBALL" --xattrs --xattrs-include='*' -C "$ROOTFS"
 
 # This will install, but not configure, the packages specified by
 # $PKGS.  After this step we will do an xbps-reconfigure -f $PKGS
@@ -222,8 +222,8 @@ fi
 if [ "$COMPRESSION" = "y" ]; then
     # Finally we can compress the tarball, the name will include the
     # platform and the date on which the tarball was built.
-    tarball=${FILENAME:-void-${PLATFORM}-PLATFORMFS-$(date '+%Y%m%d').tar.xz}
-    run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $tarball "
+    tarball=${FILENAME:-void-${PLATFORM}-PLATFORMFS-$(date -u '+%Y%m%d').tar.xz}
+    run_cmd "tar cp --posix --xattrs --xattrs-include='*' -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $tarball "
     [ $? -ne 0 ] && die "Failed to compress tarball"
 
     # Now that we have the tarball we don't need the rootfs anymore, so we

@@ -1,7 +1,7 @@
 source "virtualbox-iso" "x86_64" {
   guest_os_type = "Linux_64"
-  iso_url = "https://repo-default.voidlinux.org/live/20200722/void-live-x86_64-5.7.10_1-20200722.iso"
-  iso_checksum = "sha256:d95d40e1eb13a7776b5319a05660792fddd762662eaecee5df6b8feb3aa9b391"
+  iso_url = "https://repo-default.voidlinux.org/live/20221001/void-live-x86_64-20221001-base.iso"
+  iso_checksum = "sha256:5507fe41f54719e78db7b0f9c685f85b063616d913b14f815dd481b5ea66e397"
   ssh_username = "void"
   ssh_password = "void"
   http_directory = "http"

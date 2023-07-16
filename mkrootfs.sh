@@ -83,11 +83,11 @@ while getopts "b:C:c:hr:x:o:V" opt; do
         b) SYSPKG="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
-        h) usage; exit 0;;
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
-        V) echo "$PROGNAME @@MKLIVE_VERSION@@"; exit 0;;
+        V) version; exit 0;;
+        *) usage; exit 0;;
     esac
 done
 shift $((OPTIND - 1))
@@ -210,8 +210,8 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
 # Finally we can compress the tarball, the name will include the
 # architecture and the date on which the tarball was built.
-: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date '+%Y%m%d').tar.xz}"
-run_cmd "tar -cp --posix --xattrs -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $FILENAME "
+: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date -u '+%Y%m%d').tar.xz}"
+run_cmd "tar cp --posix --xattrs --xattrs-include='*' -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $FILENAME "
 
 # Now that we have the tarball we don't need the rootfs anymore, so we
 # can get rid of it.
