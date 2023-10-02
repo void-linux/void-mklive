@@ -46,27 +46,28 @@ trap 'die "Interrupted! exiting..."' INT TERM HUP
 # in the script, and it makes it easier to consume the contents of
 # these down the road in later scripts.
 usage() {
-    cat <<_EOF
-Usage: $PROGNAME [options] <arch>
+    cat <<-EOH
+	Usage: $PROGNAME [options] <arch>
 
-Supported architectures: i686, i686-musl, x86_64, x86_64-musl,
-                         armv5tel, armv5tel-musl, armv6l, armv6l-musl, armv7l, armv7l-musl
-                         aarch64, aarch64-musl,
-                         mipsel, mipsel-musl
-                         ppc, ppc-musl
-                         ppc64le, ppc64le-musl, ppc64, ppc64-musl
+	Generate a Void Linux ROOTFS tarball for the specified architecture.
 
-
-Options
-    -b <syspkg> Set an alternative base-system package (defaults to base-voidstrap)
-    -c <dir>    Set XBPS cache directory (defaults to \$PWD/xbps-cachedir-<arch>)
-    -C <file>   Full path to the XBPS configuration file
-    -h          Show this help
-    -r <repo>   Set XBPS repository (may be set multiple times)
-    -x <num>    Use <num> threads to compress the image (dynamic if unset)
-    -o <file>   Filename to write the ROOTFS archive to
-    -V          Show version
-_EOF
+	Supported architectures:
+	 i686, i686-musl, x86_64, x86_64-musl,
+	 armv5tel, armv5tel-musl, armv6l, armv6l-musl, armv7l, armv7l-musl
+	 aarch64, aarch64-musl,
+	 mipsel, mipsel-musl,
+	 ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl
+	
+	OPTIONS
+	 -b <system-pkg>  Set an alternative base-system package (default: base-voidstrap)
+	 -c <cachedir>    Set XBPS cache directory (default: ./xbps-cachedir-<arch>)
+	 -C <file>        Full path to the XBPS configuration file
+	 -r <repo>        Use this XBPS repository. May be specified multiple times
+	 -o <file>        Filename to write the ROOTFS to (default: automatic)
+	 -x <num>         Number of threads to use for image compression (default: dynamic)
+	 -h               Show this help and exit
+	 -V               Show version and exit
+	EOH
 }
 
 # ########################################
@@ -87,7 +88,8 @@ while getopts "b:C:c:hr:x:o:V" opt; do
         x) COMPRESSOR_THREADS="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
         V) version; exit 0;;
-        *) usage; exit 0;;
+        h) usage; exit 0;;
+        *) usage >&2; exit 1;;
     esac
 done
 shift $((OPTIND - 1))
@@ -111,7 +113,7 @@ check_tools
 # script will work without knowing what we're trying to build for.
 if [ -z "$XBPS_TARGET_ARCH" ]; then
     echo "$PROGNAME: arch was not set!"
-    usage; exit 1
+    usage >&2; exit 1
 fi
 
 # We need to operate on a tempdir, if this fails to create, it is
