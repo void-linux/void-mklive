@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# vim: set ts=4 sw=4 et:
-#
 #-
 # Copyright (c) 2009-2015 Juan Romero Pardines.
 # All rights reserved.
@@ -65,33 +63,35 @@ error_out() {
 }
 
 usage() {
-    cat <<_EOF
-Usage: $PROGNAME [options]
+	cat <<-EOH
+	Usage: $PROGNAME [options]
 
-Options:
- -a <xbps-arch>     Set XBPS_ARCH (do not use it unless you know what it is)
- -b <system-pkg>    Set an alternative base-system package (defaults to base-system).
- -r <repo-url>      Use this XBPS repository (may be specified multiple times).
- -c <cachedir>      Use this XBPS cache directory (a subdirectory of current 
-directory if unset).
- -k <keymap>        Default keymap to use (us if unset)
- -l <locale>        Default locale to use (en_US.UTF-8 if unset).
- -i <lz4|gzip|bzip2|xz> Compression type for the initramfs image (xz if unset).
- -s <gzip|lzo|xz>     Compression type for the squashfs image (xz if unset)
- -o <file>          Output file name for the ISO image (auto if unset).
- -p "pkg pkgN ..."  Install additional packages into the ISO image.
- -I <includedir>    Include directory structure under given path into rootfs
- -S "service serviceN ..." Services to enable
+	Generates a basic live ISO image of Void Linux. This ISO image can be written
+	to a CD/DVD-ROM or any USB stick.
 
- -C "cmdline args"  Add additional kernel command line arguments.
- -T "title"         Modify the bootloader title.
- -v linux<version>  Install a custom Linux version on ISO image (linux meta-package if unset).
- -K                 Do not remove builddir.
-
-The $PROGNAME script generates a live image of the Void Linux distribution.
-This ISO image can be written to a CD/DVD-ROM or any USB stick.
-_EOF
-    exit 1
+	To generate a more complete live ISO image, use build-x86-images.sh.
+	
+	OPTIONS
+	 -a <arch>          Set XBPS_ARCH in the ISO image
+	 -b <system-pkg>    Set an alternative base package (default: base-system)
+	 -r <repo>          Use this XBPS repository. May be specified multiple times
+	 -c <cachedir>      Use this XBPS cache directory (default: ./xbps-cachedir-<arch>)
+	 -k <keymap>        Default keymap to use (default: us)
+	 -l <locale>        Default locale to use (default: en_US.UTF-8)
+	 -i <lz4|gzip|bzip2|xz>
+	                    Compression type for the initramfs image (default: xz)
+	 -s <gzip|lzo|xz>   Compression type for the squashfs image (default: xz)
+	 -o <file>          Output file name for the ISO image (default: automatic)
+	 -p "<pkg> ..."     Install additional packages in the ISO image
+	 -I <includedir>    Include directory structure under given path in the ROOTFS
+	 -S "<service> ..." Enable services in the ISO image
+	 -C "<arg> ..."     Add additional kernel command line arguments
+	 -T <title>         Modify the bootloader title (default: Void Linux)
+	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
+	 -K                 Do not remove builddir
+	 -h                 Show this help and exit
+	 -V                 Show version and exit
+	EOH
 }
 
 copy_void_keys() {
@@ -321,7 +321,8 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:v:Vh" opt; do
         T) BOOT_TITLE="$OPTARG";;
         v) LINUX_VERSION="$OPTARG";;
         V) version; exit 0;;
-        *) usage;;
+        h) usage; exit 0;;
+        *) usage >&2; exit 1;;
     esac
 done
 shift $((OPTIND - 1))

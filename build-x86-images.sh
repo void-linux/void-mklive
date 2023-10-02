@@ -11,8 +11,28 @@ TRIPLET=
 REPO=
 DATE=$(date -u +%Y%m%d)
 
-help() {
-    echo "$PROGNAME: [-a arch] [-b base|enlightenment|xfce|mate|cinnamon|gnome|kde|lxde|lxqt] [-d date] [-t arch-date-variant] [-r repo]" >&2
+usage() {
+	cat <<-EOH
+	Usage: $PROGNAME [options ...] [-- mklive options ...]
+
+	Wrapper script around mklive.sh for several standard flavors of live images.
+	Adds void-installer and other helpful utilities to the generated images.
+
+	OPTIONS
+	 -a <arch>     Set XBPS_ARCH in the image
+	 -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
+	               lxde, or lxqt (default: base). May be specified multiple times
+	               to build multiple variants
+	 -d <date>     Override the datestamp on the generated image (YYYYMMDD format)
+	 -t <arch-date-variant>
+	               Equivalent to setting -a, -b, and -d
+	 -r <repo>     Use this XBPS repository. May be specified multiple times
+	 -h            Show this help and exit
+	 -V            Show version and exit
+
+	Other options can be passed directly to mklive.sh by specifying them after the --.
+	See mklive.sh -h for more details.
+	EOH
 }
 
 while getopts "a:b:d:t:hr:V" opt; do
@@ -20,11 +40,11 @@ case $opt in
     a) ARCH="$OPTARG";;
     b) IMAGES="$OPTARG";;
     d) DATE="$OPTARG";;
-    h) help; exit 0;;
     r) REPO="-r $OPTARG $REPO";;
     t) TRIPLET="$OPTARG";;
     V) version; exit 0;;
-    *) help; exit 1;;
+    h) usage; exit 0;;
+    *) usage >&2; exit 1;;
 esac
 done
 shift $((OPTIND - 1))
