@@ -48,9 +48,8 @@ usage() {
     cat <<_EOF
 Usage: $PROGNAME [options] <platform> <base-tarball>
 
-Supported platforms: i686, x86_64, GCP, bananapi, beaglebone,
-                     cubieboard2, cubietruck, odroid-c2, odroid-u2,
-                     rpi-armv6l, rpi-armv7l, rpi-aarch64, ci20,
+Supported platforms: i686, x86_64, GCP,
+                     rpi-armv6l, rpi-armv7l, rpi-aarch64,
                      pinebookpro, pinephone, rock64
 
 Options
@@ -112,13 +111,7 @@ check_tools
 # noarch though, so we strip off the -musl extention if it was
 # provided.
 case "$PLATFORM" in
-    bananapi*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    beaglebone*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    cubieboard2*|cubietruck*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    odroid-u2*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    odroid-c2*) PKGS="$BASEPKG ${PLATFORM%-musl}-base" ;;
     rpi*) PKGS="$BASEPKG rpi-base" ;;
-    ci20*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     i686*) PKGS="$BASEPKG" ;;
     x86_64*) PKGS="$BASEPKG" ;;
     GCP*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;

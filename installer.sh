@@ -1539,7 +1539,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         chroot $TARGETDIR dracut --no-hostonly --add-drivers "ahci" --force >>$LOG 2>&1
         INFOBOX "Removing temporary packages from target ..." 4 60
         echo "Removing temporary packages from target ..." >$LOG
-        TO_REMOVE="dialog xtools-minimal"
+        TO_REMOVE="dialog xtools-minimal xmirror"
         # only remove espeakup and brltty if it wasn't enabled in the live environment
         if ! [ -e "/var/service/espeakup" ]; then
             TO_REMOVE+=" espeakup"

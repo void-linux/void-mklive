@@ -117,7 +117,7 @@ PLATFORM="${PLATFORM%-PLATFORMFS*}"
 
 # Be absolutely certain the platform is supported before continuing
 case "$PLATFORM" in
-    bananapi|beaglebone|cubieboard2|cubietruck|odroid-c2|odroid-u2|rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|*-musl);;
+    rpi-armv6l|rpi-armv7l|rpi-aarch64|GCP|pinebookpro|pinephone|rock64|*-musl);;
     *) die "The $PLATFORM is not supported, exiting..."
 esac
 
@@ -172,83 +172,55 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
     _args="-I -F16"
 fi
 
+# These platforms use a partition layout with a small boot
+# partition (64M by default) and the rest of the space as the
+# root filesystem.  This is the generally preferred disk
+# layout for new platforms.
 case "$PLATFORM" in
-    cubieboard2|cubietruck|ci20*|odroid-c2*)
-        # These platforms use a single partition for the entire filesystem.
-        sfdisk "${FILENAME}" <<_EOF
-label: dos
-2048,,L
-_EOF
-        LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
-        mkfs.${ROOT_FSTYPE} -O '^64bit,^extra_isize,^has_journal' "${LOOPDEV}p1" >/dev/null 2>&1
-        mount "${LOOPDEV}p1" "$ROOTFS"
-        ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
-        ;;
-    *)
-        # These platforms use a partition layout with a small boot
-        # partition (64M by default) and the rest of the space as the
-        # root filesystem.  This is the generally preferred disk
-        # layout for new platforms.
-        case "$PLATFORM" in
-            pinebookpro*|rock64*)
-                # rk33xx devices use GPT and need more space reserved
-                sfdisk "$FILENAME" <<_EOF
+	pinebookpro*|rock64*)
+		# rk33xx devices use GPT and need more space reserved
+		sfdisk "$FILENAME" <<_EOF
 label: gpt
 unit: sectors
 first-lba: 32768
 name=BootFS, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
 name=RootFS,                      type=L
 _EOF
-                ;;
-            *)
-                # The rest use MBR and need less space reserved
-                sfdisk "${FILENAME}" <<_EOF
+		;;
+	*)
+		# The rest use MBR and need less space reserved
+		sfdisk "${FILENAME}" <<_EOF
 label: dos
 2048,${BOOT_FSSIZE},b,*
 ,+,L
 _EOF
-                ;;
-        esac
-        LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
-        # Normally we need to quote to prevent argument splitting, but
-        # we explicitly want argument splitting here.
-        # shellcheck disable=SC2086
-        mkfs.${BOOT_FSTYPE} $_args "${LOOPDEV}p1" >/dev/null
-        case "$ROOT_FSTYPE" in
-            # Because the images produced by this script are generally
-            # either on single board computers using flash memory or
-            # in cloud environments that already provide disk
-            # durability, we shut off the journal for ext filesystems.
-            # For flash memory this greatly extends the life of the
-            # memory and for cloud images this lowers the overhead by
-            # a small amount.
-            ext[34]) disable_journal="-O ^has_journal";;
-        esac
-        mkfs.${ROOT_FSTYPE} ${disable_journal:+"$disable_journal"} "${LOOPDEV}p2" >/dev/null 2>&1
-        mount "${LOOPDEV}p2" "$ROOTFS"
-        mkdir -p "${ROOTFS}/boot"
-        mount "${LOOPDEV}p1" "${ROOTFS}/boot"
-        BOOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
-        ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p2")
-        ROOT_PARTUUID=$(blkid -o value -s PARTUUID "${LOOPDEV}p2")
-        ;;
+		;;
 esac
+LOOPDEV=$(losetup --show --find --partscan "$FILENAME")
+# Normally we need to quote to prevent argument splitting, but
+# we explicitly want argument splitting here.
+# shellcheck disable=SC2086
+mkfs.${BOOT_FSTYPE} $_args "${LOOPDEV}p1" >/dev/null
+case "$ROOT_FSTYPE" in
+	# Because the images produced by this script are generally
+	# either on single board computers using flash memory or
+	# in cloud environments that already provide disk
+	# durability, we shut off the journal for ext filesystems.
+	# For flash memory this greatly extends the life of the
+	# memory and for cloud images this lowers the overhead by
+	# a small amount.
+	ext[34]) disable_journal="-O ^has_journal";;
+esac
+mkfs.${ROOT_FSTYPE} ${disable_journal:+"$disable_journal"} "${LOOPDEV}p2" >/dev/null 2>&1
+mount "${LOOPDEV}p2" "$ROOTFS"
+mkdir -p "${ROOTFS}/boot"
+mount "${LOOPDEV}p1" "${ROOTFS}/boot"
+BOOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p1")
+ROOT_UUID=$(blkid -o value -s UUID "${LOOPDEV}p2")
+ROOT_PARTUUID=$(blkid -o value -s PARTUUID "${LOOPDEV}p2")
 
 # This step unpacks the platformfs tarball made by mkplatformfs.sh.
 info_msg "Unpacking rootfs tarball ..."
-if [ "$PLATFORM" = "beaglebone" ]; then
-    # The beaglebone requires some special extra handling.  The MLO
-    # program is a special first stage boot loader that brings up
-    # enough of the processor to then load u-boot which loads the rest
-    # of the system.  The noauto option also prevents /boot from being
-    # mounted during system startup.
-    fstab_args=",noauto"
-    tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/MLO
-    tar xfp "$ROOTFS_TARBALL" -C "$ROOTFS" ./boot/u-boot.img
-    touch "$ROOTFS/boot/uEnv.txt"
-    umount "$ROOTFS/boot"
-fi
-
 # In the general case, its enough to just unpack the ROOTFS_TARBALL
 # onto the ROOTFS.  This will get a system that is ready to boot, save
 # for the bootloader which is handled later.
@@ -284,24 +256,6 @@ sed -i "${ROOTFS}/etc/ssh/sshd_config" -e 's|^#\(PermitRootLogin\) .*|\1 yes|g'
 # can be found.
 info_msg "Configuring image for platform $PLATFORM"
 case "$PLATFORM" in
-bananapi*|cubieboard2*|cubietruck*)
-    dd if="${ROOTFS}/boot/u-boot-sunxi-with-spl.bin" of="${LOOPDEV}" bs=1024 seek=8 >/dev/null 2>&1
-    ;;
-odroid-c2*)
-    dd if="${ROOTFS}/boot/bl1.bin.hardkernel" of="${LOOPDEV}" bs=1 count=442 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/bl1.bin.hardkernel" of="${LOOPDEV}" bs=512 skip=1 seek=1 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" bs=512 seek=97 >/dev/null 2>&1
-    ;;
-odroid-u2*)
-    dd if="${ROOTFS}/boot/E4412_S.bl1.HardKernel.bin" of="${LOOPDEV}" seek=1 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/bl2.signed.bin" of="${LOOPDEV}" seek=31 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/u-boot.bin" of="${LOOPDEV}" seek=63 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/E4412_S.tzsw.signed.bin" of="${LOOPDEV}" seek=2111 >/dev/null 2>&1
-    ;;
-ci20*)
-    dd if="${ROOTFS}/boot/u-boot-spl.bin" of="${LOOPDEV}" obs=512 seek=1 >/dev/null 2>&1
-    dd if="${ROOTFS}/boot/u-boot.img" of="${LOOPDEV}" obs=1K seek=14 >/dev/null 2>&1
-    ;;
 rock64*)
     rk33xx_flash_uboot "${ROOTFS}/usr/lib/rock64-uboot" "$LOOPDEV"
     # populate the extlinux.conf file

@@ -110,6 +110,11 @@ build_variant() {
     if [ -n "$LIGHTDM_SESSION" ]; then
         mkdir -p "$INCLUDEDIR"/etc/lightdm
         echo "$LIGHTDM_SESSION" > "$INCLUDEDIR"/etc/lightdm/.session
+        # needed to show the keyboard layout menu on the login screen
+        cat <<- EOF > "$INCLUDEDIR"/etc/lightdm/lightdm-gtk-greeter.conf
+[greeter]
+indicators = ~host;~spacer;~clock;~spacer;~layout;~session;~a11y;~power
+EOF
     fi
 
     if [ "$variant" != base ]; then
