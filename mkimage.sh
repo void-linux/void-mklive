@@ -255,6 +255,10 @@ sed -i "${ROOTFS}/etc/ssh/sshd_config" -e 's|^#\(PermitRootLogin\) .*|\1 yes|g'
 # can be found.
 info_msg "Configuring image for platform $PLATFORM"
 case "$PLATFORM" in
+rpi*)
+	# use PARTUUID to allow for non-mmc boot without configuration
+	sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_PARTUUID}/" "${ROOTFS}/boot/cmdline.txt"
+	;;
 rock64*)
     rk33xx_flash_uboot "${ROOTFS}/usr/lib/rock64-uboot" "$LOOPDEV"
     # populate the extlinux.conf file
