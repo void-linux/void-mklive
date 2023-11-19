@@ -33,19 +33,19 @@ INCLUDEDIR=$(mktemp -d)
 trap "cleanup" INT TERM
 
 cleanup() {
-    rm -r "$INCLUDEDIR"
+    rm -rf "$INCLUDEDIR"
 }
 
 setup_pipewire() {
     PKGS="$PKGS pipewire alsa-pipewire"
     mkdir -p "$INCLUDEDIR"/etc/xdg/autostart
-    ln -s /usr/share/applications/pipewire.desktop "$INCLUDEDIR"/etc/xdg/autostart/
+    ln -sf /usr/share/applications/pipewire.desktop "$INCLUDEDIR"/etc/xdg/autostart/
     mkdir -p "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d
-    ln -s /usr/share/examples/wireplumber/10-wireplumber.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
-    ln -s /usr/share/examples/pipewire/20-pipewire-pulse.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
+    ln -sf /usr/share/examples/wireplumber/10-wireplumber.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
+    ln -sf /usr/share/examples/pipewire/20-pipewire-pulse.conf "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d/
     mkdir -p "$INCLUDEDIR"/etc/alsa/conf.d
-    ln -s /usr/share/alsa/alsa.conf.d/50-pipewire.conf "$INCLUDEDIR"/etc/alsa/conf.d
-    ln -s /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf "$INCLUDEDIR"/etc/alsa/conf.d
+    ln -sf /usr/share/alsa/alsa.conf.d/50-pipewire.conf "$INCLUDEDIR"/etc/alsa/conf.d
+    ln -sf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf "$INCLUDEDIR"/etc/alsa/conf.d
 }
 
 build_variant() {
@@ -122,6 +122,8 @@ EOF
     fi
 
     ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
+
+	cleanup
 }
 
 if [ ! -x mklive.sh ]; then
