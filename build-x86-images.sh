@@ -6,7 +6,7 @@ set -eu
 
 PROGNAME=$(basename "$0")
 ARCH=$(uname -m)
-IMAGES=
+IMAGES="base"
 TRIPLET=
 REPO=
 DATE=$(date -u +%Y%m%d)
