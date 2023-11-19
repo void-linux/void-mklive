@@ -6,7 +6,7 @@ set -eu
 
 PROGNAME=$(basename "$0")
 ARCH=$(uname -m)
-IMAGES="base enlightenment xfce mate cinnamon gnome kde lxde lxqt"
+IMAGES=
 TRIPLET=
 REPO=
 DATE=$(date -u +%Y%m%d)
