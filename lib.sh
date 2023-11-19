@@ -339,7 +339,7 @@ rk33xx_flash_uboot() {
 # line.  This select allows us to get that information out.  This
 # fails silently if the toolname isn't known since this script is
 # sourced.
-case $1 in
+case "${1:-}" in
     platform2arch)
         PLATFORM=$2
         set_target_arch_from_platform
