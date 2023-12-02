@@ -59,7 +59,7 @@ usage() {
 	 ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl
 	
 	OPTIONS
-	 -b <system-pkg>  Set an alternative base-system package (default: base-voidstrap)
+	 -b <system-pkg>  Set an alternative base-system package (default: base-container-full)
 	 -c <cachedir>    Set XBPS cache directory (default: ./xbps-cachedir-<arch>)
 	 -C <file>        Full path to the XBPS configuration file
 	 -r <repo>        Use this XBPS repository. May be specified multiple times
@@ -75,7 +75,7 @@ usage() {
 # ########################################
 
 # Set the default system package.
-SYSPKG="base-voidstrap"
+SYSPKG="base-container-full"
 
 # Boilerplate option parsing.  This script supports the bare minimum
 # needed to build an image.
