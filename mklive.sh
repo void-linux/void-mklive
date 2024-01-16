@@ -52,14 +52,18 @@ mount_pseudofs() {
     done
 }
 umount_pseudofs() {
-    umount -R -f "$ROOTFS"/sys >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/dev >/dev/null 2>&1
-    umount -R -f "$ROOTFS"/proc >/dev/null 2>&1
+	for f in sys dev proc; do
+		if ! umount -R -f "$ROOTFS/$f"; then
+			info_msg "ERROR: failed to unmount $ROOTFS/$f/"
+			return 1
+		fi
+	done
 }
 error_out() {
-    umount_pseudofs
-    [ -d "$BUILDDIR" -a -z "$KEEP_BUILDDIR" ] && rm -rf "$BUILDDIR"
-    exit "${1:=0}"
+	trap - INT TERM 0
+    umount_pseudofs || exit "${1:-0}"
+    [ -d "$BUILDDIR" ] && [ -z "$KEEP_BUILDDIR" ] && rm -rf --one-file-system "$BUILDDIR"
+    exit "${1:-0}"
 }
 
 usage() {
@@ -263,7 +267,7 @@ generate_grub_efi_boot() {
 }
 
 generate_squashfs() {
-    umount_pseudofs
+    umount_pseudofs || exit 1
 
     # Find out required size for the rootfs and create an ext3fs image off it.
     ROOTFS_SIZE=$(du --apparent-size -sm "$ROOTFS"|awk '{print $1}')
