@@ -136,6 +136,7 @@ OPTIONS
  -s <gzip|lzo|xz>   Compression type for the squashfs image (default: xz)
  -o <file>          Output file name for the ISO image (default: automatic)
  -p "<pkg> ..."     Install additional packages in the ISO image
+ -g "<pkg> ..."     Ignore packages when building the ISO image
  -I <includedir>    Include directory structure under given path in the ROOTFS
  -S "<service> ..." Enable services in the ISO image
  -C "<arg> ..."     Add additional kernel command line arguments
