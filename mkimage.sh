@@ -63,7 +63,7 @@ usage() {
 
 	OPTIONS
 	 -b <fstype>    /boot filesystem type (default: vfat)
-	 -B <bsize>     /boot filesystem size (default: 64MiB)
+	 -B <bsize>     /boot filesystem size (default: 256MiB)
 	 -r <fstype>    / filesystem type (default: ext4)
 	 -s <totalsize> Total image size (default: 2GiB)
 	 -o <output>    Image filename (default: guessed automatically)
@@ -127,13 +127,13 @@ case "$PLATFORM" in
         : "${BOOT_FSSIZE:=256MiB}"
         ;;
 esac
-# By default we build all platform images with a 64MiB boot partition
-# formated FAT16, and an approximately 1.9GiB root partition formated
+# By default we build all platform images with a 256MiB boot partition
+# formated FAT16, and an approximately 1.88GiB root partition formatted
 # ext4.  More exotic combinations are of course possible, but this
 # combination works on all known platforms.
 : "${IMGSIZE:=2G}"
 : "${BOOT_FSTYPE:=vfat}"
-: "${BOOT_FSSIZE:=64MiB}"
+: "${BOOT_FSSIZE:=256MiB}"
 : "${ROOT_FSTYPE:=ext4}"
 
 # Verify that the required tooling is available
@@ -172,7 +172,7 @@ if [ "$BOOT_FSTYPE" = "vfat" ]; then
 fi
 
 # These platforms use a partition layout with a small boot
-# partition (64M by default) and the rest of the space as the
+# partition (256M by default) and the rest of the space as the
 # root filesystem.  This is the generally preferred disk
 # layout for new platforms.
 case "$PLATFORM" in
