@@ -209,7 +209,7 @@ PLATFORMFS. The resulting image will have 2 partitions, /boot and /.
 
 OPTIONS
  -b <fstype>    /boot filesystem type (default: vfat)
- -B <bsize>     /boot filesystem size (default: 64MiB)
+ -B <bsize>     /boot filesystem size (default: 256MiB)
  -r <fstype>    / filesystem type (default: ext4)
  -s <totalsize> Total image size (default: 2GiB)
  -o <output>    Image filename (default: guessed automatically)
