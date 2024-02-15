@@ -39,11 +39,11 @@ README.md: README.md.in build-x86-images.sh mklive.sh mkrootfs.sh mkplatformfs.s
 	cat README.md.in >> README.md
 	for script in build-x86-images mklive mkrootfs mkplatformfs mkimage mknet; do \
 		printf '### %s.sh\n\n```\n' "$${script}" >> README.md ; \
-		"./$${script}.sh" -h >> README.md ; \
+		"./$${script}.sh" -h 2>/dev/null >> README.md ; \
 		printf '```\n\n' >> README.md ; \
 	done
 
-checksum: dist
+checksum: distdir-$(DATECODE)
 	cd distdir-$(DATECODE)/ && sha256 * > sha256sum.txt
 
 distdir-$(DATECODE):
@@ -69,7 +69,7 @@ rootfs-all-print:
 
 void-%-ROOTFS-$(DATECODE).tar.xz:
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
-	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $*
+	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) -o $@ $*
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 platformfs-all: $(ALL_PLATFORMFS)
@@ -80,7 +80,7 @@ platformfs-all-print:
 .SECONDEXPANSION:
 void-%-PLATFORMFS-$(DATECODE).tar.xz: void-$$(shell ./lib.sh platform2arch %)-ROOTFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
-	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATECODE).tar.xz
+	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) -o $@ $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 images-all: platformfs-all images-all-sbc images-all-cloud
@@ -97,7 +97,7 @@ images-all-print:
 
 void-%-$(DATECODE).img.xz: void-%-PLATFORMFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
-	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-$*-PLATFORMFS-$(DATECODE).tar.xz
+	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) -o $(basename $@) void-$*-PLATFORMFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 # Some of the images MUST be compressed with gzip rather than xz, this
