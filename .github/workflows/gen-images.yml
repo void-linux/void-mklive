@@ -7,11 +7,11 @@ on:
         description: "Override datecode for images"
         required: false
         type: string
-      mirror:
-        description: "Mirror to use"
-        default: "https://repo-ci.voidlinux.org/current"
-        required: false
-        type: string
+      live_iso_flag:
+        description: "Build live ISOs"
+        default: true
+        required: true
+        type: boolean
       live_archs:
         description: "Archs to build live ISOs for"
         default: "x86_64 x86_64-musl i686"
@@ -22,16 +22,31 @@ on:
         default: "base xfce"
         required: false
         type: string
+      rootfs_flag:
+        description: "Build ROOTFSes"
+        default: true
+        required: true
+        type: boolean
       rootfs:
         description: "Archs to build ROOTFSes for"
         default: "x86_64 x86_64-musl i686 armv6l armv6l-musl armv7l armv7l-musl aarch64 aarch64-musl"
         required: false
         type: string
+      platformfs_flag:
+        description: "Build PLATFORMFSes"
+        default: true
+        required: true
+        type: boolean
       platformfs:
         description: "Platforms to build PLATFORMFSes for"
         default: "rpi-armv6l rpi-armv6l-musl rpi-armv7l rpi-armv7l-musl rpi-aarch64 rpi-aarch64-musl"
         required: false
         type: string
+      sbc_img_flag:
+        description: "Build SBC Images"
+        default: true
+        required: true
+        type: boolean
       sbc_imgs:
         description: "Platforms to build SBC images for"
         default: "rpi-armv6l rpi-armv6l-musl rpi-armv7l rpi-armv7l-musl rpi-aarch64 rpi-aarch64-musl"
@@ -42,89 +57,280 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
+defaults:
+  run:
+    shell: bash
 
-    defaults:
-      run:
-        shell: bash
+jobs:
+  prepare:
+    name: Prepare Environment
+    runs-on: ubuntu-latest
+    outputs:
+      datecode: ${{ steps.prep.outputs.datecode }}
+      revision: ${{ steps.prep.outputs.revision }}
+      mirror: ${{ steps.prep.outputs.mirror }}
+
+    steps:
+      - name: Prepare Environment
+        id: prep
+        run: |
+          if [ -z "${{ inputs.datecode }}" ]; then
+            echo "datecode=$(date -u "+%Y%m%d")" >> $GITHUB_OUTPUT
+          else
+            echo "datecode=${{ inputs.datecode }}" >> $GITHUB_OUTPUT
+          fi
+          echo "revision=${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+          echo "mirror=https://repo-ci.voidlinux.org/current" >> $GITHUB_OUTPUT
+
+  build-live-isos:
+    name: Build Live ISOs
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ inputs.live_iso_flag }}
 
     container:
-      image: 'ghcr.io/void-linux/void-linux:20230204RC01-full-x86_64'
+      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
       options: --privileged
       volumes:
         - /dev:/dev
       env:
         PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
-        DATECODE: "${{ inputs.datecode }}"
-        LIVE_ARCHS: "${{ inputs.live_archs }}"
-        LIVE_FLAVORS: "${{ inputs.live_flavors }}"
-        ROOTFS_ARCHS: "${{ inputs.rootfs }}"
-        PLATFORMS: "${{ inputs.platformfs }}"
-        SBC_IMGS: "${{ inputs.sbc_imgs }}"
-        REPO: "${{ inputs.mirror }}"
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
 
     steps:
       - name: Prepare container
         shell: sh
         run: |
-          # Switch to repo-ci mirror
+          # Switch to mirror
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"$REPO"'|g' /etc/xbps.d/*-repository-*.conf
+          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
+            /etc/xbps.d/*-repository-*.conf
           # Sync and upgrade once, assume error comes from xbps update
           xbps-install -Syu || xbps-install -yu xbps
           # Upgrade again (in case there was a xbps update)
           xbps-install -yu
           # Install depedencies
           xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
-
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
-      - name: Prepare environment
-        run: |
-          echo "DATECODE=$(date -u "+%Y%m%d")" >> $GITHUB_ENV
-          echo "MKLIVE_REV=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+
       - name: Build live ISOs
         run: |
-          if ! [[ "$LIVE_ARCHS" = "none" || "$LIVE_FLAVORS" = "none" ]]; then
-              make live-iso-all{-print,} \
-                  LIVE_ARCHS="$LIVE_ARCHS" LIVE_FLAVORS="$LIVE_FLAVORS" \
-                  SUDO= REPOSITORY="$REPO" DATECODE=$DATECODE
-          else
-              echo "Nothing to do..."
-          fi
-      - name: Build ROOTFSes
-        run: |
-          if ! [ "$ROOTFS_ARCHS" = "none" ]; then
-              make rootfs-all{-print,} \
-                  SUDO= ARCHS="$ROOTFS_ARCHS" REPOSITORY="$REPO" DATECODE=$DATECODE
-          else
-              echo "Nothing to do..."
-          fi
-      - name: Build PLATFORMFSes
-        run: |
-          if ! [ "$PLATFORMS" = "none" ]; then
-              make platformfs-all{-print,} \
-                  SUDO= PLATFORMS="$PLATFORMS" REPOSITORY="$REPO" DATECODE=$DATECODE
-          else
-              echo "Nothing to do..."
-          fi
-      - name: Build SBC images
-        run: |
-          if ! [ "$SBC_IMGS" = "none" ]; then
-              make images-all-sbc{-print,} \
-                  SUDO= SBC_IMGS="$SBC_IMGS" REPOSITORY="$REPO" DATECODE=$DATECODE
-          else
-              echo "Nothing to do..."
-          fi
+          make live-iso-all-print live-iso-all \
+            SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
+            DATECODE="${{ needs.prepare.outputs.datecode }}" \
+            LIVE_ARCHS="${{ inputs.live_archs }}" LIVE_FLAVORS="${{ inputs.live_flavors }}"
+
       - name: Prepare artifacts for upload
         run: |
-          make dist checksum DATECODE=$DATECODE
+          make dist DATECODE="${{ needs.prepare.outputs.datecode }}"
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: void-live-${{ env.DATECODE }}
-          path: distdir-${{ env.DATECODE }}/*
+          name: void-iso-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
+          if-no-files-found: error
+
+  build-rootfs:
+    name: Build ROOTFSes
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ inputs.rootfs_flag }}
+
+    container:
+      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      options: --privileged
+      volumes:
+        - /dev:/dev
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: |
+          # Switch to mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
+            /etc/xbps.d/*-repository-*.conf
+          # Sync and upgrade once, assume error comes from xbps update
+          xbps-install -Syu || xbps-install -yu xbps
+          # Upgrade again (in case there was a xbps update)
+          xbps-install -yu
+          # Install depedencies
+          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Build ROOTFSes
+        run: |
+          make rootfs-all-print rootfs-all \
+            SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
+            DATECODE="${{ needs.prepare.outputs.datecode }}" \
+            ARCHS="${{ inputs.rootfs }}"
+
+      - name: Prepare artifacts for upload
+        run: |
+          make dist DATECODE="${{ needs.prepare.outputs.datecode }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-rootfs-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
+          if-no-files-found: error
+
+  build-platformfs:
+    name: Build PLATFORMFSes
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ inputs.platformfs_flag }}
+
+    container:
+      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      options: --privileged
+      volumes:
+        - /dev:/dev
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: |
+          # Switch to mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
+            /etc/xbps.d/*-repository-*.conf
+          # Sync and upgrade once, assume error comes from xbps update
+          xbps-install -Syu || xbps-install -yu xbps
+          # Upgrade again (in case there was a xbps update)
+          xbps-install -yu
+          # Install depedencies
+          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Build PLATFORMFSes
+        run: |
+          make platformfs-all-print platformfs-all \
+            SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
+            DATECODE="${{ needs.prepare.outputs.datecode }}" \
+            PLATFORMS="${{ inputs.platformfs }}"
+
+      - name: Prepare artifacts for upload
+        run: |
+          make dist DATECODE="${{ needs.prepare.outputs.datecode }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-platformfs-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
+            !distdir-${{ needs.prepare.outputs.datecode }}/*ROOTFS*
+          if-no-files-found: error
+
+  build-sbc-img:
+    name: Build SBC Images
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ inputs.sbc_img_flag }}
+
+    container:
+      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      options: --privileged
+      volumes:
+        - /dev:/dev
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: |
+          # Switch to mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
+            /etc/xbps.d/*-repository-*.conf
+          # Sync and upgrade once, assume error comes from xbps update
+          xbps-install -Syu || xbps-install -yu xbps
+          # Upgrade again (in case there was a xbps update)
+          xbps-install -yu
+          # Install depedencies
+          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Build SBC Images
+        run: |
+          make images-all-sbc-print images-all-sbc \
+            SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
+            DATECODE="${{ needs.prepare.outputs.datecode }}" \
+            SBC_IMGS="${{ inputs.sbc_imgs }}"
+
+      - name: Prepare artifacts for upload
+        run: |
+          make dist DATECODE="${{ needs.prepare.outputs.datecode }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-sbc-img-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
+            !distdir-${{ needs.prepare.outputs.datecode }}/*ROOTFS*
+            !distdir-${{ needs.prepare.outputs.datecode }}/*PLATFORMFS*
+          if-no-files-found: error
+
+  merge-artifacts:
+    name: Combine artifacts
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - prepare
+      - build-live-isos
+      - build-rootfs
+      - build-platformfs
+      - build-sbc-img
+
+    container:
+      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: |
+          # Switch to mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
+            /etc/xbps.d/*-repository-*.conf
+          # Sync and upgrade once, assume error comes from xbps update
+          xbps-install -Syu || xbps-install -yu xbps
+          # Upgrade again (in case there was a xbps update)
+          xbps-install -yu
+          # Install depedencies
+          xbps-install -yu bash make git outils
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: distdir-${{ needs.prepare.outputs.datecode }}
+          merge-multiple: true
+      - name: Prepare artifacts for upload
+        run: |
+          make checksum DATECODE="${{ needs.prepare.outputs.datecode }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-live-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
           if-no-files-found: error
