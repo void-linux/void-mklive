@@ -97,6 +97,11 @@ shift $((OPTIND - 1))
 PLATFORM="$1"
 BASE_TARBALL="$2"
 
+if [ -z "$PLATFORM" ] || [ -z "$BASE_TARBALL" ]; then
+	usage >&2
+	exit 1
+fi
+
 # This is an aweful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
 if [ "$(id -u)" -ne 0 ]; then

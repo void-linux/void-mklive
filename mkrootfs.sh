@@ -95,6 +95,11 @@ done
 shift $((OPTIND - 1))
 XBPS_TARGET_ARCH="$1"
 
+if [ -z "$XBPS_TARGET_ARCH" ]; then
+	usage >&2
+	exit 1
+fi
+
 # Set the XBPS cache
 set_cachedir
 
