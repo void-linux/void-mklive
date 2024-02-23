@@ -52,7 +52,7 @@ mount_pseudofs() {
 }
 umount_pseudofs() {
 	for f in sys dev proc; do
-		if ! umount -R -f "$ROOTFS/$f"; then
+		if [ -d "$ROOTFS/$f" ] && ! umount -R -f "$ROOTFS/$f"; then
 			info_msg "ERROR: failed to unmount $ROOTFS/$f/"
 			return 1
 		fi
