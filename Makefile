@@ -43,6 +43,8 @@ README.md: README.md.in build-x86-images.sh mklive.sh mkrootfs.sh mkplatformfs.s
 		printf '```\n\n' >> README.md ; \
 	done
 
+build-x86-images.sh: mklive.sh
+
 checksum: distdir-$(DATECODE)
 	cd distdir-$(DATECODE)/ && sha256 * > sha256sum.txt
 
@@ -57,7 +59,7 @@ live-iso-all: $(ALL_LIVE_ISO)
 live-iso-all-print:
 	@echo $(ALL_LIVE_ISO) | sed "s: :\n:g"
 
-void-live-%.iso:
+void-live-%.iso: build-x86-images.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./build-x86-images.sh -r $(REPOSITORY) -t $*
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
@@ -67,7 +69,7 @@ rootfs-all: $(ALL_ROOTFS)
 rootfs-all-print:
 	@echo $(ALL_ROOTFS) | sed "s: :\n:g"
 
-void-%-ROOTFS-$(DATECODE).tar.xz:
+void-%-ROOTFS-$(DATECODE).tar.xz: mkrootfs.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) -o $@ $*
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
@@ -78,7 +80,7 @@ platformfs-all-print:
 	@echo $(ALL_PLATFORMFS) | sed "s: :\n:g"
 
 .SECONDEXPANSION:
-void-%-PLATFORMFS-$(DATECODE).tar.xz: void-$$(shell ./lib.sh platform2arch %)-ROOTFS-$(DATECODE).tar.xz
+void-%-PLATFORMFS-$(DATECODE).tar.xz: void-$$(shell ./lib.sh platform2arch %)-ROOTFS-$(DATECODE).tar.xz mkplatformfs.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./mkplatformfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) -o $@ $* void-$(shell ./lib.sh platform2arch $*)-ROOTFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
@@ -95,14 +97,14 @@ images-all-cloud: $(ALL_CLOUD_IMAGES)
 images-all-print:
 	@echo $(ALL_SBC_IMAGES) $(ALL_CLOUD_IMAGES) | sed "s: :\n:g"
 
-void-%-$(DATECODE).img.xz: void-%-PLATFORMFS-$(DATECODE).tar.xz
+void-%-$(DATECODE).img.xz: void-%-PLATFORMFS-$(DATECODE).tar.xz mkimage.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) -o $(basename $@) void-$*-PLATFORMFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 # Some of the images MUST be compressed with gzip rather than xz, this
 # rule services those images.
-void-%-$(DATECODE).tar.gz: void-%-PLATFORMFS-$(DATECODE).tar.xz
+void-%-$(DATECODE).tar.gz: void-%-PLATFORMFS-$(DATECODE).tar.xz mkimage.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./mkimage.sh -x $(COMPRESSOR_THREADS) void-$*-PLATFORMFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
@@ -112,7 +114,7 @@ pxe-all: $(ALL_PXE_ARCHS)
 pxe-all-print:
 	@echo $(ALL_PXE_ARCHS) | sed "s: :\n:g"
 
-void-%-NETBOOT-$(DATECODE).tar.gz: void-%-ROOTFS-$(DATECODE).tar.xz
+void-%-NETBOOT-$(DATECODE).tar.gz: void-%-ROOTFS-$(DATECODE).tar.xz mknet.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
