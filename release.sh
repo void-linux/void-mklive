@@ -50,14 +50,22 @@ download_build() {
 }
 
 sign_build() {
-	check_programs pwgen signify
-	DATE="$1"
+	check_programs pwgen minisign
+	DATECODE="$1"
 	SUMFILE="$2"
 	mkdir -p release
-	KEYFILE="release/void-release-$DATE.key"
-	pwgen -cny 25 1 > "$KEYFILE"
-	signify -G -p "${KEYFILE//key/pub}" -s "${KEYFILE//key/sec}" -c "This key is only valid for images with date $DATE."
-	signify -S -e -s "${KEYFILE//key/sec}" -m "$SUMFILE" -x "${SUMFILE//txt/sig}"
+
+	echo "Creating key..."
+	pwgen -cny 25 1 > "release/void-release-$DATECODE.key"
+	minisign -G -p "release/void-release-$DATECODE.pub" \
+		-s "release/void-release-$DATECODE.sec" \
+		-c "This key is only valid for images with date $DATECODE."
+
+	echo "Signing $SUMFILE..."
+	minisign -S -x "${SUMFILE//txt/sig}" -s "release/void-release-$DATECODE.sec" \
+		-c "This key is only valid for images with date $DATECODE." \
+		-t "This key is only valid for images with date $DATECODE." \
+		-m "$SUMFILE"
 }
 
 case "$1" in
