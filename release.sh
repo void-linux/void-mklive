@@ -59,13 +59,14 @@ sign_build() {
 	pwgen -cny 25 1 > "release/void-release-$DATECODE.key"
 	minisign -G -p "release/void-release-$DATECODE.pub" \
 		-s "release/void-release-$DATECODE.sec" \
-		-c "This key is only valid for images with date $DATECODE."
+		-c "This key is only valid for images with date $DATECODE." \
+		< <(cat "release/void-release-$DATECODE.key" "release/void-release-$DATECODE.key")
 
 	echo "Signing $SUMFILE..."
 	minisign -S -x "${SUMFILE//txt/sig}" -s "release/void-release-$DATECODE.sec" \
 		-c "This key is only valid for images with date $DATECODE." \
 		-t "This key is only valid for images with date $DATECODE." \
-		-m "$SUMFILE"
+		-m "$SUMFILE" < "release/void-release-$DATECODE.key"
 }
 
 case "$1" in
