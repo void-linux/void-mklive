@@ -139,6 +139,7 @@ OPTIONS
  -g "<pkg> ..."     Ignore packages when building the ISO image
  -I <includedir>    Include directory structure under given path in the ROOTFS
  -S "<service> ..." Enable services in the ISO image
+ -D "<service> ..." Ignore services when building the ISO image
  -C "<arg> ..."     Add additional kernel command line arguments
  -T <title>         Modify the bootloader title (default: Void Linux)
  -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
