@@ -5,7 +5,7 @@ set -e
 usage() {
 	echo "release.sh start [-l LIVE_ARCHS] [-f LIVE_VARIANTS] [-a ROOTFS_ARCHS]"
 	echo "    [-p PLATFORMS] [-i SBC_IMGS] [-d DATE] [-r REPOSITORY] -- [gh args...]"
-	echo "release.sh dl [gh args...]"
+	echo "release.sh dl [run id] -- [gh args...]"
 	echo "release.sh sign DATE SHASUMFILE"
 	exit 1
 }
@@ -42,8 +42,19 @@ start_build() {
 # wish it could be better but alas:
 # https://github.com/cli/cli/issues/4001
 download_build() {
+	local run
 	check_programs gh
-	run="$(gh run list -s success -w gen-images.yml --json databaseId -q '.[].databaseId' "$@" | sort -r | head -1)"
+	if [ -n "$1" ] && [ "$1" != "--" ]; then
+		run="$1"
+		shift
+	else
+		run="$(gh run list -s success -w gen-images.yml --json databaseId -q '.[].databaseId' "$@" | sort -r | head -1)"
+	fi
+	if [ -n "$1" ] && [ "$1" != "--" ]; then
+		usage
+	elif [ "$1" == "--" ]; then
+		shift
+	fi
 	echo "Downloading artifacts from run ${run} [this may take a while] ..."
 	gh run download "$run" -p 'void-live*' "$@"
 	echo "Done."
