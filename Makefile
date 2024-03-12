@@ -30,7 +30,7 @@ SUDO := sudo
 
 REPOSITORY := https://repo-default.voidlinux.org/current
 XBPS_REPOSITORY := -r $(REPOSITORY) -r $(REPOSITORY)/musl -r $(REPOSITORY)/aarch64
-COMPRESSOR_THREADS:=2
+COMPRESSOR_THREADS:=$(shell nproc)
 
 all:
 
