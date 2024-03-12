@@ -328,9 +328,24 @@ jobs:
         run: |
           make checksum DATECODE="${{ needs.prepare.outputs.datecode }}"
       - name: Upload artifacts
+        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: void-live-${{ needs.prepare.outputs.datecode }}
           path: |
             distdir-${{ needs.prepare.outputs.datecode }}/*
           if-no-files-found: error
+      - name: Generate summary
+        run: |
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          ## Images generated successfully!
+
+          ### Download
+
+          Download the result of this run with \`./release.sh "${{ github.run_id }}" -- -R "${{ github.repository }}"\` or use [this url](${{ steps.upload.outputs.artifact-url }}).
+
+          ### Checksums
+          \`\`\`
+          $(cat distdir-${{ needs.prepare.outputs.datecode }}/sha256sum.txt)
+          \`\`\`
+          EOF
