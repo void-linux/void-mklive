@@ -91,26 +91,26 @@ build_variant() {
         ;;
         xfce)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin"
-            SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
             LIGHTDM_SESSION=xfce
         ;;
         mate)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
-            SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
             LIGHTDM_SESSION=mate
         ;;
         cinnamon)
             PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk3-greeter cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
-            SERVICES="$SERVICES dbus elogind lightdm NetworkManager polkitd"
+            SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
             LIGHTDM_SESSION=cinnamon
         ;;
         gnome)
             PKGS="$PKGS $XORG_PKGS gnome firefox"
-            SERVICES="$SERVICES dbus elogind gdm NetworkManager polkitd"
+            SERVICES="$SERVICES dbus gdm NetworkManager polkitd"
         ;;
         kde)
             PKGS="$PKGS $XORG_PKGS kde5 konsole firefox dolphin"
-            SERVICES="$SERVICES dbus elogind NetworkManager sddm"
+            SERVICES="$SERVICES dbus NetworkManager sddm"
         ;;
         lxde)
             PKGS="$PKGS $XORG_PKGS lxde lightdm lightdm-gtk3-greeter gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
@@ -119,7 +119,7 @@ build_variant() {
         ;;
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt sddm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
-            SERVICES="$SERVICES elogind dbus dhcpcd wpa_supplicant sddm polkitd"
+            SERVICES="$SERVICES dbus dhcpcd wpa_supplicant sddm polkitd"
         ;;
         *)
             >&2 echo "Unknown variant $variant"
