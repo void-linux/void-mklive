@@ -342,7 +342,7 @@ jobs:
 
           ### Download
 
-          Download the result of this run with \`./release.sh "${{ github.run_id }}" -- -R "${{ github.repository }}"\` or use [this url](${{ steps.upload.outputs.artifact-url }}).
+          Download the result of this run with \`./release.sh dl ${{ github.run_id }} -- -R ${{ github.repository }}\` or use [this url](${{ steps.upload.outputs.artifact-url }}).
 
           ### Checksums
           \`\`\`
