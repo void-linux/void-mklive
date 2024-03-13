@@ -53,7 +53,7 @@ usage() {
 
 	Supported platforms: i686, x86_64, GCP,
 	                     rpi-armv6l, rpi-armv7l, rpi-aarch64,
-	                     pinebookpro, pinephone, rock64
+	                     pinebookpro, pinephone, rock64, rockpro64
 	
 	OPTIONS
 	 -b <system-pkg>  Set an alternative base-system package (default: base-system)
@@ -127,6 +127,7 @@ case "$PLATFORM" in
     pinebookpro*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     pinephone*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     rock64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    rockpro64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
