@@ -89,6 +89,7 @@ usage() {
 	 -g "<pkg> ..."     Ignore packages when building the ISO image
 	 -I <includedir>    Include directory structure under given path in the ROOTFS
 	 -S "<service> ..." Enable services in the ISO image
+	 -D "<service> ..." Ignore services when building the ISO image
 	 -C "<arg> ..."     Add additional kernel command line arguments
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
@@ -153,10 +154,12 @@ ignore_packages() {
 enable_services() {
     SERVICE_LIST="$*"
     for service in $SERVICE_LIST; do
-        if ! [ -e $ROOTFS/etc/sv/$service ]; then
-            die "service $service not in /etc/sv"
+        if ! [[ $IGNORE_SV =~ (^|[[:space:]])$service($|[[:space:]]) ]] ; then
+            if ! [ -e $ROOTFS/etc/sv/$service ] ; then
+                die "service $service not in /etc/sv"
+            fi
+            ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
         fi
-        ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
     done
 }
 
@@ -313,7 +316,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
+while getopts "a:b:r:c:C:D:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
 	case $opt in
 		a) BASE_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -326,6 +329,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
 		i) INITRAMFS_COMPRESSION="$OPTARG";;
 		I) INCLUDE_DIRS+=("$OPTARG");;
 		S) SERVICE_LIST="$SERVICE_LIST $OPTARG";;
+		D) IGNORE_SV="$IGNORE_SV $OPTARG";;
 		s) SQUASHFS_COMPRESSION="$OPTARG";;
 		o) OUTPUT_FILE="$OPTARG";;
 		p) PACKAGE_LIST="$PACKAGE_LIST $OPTARG";;
