@@ -72,7 +72,10 @@ build_variant() {
     variant="$1"
     shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
-    GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
+    case "$ARCH" in
+        x86_64*|i686*) GRUB_PKGS="grub-i386-efi grub-x86_64-efi" ;;
+        aarch64*) GRUB_PKGS="grub-arm64-efi" ;;
+    esac
     A11Y_PKGS="espeakup void-live-audio brltty"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror chrony tmux $A11Y_PKGS $GRUB_PKGS"
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf orca"
