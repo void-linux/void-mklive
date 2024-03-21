@@ -5,8 +5,8 @@
 This repository contains several utilities:
 
 * [*mklive.sh*](#mklivesh) - The Void Linux live image generator for x86
-* [*build-x86-images.sh*](#build-x86-imagessh) - Wrapper script to generate bootable
-  and installable live images for x86
+* [*mkiso.sh*](#mkisosh) - Wrapper script to generate bootable and installable live
+  images for i686, x86_64, and aarch64.
 * [*mkrootfs.sh*](#mkrootfssh) - The Void Linux rootfs generator for all platforms
 * [*mkplatformfs.sh*](#mkplatformfssh) - The Void Linux filesystem tool to produce
   a rootfs for a particular platform
@@ -20,7 +20,7 @@ This repository contains several utilities:
 #### Generating x86 live ISOs
 
 To generate a live ISO like the officially-published ones, use
-[*build-x86-images.sh*](#build-x86-imagessh). To generate a more basic live ISO
+[*mkiso.sh*](#mkisosh). To generate a more basic live ISO
 (which does not include things like `void-installer`), use [*mklive.sh*](#mklivesh).
 
 #### Generating ROOTFS tarballs
