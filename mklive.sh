@@ -72,7 +72,7 @@ usage() {
 	Generates a basic live ISO image of Void Linux. This ISO image can be written
 	to a CD/DVD-ROM or any USB stick.
 
-	To generate a more complete live ISO image, use build-x86-images.sh.
+	To generate a more complete live ISO image, use mkiso.sh.
 	
 	OPTIONS
 	 -a <arch>          Set XBPS_ARCH in the ISO image
