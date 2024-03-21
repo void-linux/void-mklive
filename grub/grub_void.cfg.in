@@ -2,6 +2,17 @@
 set pager="1"
 set locale_dir="(${voidlive})/boot/grub/locale"
 
+if [ "${grub_cpu}" == "x86_64" ]; then
+	set kernel_img="vmlinuz"
+	set memtest="yes"
+elif [ "${grub_cpu}" == "i386" ]; then
+	set kernel_img="vmlinuz"
+	set memtest="yes"
+elif [ "${grub_cpu}" == "arm64" ]; then
+	set kernel_img="vmlinux"
+	set memtest=""
+fi
+
 if [ -e "${prefix}/${grub_cpu}-${grub_platform}/all_video.mod" ]; then
 	insmod all_video
 else
@@ -35,7 +46,7 @@ play 600 988 1 1319 4
 if [ cpuid -l ]; then
 	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id "linux" {
 		set gfxpayload="keep"
-		linux (${voidlive})/boot/vmlinuz \
+		linux (${voidlive})/boot/${kernel_img} \
 		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
 		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
@@ -44,7 +55,7 @@ if [ cpuid -l ]; then
 	}
 	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (RAM)" --id "linuxram" {
 		set gfxpayload="keep"
-		linux (${voidlive})/boot/vmlinuz \
+		linux (${voidlive})/boot/${kernel_img} \
 		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
 		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
@@ -62,7 +73,7 @@ if [ cpuid -l ]; then
 	}
 	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) with speech" --hotkey s --id "linuxa11y" {
 		set gfxpayload="keep"
-		linux (${voidlive})/boot/vmlinuz \
+		linux (${voidlive})/boot/${kernel_img} \
 		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
 		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
@@ -71,7 +82,7 @@ if [ cpuid -l ]; then
 	}
 	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) with speech (RAM)" --hotkey r --id "linuxa11yram" {
 		set gfxpayload="keep"
-		linux (${voidlive})/boot/vmlinuz \
+		linux (${voidlive})/boot/${kernel_img} \
 		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
 		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
 		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
@@ -87,19 +98,21 @@ if [ cpuid -l ]; then
 		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ live.accessibility live.autologin nomodeset
 		initrd (${voidlive})/boot/initrd
 	}
-	if [ "${grub_platform}" == "efi" ]; then
-		menuentry "Run Memtest86+ (RAM test)" --hotkey m --id memtest {
-			set gfxpayload="keep"
-			linux (${voidlive})/boot/memtest.efi
-		}
-		menuentry 'UEFI Firmware Settings' --hotkey f --id uefifw {
-			fwsetup
-		}
-	else
-		menuentry "Run Memtest86+ (RAM test)" --id memtest {
-			set gfxpayload="keep"
-			linux (${voidlive})/boot/memtest.bin
-		}
+	if [ "${memtest}" == "yes" ]; then
+		if [ "${grub_platform}" == "efi" ]; then
+			menuentry "Run Memtest86+ (RAM test)" --id memtest {
+				set gfxpayload="keep"
+				linux (${voidlive})/boot/memtest.efi
+			}
+			menuentry 'UEFI Firmware Settings' --id uefifw {
+				fwsetup
+			}
+		else
+			menuentry "Run Memtest86+ (RAM test)" --id memtest {
+				set gfxpayload="keep"
+				linux (${voidlive})/boot/memtest.bin
+			}
+		fi
 	fi
 
 	menuentry "System restart" --hotkey b --id restart {
