@@ -245,6 +245,10 @@ fi
 # ensure ssh login is possible for headless setups.
 sed -i "${ROOTFS}/etc/ssh/sshd_config" -e 's|^#\(PermitRootLogin\) .*|\1 yes|g'
 
+# Grow rootfs to fill the media on boot
+run_cmd_target "xbps-install -Syr $ROOTFS cloud-guest-utils"
+sed -i "${ROOTFS}/etc/default/growpart" -e 's/#ENABLE/ENABLE/'
+
 # This section does final configuration on the images.  In the case of
 # SBCs this writes the bootloader to the image or sets up other
 # required binaries to boot.  In the case of images destined for a
