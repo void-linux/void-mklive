@@ -89,6 +89,8 @@ usage() {
 	 -g "<pkg> ..."     Ignore packages when building the ISO image
 	 -I <includedir>    Include directory structure under given path in the ROOTFS
 	 -S "<service> ..." Enable services in the ISO image
+	 -e <shell>         Default shell of the root user (must be absolute path).
+	                    Set the live.shell kernel argument to change the default shell of anon.
 	 -C "<arg> ..."     Add additional kernel command line arguments
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
@@ -158,6 +160,11 @@ enable_services() {
         fi
         ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
     done
+}
+
+change_shell() {
+    chroot "$ROOTFS" chsh -s "$ROOT_SHELL" root
+    [ $? -ne 0 ] && die "Failed to change the shell for root"
 }
 
 copy_include_directories() {
@@ -313,7 +320,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:Vh" opt; do
 	case $opt in
 		a) BASE_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -326,6 +333,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
 		i) INITRAMFS_COMPRESSION="$OPTARG";;
 		I) INCLUDE_DIRS+=("$OPTARG");;
 		S) SERVICE_LIST="$SERVICE_LIST $OPTARG";;
+		e) ROOT_SHELL="$OPTARG";;
 		s) SQUASHFS_COMPRESSION="$OPTARG";;
 		o) OUTPUT_FILE="$OPTARG";;
 		p) PACKAGE_LIST="$PACKAGE_LIST $OPTARG";;
@@ -387,6 +395,7 @@ CURRENT_STEP=0
 STEP_COUNT=10
 [ "${#INCLUDE_DIRS[@]}" -gt 0 ] && STEP_COUNT=$((STEP_COUNT+1))
 [ -n "${IGNORE_PKGS}" ] && STEP_COUNT=$((STEP_COUNT+1))
+[ -n "$ROOT_SHELL" ] && STEP_COUNT=$((STEP_COUNT+1))
 
 : ${SYSLINUX_DATADIR:="$VOIDHOSTDIR"/usr/lib/syslinux}
 : ${GRUB_DATADIR:="$VOIDHOSTDIR"/usr/share/grub}
@@ -446,6 +455,11 @@ install_packages
 : ${DEFAULT_SERVICE_LIST:=agetty-tty1 agetty-tty2 agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6 udevd}
 print_step "Enabling services: ${SERVICE_LIST} ..."
 enable_services ${DEFAULT_SERVICE_LIST} ${SERVICE_LIST}
+
+if [ -n "$ROOT_SHELL" ]; then
+    print_step "Changing the root shell ..."
+    change_shell
+fi
 
 if [ "${#INCLUDE_DIRS[@]}" -gt 0 ];then
     print_step "Copying directory structures into the rootfs ..."
