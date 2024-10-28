@@ -1,0 +1,1 @@
+fi # for if [ cpuid -l ] in grub_void.cfg.pre
