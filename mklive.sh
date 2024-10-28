@@ -33,26 +33,31 @@ TARGET_PKGS=(base-files)
 INITRAMFS_PKGS=(binutils xz device-mapper dhclient dracut-network openresolv)
 PACKAGE_LIST=()
 IGNORE_PKGS=()
+PLATFORMS=()
 readonly PROGNAME="$(basename "$0")"
 declare -a INCLUDE_DIRS=()
 
 info_msg() {
     printf "\033[1m$@\n\033[m"
 }
+
 die() {
     info_msg "ERROR: $@"
     error_out 1 $LINENO
 }
+
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
     info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
 }
+
 mount_pseudofs() {
     for f in sys dev proc; do
         mkdir -p "$ROOTFS"/$f
         mount --rbind /$f "$ROOTFS"/$f
     done
 }
+
 umount_pseudofs() {
 	for f in sys dev proc; do
 		if [ -d "$ROOTFS/$f" ] && ! umount -R -f "$ROOTFS/$f"; then
@@ -61,6 +66,7 @@ umount_pseudofs() {
 		fi
 	done
 }
+
 error_out() {
 	trap - INT TERM 0
     umount_pseudofs || exit "${1:-0}"
@@ -76,7 +82,7 @@ usage() {
 	to a CD/DVD-ROM or any USB stick.
 
 	To generate a more complete live ISO image, use mkiso.sh.
-	
+
 	OPTIONS
 	 -a <arch>          Set XBPS_ARCH in the ISO image
 	 -b <system-pkg>    Set an alternative base package (default: base-system)
@@ -95,6 +101,8 @@ usage() {
 	 -e <shell>         Default shell of the root user (must be absolute path).
 	                    Set the live.shell kernel argument to change the default shell of anon.
 	 -C "<arg> ..."     Add additional kernel command line arguments
+	 -P "<platform> ..."
+	                    Platforms to enable for aarch64 EFI ISO images (available: x13s)
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
 	                    Also accepts linux metapackages (linux-mainline, linux-lts).
@@ -149,9 +157,9 @@ install_packages() {
 
     mount_pseudofs
 
-    LANG=C XBPS_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
+    LANG=C XBPS_TARGET_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -y "${PACKAGE_LIST[@]}" "${INITRAMFS_PKGS[@]}"
-    [ $? -ne 0 ] && die "Failed to install ${PACKAGE_LIST[*]}"
+    [ $? -ne 0 ] && die "Failed to install ${PACKAGE_LIST[*]} ${INITRAMFS_PKGS[*]}"
 
     xbps-reconfigure -r "$ROOTFS" -f base-files >/dev/null 2>&1
     chroot "$ROOTFS" env -i xbps-reconfigure -f base-files
@@ -256,18 +264,109 @@ generate_isolinux_boot() {
 }
 
 generate_grub_efi_boot() {
-	set -x
     cp -f grub/grub.cfg "$GRUB_DIR"
     cp -f "${SPLASH_IMAGE}" "$ISOLINUX_DIR"
-    cp -f grub/grub_void.cfg.in "$GRUB_DIR"/grub_void.cfg
-    sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
-        -e "s|@@KERNVER@@|${KERNELVERSION}|" \
-        -e "s|@@KEYMAP@@|${KEYMAP}|" \
-        -e "s|@@ARCH@@|$TARGET_ARCH|" \
-        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
-        -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
-        -e "s|@@LOCALE@@|${LOCALE}|" "$GRUB_DIR"/grub_void.cfg
+    cp -f grub/grub_void.cfg.pre "$GRUB_DIR"/grub_void.cfg
+
+    case "$TARGET_ARCH" in
+        i686*|x86_64*) KERNEL_IMG=vmlinuz; WANT_MEMTEST=yes ;;
+        aarch64*) KERNEL_IMG=vmlinux; WANT_MEMTEST=no ;;
+    esac
+
+    write_entry() {
+        local entrytitle="$1" id="$2" cmdline="$3" dtb="$4" hotkey="$5"
+        cat << EOF >> "$GRUB_DIR"/grub_void.cfg
+menuentry "${entrytitle}" --id "${id}" ${hotkey:+--hotkey $hotkey} {
+    set gfxpayload="keep"
+    linux (\${voidlive})/boot/${KERNEL_IMG} \\
+        root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \\
+        rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \\
+        vconsole.unicode=1 vconsole.keymap=${KEYMAP} locale.LANG=${LOCALE} ${cmdline}
+    initrd (\${voidlive})/boot/initrd
+EOF
+        if [ -n "${dtb}" ]; then
+            printf '    devicetree (${voidlive})/boot/dtbs/%s\n' "${dtb}" >> "$GRUB_DIR"/grub_void.cfg
+        fi
+        printf '}\n' >> "$GRUB_DIR"/grub_void.cfg
+    }
+
+    write_entries() {
+        local title_sfx="$1" id_sfx="$2" cmdline="$3" dtb="$4"
+
+        ENTRY_TITLE="${BOOT_TITLE} ${KERNELVERSION} ${title_sfx}(${TARGET_ARCH})"
+
+        write_entry "${ENTRY_TITLE}" "linux${id_sfx}" \
+            "$BOOT_CMDLINE $cmdline" "$dtb"
+        write_entry "${ENTRY_TITLE} (RAM)" "linuxram${id_sfx}" \
+            "rd.live.ram $BOOT_CMDLINE $cmdline" "$dtb"
+        write_entry "${ENTRY_TITLE} (graphics disabled)" "linuxnogfx${id_sfx}" \
+            "nomodeset $BOOT_CMDLINE $cmdline" "$dtb"
+        write_entry "${ENTRY_TITLE} with speech" "linuxa11y${id_sfx}" \
+            "live.accessibility live.autologin $BOOT_CMDLINE $cmdline" "$dtb" 's'
+        write_entry "${ENTRY_TITLE} with speech (RAM)" "linuxa11yram${id_sfx}" \
+            "live.accessibility live.autologin rd.live.ram $BOOT_CMDLINE $cmdline" "$dtb" 'r'
+        write_entry "${ENTRY_TITLE} with speech (graphics disabled)" "linuxa11ynogfx${id_sfx}" \
+            "live.accessibility live.autologin nomodeset $BOOT_CMDLINE $cmdline" "$dtb" 'g'
+
+    }
+
+    write_entries
+
+    for platform in "${PLATFORMS[@]}"; do
+        (
+            . "platforms/${platform}.sh"
+
+            if [ -n "$PLATFORM_DTB" ]; then
+                mkdir -p "${BOOT_DIR}/dtbs/${PLATFORM_DTB%/*}"
+                cp "${ROOTFS}/boot/dtbs/dtbs-${KERNVER}"*/"${PLATFORM_DTB}" "${BOOT_DIR}/dtbs/${PLATFORM_DTB}"
+            fi
+
+            printf 'submenu "%s" --id platform-%s {\n' \
+                "${BOOT_TITLE} for ${PLATFORM_NAME:-$platform} >" "${platform}" >> "$GRUB_DIR"/grub_void.cfg
+            write_entries "for ${PLATFORM_NAME:-$platform} " "-$platform" "$PLATFORM_CMDLINE" "${PLATFORM_DTB}"
+            printf '}\n' >> "$GRUB_DIR"/grub_void.cfg
+        )
+    done
+
+    if [ "$WANT_MEMTEST" = yes ]; then
+        cat << 'EOF' >> "$GRUB_DIR"/grub_void.cfg
+    if [ "${grub_platform}" == "efi" ]; then
+        menuentry "Run Memtest86+ (RAM test)" --id memtest {
+            set gfxpayload="keep"
+            linux (${voidlive})/boot/memtest.efi
+        }
+    else
+        menuentry "Run Memtest86+ (RAM test)" --id memtest {
+            set gfxpayload="keep"
+            linux (${voidlive})/boot/memtest.bin
+        }
+    fi
+EOF
+    fi
+
+    cat << 'EOF' >> "$GRUB_DIR"/grub_void.cfg
+if [ "${grub_platform}" == "efi" ]; then
+    menuentry 'UEFI Firmware Settings' --hotkey f --id uefifw {
+        fwsetup
+    }
+fi
+
+menuentry "System restart" --hotkey b --id restart {
+    echo "System rebooting..."
+    reboot
+}
+
+menuentry "System shutdown" --hotkey p --id poweroff {
+    echo "System shutting down..."
+    halt
+}
+EOF
+    cat grub/grub_void.cfg.post >> "$GRUB_DIR"/grub_void.cfg
+
+    sed -i -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" "$GRUB_DIR"/grub_void.cfg
+
     mkdir -p "$GRUB_DIR"/fonts
+
     cp -f "$GRUB_DATADIR"/unicode.pf2 "$GRUB_DIR"/fonts
 
     modprobe -q loop || :
@@ -387,7 +486,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:Vh" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
 	case $opt in
 		a) TARGET_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -404,6 +503,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:Vh" opt; do
 		s) SQUASHFS_COMPRESSION="$OPTARG";;
 		o) OUTPUT_FILE="$OPTARG";;
 		p) PACKAGE_LIST+=($OPTARG);;
+		P) PLATFORMS+=($OPTARG) ;;
 		C) BOOT_CMDLINE="$OPTARG";;
 		T) BOOT_TITLE="$OPTARG";;
 		v) LINUX_VERSION="$OPTARG";;
@@ -437,11 +537,22 @@ case "$TARGET_ARCH" in
 		BOOTLOADERS=(syslinux grub)
 		IMAGE_TYPE='hybrid'
 		TARGET_PKGS+=(syslinux grub-i386-efi grub-x86_64-efi memtest86+)
+        PLATFORMS=() # arm only
 		;;
 	aarch64*)
 		BOOTLOADERS=(grub)
 		IMAGE_TYPE='efi'
 		TARGET_PKGS+=(grub-arm64-efi)
+        for platform in "${PLATFORMS[@]}"; do
+            if [ -r "platforms/${platform}.sh" ]; then
+                . "platforms/${platform}.sh"
+            else
+                die "unknown platform: ${platform}"
+            fi
+            PACKAGE_LIST+=("${PLATFORM_PKGS[@]}")
+            unset PLATFORM_PKGS PLATFORM_CMDLINE PLATFORM_DTB
+        done
+
 		;;
     *) >&2 echo "architecture $TARGET_ARCH not supported by mklive.sh"; exit 1;;
 esac

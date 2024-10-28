@@ -1,0 +1,36 @@
+export voidlive
+
+set pager="1"
+set locale_dir="(${voidlive})/boot/grub/locale"
+
+if [ -e "${prefix}/${grub_cpu}-${grub_platform}/all_video.mod" ]; then
+	insmod all_video
+else
+	insmod efi_gop
+	insmod efi_uga
+	insmod video_bochs
+	insmod video_cirrus
+fi
+
+insmod font
+
+if loadfont "(${voidlive})/boot/grub/fonts/unicode.pf2" ; then
+	insmod gfxterm
+	set gfxmode="auto"
+
+	terminal_input console
+	terminal_output gfxterm
+
+	insmod png
+	background_image "(${voidlive})/boot/isolinux/@@SPLASHIMAGE@@"
+fi
+
+# Set default menu entry
+default=linux
+timeout=15
+timeout_style=menu
+
+# GRUB init tune for accessibility
+play 600 988 1 1319 4
+
+if [ cpuid -l ]; then
