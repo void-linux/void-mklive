@@ -32,26 +32,31 @@ REQUIRED_PKGS=(base-files libgcc dash coreutils sed tar gawk squashfs-tools xorr
 TARGET_PKGS=(base-files)
 INITRAMFS_PKGS=(binutils xz device-mapper dhclient dracut-network openresolv)
 PACKAGE_LIST=()
+PLATFORMS=()
 readonly PROGNAME="$(basename "$0")"
 declare -a INCLUDE_DIRS=()
 
 info_msg() {
     printf "\033[1m$@\n\033[m"
 }
+
 die() {
     info_msg "ERROR: $@"
     error_out 1 $LINENO
 }
+
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
     info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
 }
+
 mount_pseudofs() {
     for f in sys dev proc; do
         mkdir -p "$ROOTFS"/$f
         mount --rbind /$f "$ROOTFS"/$f
     done
 }
+
 umount_pseudofs() {
 	for f in sys dev proc; do
 		if [ -d "$ROOTFS/$f" ] && ! umount -R -f "$ROOTFS/$f"; then
@@ -60,6 +65,7 @@ umount_pseudofs() {
 		fi
 	done
 }
+
 error_out() {
 	trap - INT TERM 0
     umount_pseudofs || exit "${1:-0}"
@@ -75,7 +81,7 @@ usage() {
 	to a CD/DVD-ROM or any USB stick.
 
 	To generate a more complete live ISO image, use mkiso.sh.
-	
+
 	OPTIONS
 	 -a <arch>          Set XBPS_ARCH in the ISO image
 	 -b <system-pkg>    Set an alternative base package (default: base-system)
@@ -92,6 +98,8 @@ usage() {
 	 -I <includedir>    Include directory structure under given path in the ROOTFS
 	 -S "<service> ..." Enable services in the ISO image
 	 -C "<arg> ..."     Add additional kernel command line arguments
+	 -P "<platform> ..."
+	                    Platforms to enable for aarch64 EFI ISO images (available: x13s)
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
 	 -K                 Do not remove builddir
@@ -134,9 +142,9 @@ install_packages() {
 
     mount_pseudofs
 
-    LANG=C XBPS_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
+    LANG=C XBPS_TARGET_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -y "${PACKAGE_LIST[@]}" "${INITRAMFS_PKGS[@]}"
-    [ $? -ne 0 ] && die "Failed to install ${PACKAGE_LIST[*]}"
+    [ $? -ne 0 ] && die "Failed to install ${PACKAGE_LIST[*]} ${INITRAMFS_PKGS[*]}"
 
     xbps-reconfigure -r "$ROOTFS" -f base-files >/dev/null 2>&1
     chroot "$ROOTFS" env -i xbps-reconfigure -f base-files
@@ -230,18 +238,32 @@ generate_isolinux_boot() {
 }
 
 generate_grub_efi_boot() {
-	set -x
     cp -f grub/grub.cfg "$GRUB_DIR"
     cp -f "${SPLASH_IMAGE}" "$ISOLINUX_DIR"
     cp -f grub/grub_void.cfg.in "$GRUB_DIR"/grub_void.cfg
-    sed -i  -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
-        -e "s|@@KERNVER@@|${KERNELVERSION}|" \
-        -e "s|@@KEYMAP@@|${KEYMAP}|" \
-        -e "s|@@ARCH@@|$TARGET_ARCH|" \
-        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" \
-        -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
-        -e "s|@@LOCALE@@|${LOCALE}|" "$GRUB_DIR"/grub_void.cfg
-    mkdir -p "$GRUB_DIR"/fonts
+    sed -i -e "s|@@SPLASHIMAGE@@|$(basename "${SPLASH_IMAGE}")|" \
+        -e "s|@@KEYMAP@@|${KEYMAP}|" -e "s|@@LOCALE@@|${LOCALE}|" \
+        -e "s|@@BOOT_TITLE@@|${BOOT_TITLE}|" -e "s|@@BOOT_CMDLINE@@|${BOOT_CMDLINE}|" \
+        -e "s|@@PLATFORMS@@|${PLATFORMS[*]}|" \
+        "$GRUB_DIR"/grub_void.cfg
+    cp -f grub/void_entries.cfg.in "$GRUB_DIR"/void_entries.cfg
+    sed -i -e "s|@@PLATFORM_CMDLINE@@||" -e "s|@@DEVICETREE@@||" \
+        -e "s|@@ENTRY_TITLE@@|${BOOT_TITLE} ${KERNELVERSION} (${TARGET_ARCH})|" \
+        "$GRUB_DIR"/void_entries.cfg
+
+    mkdir -p "$GRUB_DIR"/fonts "$GRUB_DIR"/platforms
+
+    for platform in "${PLATFORMS[@]}"; do
+        . "platforms/${platform}.sh"
+        cp -f grub/void_entries.cfg.in "${GRUB_DIR}/platforms/${platform}.cfg"
+        mkdir -p "${BOOT_DIR}/dtbs/${PLATFORM_DTB%/*}"
+        cp "${ROOTFS}/boot/dtbs/dtbs-${KERNVER}"*/"${PLATFORM_DTB}" "${BOOT_DIR}/dtbs/${PLATFORM_DTB}"
+        sed -i -e "s|@@PLATFORM_CMDLINE@@|${PLATFORM_CMDLINE}|" -e "s|@@DEVICETREE@@|${PLATFORM_DTB}|" \
+            -e "s|@@ENTRY_TITLE@@|${BOOT_TITLE} ${KERNELVERSION} for ${platform} (${TARGET_ARCH})|" \
+            "${GRUB_DIR}/platforms/${platform}.cfg"
+        unset PLATFORM_PKGS PLATFORM_CMDLINE PLATFORM_DTB
+    done
+
     cp -f "$GRUB_DATADIR"/unicode.pf2 "$GRUB_DIR"/fonts
 
     modprobe -q loop || :
@@ -287,7 +309,6 @@ generate_grub_efi_boot() {
     umount "$GRUB_EFI_TMPDIR"
     losetup --detach "${LOOP_DEVICE}"
     rm -rf "$GRUB_EFI_TMPDIR"
-	set +x
 }
 
 generate_squashfs() {
@@ -360,7 +381,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:P:Vh" opt; do
 	case $opt in
 		a) TARGET_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -376,6 +397,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:s:o:p:g:v:Vh" opt; do
 		s) SQUASHFS_COMPRESSION="$OPTARG";;
 		o) OUTPUT_FILE="$OPTARG";;
 		p) PACKAGE_LIST+=($OPTARG);;
+		P) PLATFORMS+=($OPTARG) ;;
 		C) BOOT_CMDLINE="$OPTARG";;
 		T) BOOT_TITLE="$OPTARG";;
 		v) LINUX_VERSION="$OPTARG";;
@@ -408,11 +430,22 @@ case "$TARGET_ARCH" in
 		BOOTLOADERS=(syslinux grub)
 		IMAGE_TYPE='hybrid'
 		TARGET_PKGS+=(syslinux grub-i386-efi grub-x86_64-efi memtest86+)
+        PLATFORMS=() # arm only
 		;;
 	aarch64*)
 		BOOTLOADERS=(grub)
 		IMAGE_TYPE='efi'
 		TARGET_PKGS+=(grub-arm64-efi)
+        for platform in "${PLATFORMS[@]}"; do
+            if [ -r "platforms/${platform}.sh" ]; then
+                . "platforms/${platform}.sh"
+            else
+                die "unknown platform: ${platform}"
+            fi
+            PACKAGE_LIST+=("${PLATFORM_PKGS[@]}")
+            unset PLATFORM_PKGS PLATFORM_CMDLINE PLATFORM_DTB
+        done
+
 		;;
     *) >&2 echo "architecture $TARGET_ARCH not supported by mklive.sh"; exit 1;;
 esac
