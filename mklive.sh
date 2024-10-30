@@ -254,14 +254,17 @@ generate_grub_efi_boot() {
     mkdir -p "$GRUB_DIR"/fonts "$GRUB_DIR"/platforms
 
     for platform in "${PLATFORMS[@]}"; do
-        . "platforms/${platform}.sh"
-        cp -f grub/void_entries.cfg.in "${GRUB_DIR}/platforms/${platform}.cfg"
-        mkdir -p "${BOOT_DIR}/dtbs/${PLATFORM_DTB%/*}"
-        cp "${ROOTFS}/boot/dtbs/dtbs-${KERNVER}"*/"${PLATFORM_DTB}" "${BOOT_DIR}/dtbs/${PLATFORM_DTB}"
-        sed -i -e "s|@@PLATFORM_CMDLINE@@|${PLATFORM_CMDLINE}|" -e "s|@@DEVICETREE@@|${PLATFORM_DTB}|" \
-            -e "s|@@ENTRY_TITLE@@|${BOOT_TITLE} ${KERNELVERSION} for ${platform} (${TARGET_ARCH})|" \
-            "${GRUB_DIR}/platforms/${platform}.cfg"
-        unset PLATFORM_PKGS PLATFORM_CMDLINE PLATFORM_DTB
+        (
+            . "platforms/${platform}.sh"
+            cp -f grub/void_entries.cfg.in "${GRUB_DIR}/platforms/${platform}.cfg"
+            if [ -n "$PLATFORM_DTB" ]; then
+                mkdir -p "${BOOT_DIR}/dtbs/${PLATFORM_DTB%/*}"
+                cp "${ROOTFS}/boot/dtbs/dtbs-${KERNVER}"*/"${PLATFORM_DTB}" "${BOOT_DIR}/dtbs/${PLATFORM_DTB}"
+            fi
+            sed -i -e "s|@@PLATFORM_CMDLINE@@|${PLATFORM_CMDLINE}|" -e "s|@@DEVICETREE@@|${PLATFORM_DTB}|" \
+                -e "s|@@ENTRY_TITLE@@|${BOOT_TITLE} ${KERNELVERSION} for ${PLATFORM_NAME:-$platform} (${TARGET_ARCH})|" \
+                "${GRUB_DIR}/platforms/${platform}.cfg"
+        )
     done
 
     cp -f "$GRUB_DATADIR"/unicode.pf2 "$GRUB_DIR"/fonts
