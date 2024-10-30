@@ -1,0 +1,39 @@
+set platformcmdline="@@PLATFORM_CMDLINE@@"
+set entrytitle="@@ENTRY_TITLE@@"
+set dtb="@@DEVICETREE@@"
+
+menuentry "${entrytitle}" --id "linux" {
+	set gfxpayload="keep"
+	linux (${voidlive})/boot/${kernel_img} ${cmdline} ${platformcmdline}
+	initrd (${voidlive})/boot/initrd
+	if [ -n "${dtb}" ]; then
+		devicetree (${voidlive})/boot/dtbs/${dtb}
+	fi
+}
+
+menuentry "${entrytitle} (RAM)" --id "linuxram" {
+	set gfxpayload="keep"
+	linux (${voidlive})/boot/${kernel_img} ${cmdline} ${platformcmdline} rd.live.ram
+	initrd (${voidlive})/boot/initrd
+	if [ -n "${dtb}" ]; then
+		devicetree (${voidlive})/boot/dtbs/${dtb}
+	fi
+}
+
+menuentry "${entrytitle} with speech" --hotkey s --id "linuxa11y" {
+	set gfxpayload="keep"
+	linux (${voidlive})/boot/${kernel_img} ${cmdline} ${platformcmdline} live.accessibility live.autologin
+	initrd (${voidlive})/boot/initrd
+	if [ -n "${dtb}" ]; then
+		devicetree (${voidlive})/boot/dtbs/${dtb}
+	fi
+}
+
+menuentry "${entrytitle} with speech (RAM)" --hotkey r --id "linuxa11yram" {
+	set gfxpayload="keep"
+	linux (${voidlive})/boot/${kernel_img} ${cmdline} ${platformcmdline} live.accessibility live.autologin rd.live.ram
+	initrd (${voidlive})/boot/initrd
+	if [ -n "${dtb}" ]; then
+		devicetree (${voidlive})/boot/dtbs/${dtb}
+	fi
+}
