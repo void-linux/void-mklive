@@ -57,6 +57,7 @@ usage() {
 	 aarch64, aarch64-musl,
 	 mipsel, mipsel-musl,
 	 ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl
+     riscv64, riscv64-musl
 	
 	OPTIONS
 	 -b <system-pkg>  Set an alternative base-system package (default: base-container-full)
