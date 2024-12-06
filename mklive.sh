@@ -215,7 +215,7 @@ generate_isolinux_boot() {
         "$ISOLINUX_DIR"/isolinux.cfg
 
     # include memtest86+
-    cp -f "$VOIDHOSTDIR"/boot/memtest.bin "$BOOT_DIR"
+    cp -f "$VOIDHOSTDIR"/boot/memtest86+/memtest.bin "$BOOT_DIR"
 }
 
 generate_grub_efi_boot() {
@@ -270,7 +270,7 @@ generate_grub_efi_boot() {
     rm -rf "$GRUB_EFI_TMPDIR"
 
     # include memtest86+
-    cp -f "$VOIDHOSTDIR"/boot/memtest.efi "$BOOT_DIR"
+    cp -f "$VOIDHOSTDIR"/boot/memtest86+/memtest.efi "$BOOT_DIR"
 }
 
 generate_squashfs() {
