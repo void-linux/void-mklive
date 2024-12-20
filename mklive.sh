@@ -99,7 +99,7 @@ usage() {
 	 -S "<service> ..." Enable services in the ISO image
 	 -C "<arg> ..."     Add additional kernel command line arguments
 	 -P "<platform> ..."
-	                    Platforms to enable for aarch64 EFI ISO images (available: x13s)
+	                    Platforms to enable for aarch64 EFI ISO images (available: pinebookpro, x13s)
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
 	 -K                 Do not remove builddir
