@@ -744,7 +744,7 @@ menu_useraccount() {
         fi
     done
 
-    _groups="wheel,audio,video,floppy,cdrom,optical,kvm,xbuilder"
+    _groups="wheel,audio,video,floppy,cdrom,optical,kvm,users,xbuilder"
     while true; do
         _desc="Select group membership for login '$(get_option USERLOGIN)':"
         for _group in $(cat /etc/group); do
@@ -757,7 +757,7 @@ menu_useraccount() {
                 _status=on
             fi
             # ignore the groups of root, existing users, and package groups
-            if [[ "${_gid}" -ge 1000 || "${_group}" = "_"* || "${_group}" = "root" ]]; then
+            if [[ "${_gid}" -ge 1000 || "${_group}" = "_"* || "${_group}" =~ ^(root|nogroup|chrony|dbus|lightdm|polkitd)$ ]]; then
                 continue
             fi
             if [ -z "${_checklist}" ]; then
