@@ -1254,7 +1254,11 @@ install_packages() {
         DIE 1
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
-    chroot $TARGETDIR xbps-reconfigure -a
+    stdbuf -oL chroot $TARGETDIR xbps-reconfigure -a 2>&1 | \
+        DIALOG --title "Configuring base system packages..." --programbox 24 80
+    if [ $? -ne 0 ]; then
+        DIE 1
+    fi
 }
 
 enable_service() {
