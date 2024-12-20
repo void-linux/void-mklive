@@ -506,17 +506,19 @@ menu_partitions() {
 
             DIALOG --title "Modify Partition Table on $device" --msgbox "\n
 ${BOLD}${software} will be executed in disk $device.${RESET}\n\n
-For BIOS systems, MBR or GPT partition tables are supported.\n
-To use GPT on PC BIOS systems an empty partition of 1MB must be added\n
-at the first 2GB of the disk with the TOGGLE \`bios_grub' enabled.\n
+For BIOS systems, MBR or GPT partition tables are supported. To use GPT\n
+on PC BIOS systems, an empty partition of 1MB must be added at the first\n
+2GB of the disk with the partition type \`BIOS Boot'.\n
 ${BOLD}NOTE: you don't need this on EFI systems.${RESET}\n\n
-For EFI systems GPT is mandatory and a FAT32 partition with at least\n
-100MB must be created with the TOGGLE \`boot', this will be used as\n
-EFI System Partition. This partition must have mountpoint as \`/boot/efi'.\n\n
-At least 1 partition is required for the rootfs (/).\n
-For swap, RAM*2 must be really enough. For / 600MB are required.\n\n
+For EFI systems, GPT is mandatory and a FAT32 partition with at least 100MB\n
+must be created with the partition type \`EFI System'. This will be used as\n
+the EFI System Partition. This partition must have the mountpoint \`/boot/efi'.\n\n
+At least 1 partition is required for the rootfs (/). For this partition,\n
+at least 2GB is required, but more is recommended. The rootfs partition\n
+should have the partition type \`Linux Filesystem'. For swap, RAM*2\n
+should be enough and the partition type \`Linux swap' should be used.\n\n
 ${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
-${RESET}\n" 18 80
+${RESET}\n" 23 80
             if [ $? -eq 0 ]; then
                 while true; do
                     clear; $software $device; PARTITIONS_DONE=1
