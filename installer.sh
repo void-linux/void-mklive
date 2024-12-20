@@ -1221,14 +1221,16 @@ copy_rootfs() {
 install_packages() {
     local _grub= _syspkg=
 
-    if [ -n "$EFI_SYSTEM" ]; then
-        if [ $EFI_FW_BITS -eq 32 ]; then
-            _grub="grub-i386-efi"
+    if [ "$(get_option BOOTLOADER)" != none ]; then
+        if [ -n "$EFI_SYSTEM" ]; then
+            if [ $EFI_FW_BITS -eq 32 ]; then
+                _grub="grub-i386-efi"
+            else
+                _grub="grub-x86_64-efi"
+            fi
         else
-            _grub="grub-x86_64-efi"
+            _grub="grub"
         fi
-    else
-        _grub="grub"
     fi
 
     _syspkg="base-system"
@@ -1334,7 +1336,13 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         if ! [ -e "/var/service/brltty" ]; then
             TO_REMOVE+=" brltty"
         fi
-        xbps-remove -r $TARGETDIR -Ry $TO_REMOVE >>$LOG 2>&1
+        if [ "$(get_option BOOTLOADER)" = none ]; then
+            TO_REMOVE+=" grub-x86_64-efi grub-i386-efi grub"
+        fi
+        # uninstall separately to minimise errors
+        for pkg in $TO_REMOVE; do
+            xbps-remove -r $TARGETDIR -Ry "$pkg" >>$LOG 2>&1
+        done
         rmdir $TARGETDIR/mnt/target
     else
         # mount required fs
