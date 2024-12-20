@@ -50,6 +50,7 @@ if [ ! -f $CONF_FILE ]; then
     touch -f $CONF_FILE
 fi
 ANSWER=$(mktemp -t vinstall-XXXXXXXX || exit 1)
+TARGET_SERVICES=$(mktemp -t vinstall-sv-XXXXXXXX || exit 1)
 TARGET_FSTAB=$(mktemp -t vinstall-fstab-XXXXXXXX || exit 1)
 
 trap "DIE" INT TERM QUIT
@@ -112,7 +113,7 @@ DIE() {
     rval=$1
     [ -z "$rval" ] && rval=0
     clear
-    rm -f $ANSWER $TARGET_FSTAB
+    rm -f $ANSWER $TARGET_FSTAB $TARGET_SERVICES
     # reenable printk
     if [ -w /proc/sys/kernel/printk ]; then
         echo 4 >/proc/sys/kernel/printk
@@ -1261,8 +1262,44 @@ install_packages() {
     fi
 }
 
+menu_services() {
+    local sv _status _checklist=""
+    find $TARGETDIR/etc/runit/runsvdir/default -mindepth 1 -maxdepth 1 -xtype d -printf '%f\n' | sort -u > "$TARGET_SERVICES"
+    while true; do
+        while read -r sv; do
+            if [ -n "$sv" ]; then
+                if grep -qx "$sv" "$TARGET_SERVICES" 2>/dev/null; then
+                    _status=on
+                else
+                    _status=off
+                fi
+                _checklist+=" ${sv} ${sv} ${_status}"
+            fi
+        done < <(find $TARGETDIR/etc/sv -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | \
+            # filter out services that probably shouldn't be messed with
+            grep -Ev '^(agetty-(tty[1-9]|generic|serial)|udevd|sulogin)$' | sort -u)
+        echo "$_checklist" 1>&2
+        DIALOG --no-tags --checklist "Select services to enable:" 20 60 18 ${_checklist}
+        if [ $? -eq 0 ]; then
+            comm -13 "$TARGET_SERVICES" <(tr ' ' '\n' "$ANSWER") | while read -r sv; do
+                enable_service "$sv"
+            done
+            comm -23 "$TARGET_SERVICES" <(tr ' ' '\n' "$ANSWER") | while read -r sv; do
+                disable_service "$sv"
+            done
+            break
+        else
+            return
+        fi
+    done
+}
+
 enable_service() {
-    ln -sf /etc/sv/$1 $TARGETDIR/etc/runit/runsvdir/default/$1
+    ln -sf "/etc/sv/$1" "$TARGETDIR/etc/runit/runsvdir/default/$1"
+}
+
+disable_service() {
+    rm -f "$TARGETDIR/etc/runit/runsvdir/default/$1"
 }
 
 menu_install() {
@@ -1386,7 +1423,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ "$_type" = "dhcp" ]; then
             if $(echo $_dev|egrep -q "^wl.*" 2>/dev/null); then
                 cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
-                ln -sf /etc/sv/wpa_supplicant $TARGETDIR/etc/runit/runsvdir/default/wpa_supplicant
+                enable_service wpa_supplicant
             fi
             enable_service dhcpcd
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
@@ -1427,6 +1464,10 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # install bootloader.
     set_bootloader
+
+    # menu for enabling services
+    menu_services
+
     sync && sync && sync
 
     # unmount all filesystems.
