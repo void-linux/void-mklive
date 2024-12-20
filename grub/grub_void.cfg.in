@@ -51,6 +51,15 @@ if [ cpuid -l ]; then
 		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ rd.live.ram
 		initrd (${voidlive})/boot/initrd
 	}
+	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (graphics disabled)" --id "linuxnogfx" {
+		set gfxpayload="keep"
+		linux (${voidlive})/boot/vmlinuz \
+		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
+		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
+		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
+		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ nomodeset
+		initrd (${voidlive})/boot/initrd
+	}
 	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) with speech" --hotkey s --id "linuxa11y" {
 		set gfxpayload="keep"
 		linux (${voidlive})/boot/vmlinuz \
@@ -69,12 +78,21 @@ if [ cpuid -l ]; then
 		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ live.accessibility live.autologin rd.live.ram
 		initrd (${voidlive})/boot/initrd
 	}
+	menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (graphics disabled)" --hotkey g --id "linuxa11ynogfx" {
+		set gfxpayload="keep"
+		linux (${voidlive})/boot/vmlinuz \
+		root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \
+		rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \
+		vconsole.unicode=1 vconsole.keymap=@@KEYMAP@@ \
+		locale.LANG=@@LOCALE@@ @@BOOT_CMDLINE@@ live.accessibility live.autologin nomodeset
+		initrd (${voidlive})/boot/initrd
+	}
 	if [ "${grub_platform}" == "efi" ]; then
-		menuentry "Run Memtest86+ (RAM test)" --id memtest {
+		menuentry "Run Memtest86+ (RAM test)" --hotkey m --id memtest {
 			set gfxpayload="keep"
 			linux (${voidlive})/boot/memtest.efi
 		}
-		menuentry 'UEFI Firmware Settings' --id uefifw {
+		menuentry 'UEFI Firmware Settings' --hotkey f --id uefifw {
 			fwsetup
 		}
 	else
@@ -84,12 +102,12 @@ if [ cpuid -l ]; then
 		}
 	fi
 
-	menuentry "System restart" --id restart {
+	menuentry "System restart" --hotkey b --id restart {
 		echo "System rebooting..."
 		reboot
 	}
 
-	menuentry "System shutdown" --id poweroff {
+	menuentry "System shutdown" --hotkey p --id poweroff {
 		echo "System shutting down..."
 		halt
 	}

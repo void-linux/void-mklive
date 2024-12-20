@@ -28,4 +28,5 @@ install() {
     inst_hook pre-pivot 02 "$moddir/getty-serial.sh"
     inst_hook pre-pivot 03 "$moddir/locale.sh"
     inst_hook pre-pivot 04 "$moddir/accessibility.sh"
+    inst_hook pre-pivot 05 "$moddir/nomodeset.sh"
 }
