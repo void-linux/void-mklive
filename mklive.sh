@@ -93,7 +93,8 @@ usage() {
 	                    Set the live.shell kernel argument to change the default shell of anon.
 	 -C "<arg> ..."     Add additional kernel command line arguments
 	 -T <title>         Modify the bootloader title (default: Void Linux)
-	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage)
+	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
+	                    Also accepts linux metapackages (linux-mainline, linux-lts).
 	 -K                 Do not remove builddir
 	 -h                 Show this help and exit
 	 -V                 Show version and exit
@@ -363,6 +364,7 @@ ARCH=$(xbps-uhelper arch)
 : ${SQUASHFS_COMPRESSION:=xz}
 : ${BASE_SYSTEM_PKG:=base-system}
 : ${BOOT_TITLE:="Void Linux"}
+: ${LINUX_VERSION:=linux}
 
 case $BASE_ARCH in
     x86_64*|i686*) ;;
@@ -417,18 +419,28 @@ XBPS_ARCH=$ARCH $XBPS_INSTALL_CMD -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} -S
 
 # Get linux version for ISO
 # If linux version option specified use
-if [ -n "$LINUX_VERSION" ]; then
-    if ! echo "$LINUX_VERSION" | grep "linux[0-9._]\+"; then
-        die "-v option must be in format linux<version>"
-    fi
+shopt -s extglob
+case "$LINUX_VERSION" in
+    linux+([0-9.]))
+        IGNORE_PKGS+=" linux"
+        PACKAGE_LIST+=" $LINUX_VERSION linux-base"
+        ;;
+    linux-@(mainline|lts))
+        IGNORE_PKGS+=" linux"
+        PACKAGE_LIST+=" $LINUX_VERSION"
+        LINUX_VERSION="$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x "$LINUX_VERSION" | grep 'linux[0-9._]\+')"
+        ;;
+    linux)
+        PACKAGE_LIST+=" linux"
+        LINUX_VERSION="$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')"
+        ;;
+    *)
+        die "-v option must be in format linux<version> or linux-<series>"
+        ;;
+esac
+shopt -u extglob
 
-    _linux_series="$LINUX_VERSION"
-    PACKAGE_LIST="$PACKAGE_LIST $LINUX_VERSION"
-else # Otherwise find latest stable version from linux meta-package
-    _linux_series=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')
-fi
-
-_kver=$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver ${_linux_series})
+_kver="$(XBPS_ARCH=$BASE_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver $LINUX_VERSION)"
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
 
 if [ "$?" -ne "0" ]; then
