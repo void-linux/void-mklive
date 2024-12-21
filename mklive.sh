@@ -122,6 +122,17 @@ install_prereqs() {
     [ $? -ne 0 ] && die "Failed to install required software, exiting..."
 }
 
+post_install_packages() {
+    # Cleanup and remove useless stuff.
+    rm -rf "$ROOTFS"/var/cache/* "$ROOTFS"/run/* "$ROOTFS"/var/run/*
+
+    # boot failure if disks have raid logical volumes and this isn't loaded
+    for f in "$ROOTFS/usr/lib/modules/$KERNELVERSION/kernel/drivers/md/dm-raid.ko".*; do
+        echo "dm-raid" > "$ROOTFS"/etc/modules-load.d/dm-raid.conf
+        break
+    done
+}
+
 install_packages() {
     XBPS_ARCH=$BASE_ARCH "${XBPS_INSTALL_CMD}" -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -yn $PACKAGE_LIST $INITRAMFS_PKGS
@@ -147,8 +158,7 @@ install_packages() {
     fi
     chroot "$ROOTFS" env -i xbps-reconfigure -a
 
-    # Cleanup and remove useless stuff.
-    rm -rf "$ROOTFS"/var/cache/* "$ROOTFS"/run/* "$ROOTFS"/var/run/*
+    post_install_packages
 }
 
 ignore_packages() {
