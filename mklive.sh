@@ -151,7 +151,7 @@ install_packages() {
     if [ -f "$ROOTFS"/etc/default/libc-locales ]; then
         sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i "$ROOTFS"/etc/default/libc-locales
     fi
-    if xbps-query -r "$ROOTFS" dkms >/dev/null 2>&1; then
+    if XBPS_ARCH=$BASE_ARCH "$XBPS_QUERY_CMD" -r "$ROOTFS" dkms >/dev/null 2>&1; then
         # dkms modules alphabetically before dkms can't configure
         # if dkms hasn't configured beforehand to create /var/lib/dkms
         chroot "$ROOTFS" env -i xbps-reconfigure dkms
