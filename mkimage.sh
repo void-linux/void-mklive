@@ -352,9 +352,9 @@ GCP*)
     ;;
 asahi*)
     mount_pseudofs
-    run_cmd_chroot "${ROOTFS}" "mkdir /boot/m1n1"
-    run_cmd_chroot "${ROOTFS}" "grub-install --target=arm64-efi --efi-directory=/boot --removable"
-    run_cmd_chroot "${ROOTFS}" "grub-mkconfig  > /boot/grub/grub.cfg"
+    run_cmd_chroot "${ROOTFS}" "mkdir -p /boot/efi/m1n1"
+    run_cmd_chroot "${ROOTFS}" "grub-install --target=arm64-efi --efi-directory=/boot/efi --removable"
+    run_cmd_chroot "${ROOTFS}" "grub-mkconfig  > /boot/efi/grub/grub.cfg"
     run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f linux-asahi"
     cleanup_chroot
     ;;
