@@ -323,8 +323,6 @@ rk33xx_flash_uboot() {
                       --repository=https://repo-default.voidlinux.org/current/musl \
                       --repository=https://repo-default.voidlinux.org/current/aarch64}"
 
-
-
 # This library is the authoritative source of the platform map,
 # because of this we may need to get this information from the command
 # line.  This select allows us to get that information out.  This

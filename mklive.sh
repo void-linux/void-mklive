@@ -37,18 +37,14 @@ PLATFORMS=()
 readonly PROGNAME="$(basename "$0")"
 declare -a INCLUDE_DIRS=()
 
-info_msg() {
-    printf "\033[1m$@\n\033[m"
-}
-
 die() {
-    info_msg "ERROR: $@"
+    info_msg "ERROR: $*"
     error_out 1 $LINENO
 }
 
 print_step() {
     CURRENT_STEP=$((CURRENT_STEP+1))
-    info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $@"
+    info_msg "[${CURRENT_STEP}/${STEP_COUNT}] $*"
 }
 
 mount_pseudofs() {
@@ -531,6 +527,8 @@ HOST_ARCH=$(xbps-uhelper arch)
 : ${BASE_SYSTEM_PKG:=base-system}
 : ${BOOT_TITLE:="Void Linux"}
 : ${LINUX_VERSION:=linux}
+
+XBPS_TARGET_ARCH="$TARGET_ARCH" register_binfmt
 
 case "$TARGET_ARCH" in
 	x86_64*|i686*)
