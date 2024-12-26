@@ -210,52 +210,39 @@ register_binfmt() {
                 return
             fi
             _cpu=arm
-            _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             ;;
         aarch64)
             _cpu=aarch64
-            _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             ;;
         ppc64le)
             _cpu=ppc64le
-            _magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
             ;;
         ppc64)
             _cpu=ppc64
-            _magic="\x7fELF\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             ;;
         ppc)
             if [ "$_hostarch" = "ppc64" ] ; then
                 return
             fi
             _cpu=ppc
-            _magic="\x7fELF\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
             ;;
         mipsel)
             if [ "$_hostarch" = "mips64el" ] ; then
                 return
             fi
             _cpu=mipsel
-            _magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00"
-            _mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             ;;
         x86_64)
             _cpu=x86_64
-            _magic="\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00"
-            _mask="\xff\xff\xff\xff\xff\xfe\xfe\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
             ;;
         i686)
             if [ "$_hostarch" = "x86_64" ] ; then
                 return
             fi
             _cpu=i386
-            _magic="\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00"
-            _mask="\xff\xff\xff\xff\xff\xfe\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+            ;;
+        riscv64)
+            _cpu=riscv64
             ;;
         *)
             die "Unknown target architecture!"
@@ -264,7 +251,7 @@ register_binfmt() {
 
     # For builds that do not match the host architecture, the correct
     # qemu binary will be required.
-    QEMU_BIN="qemu-${_cpu}-static"
+    QEMU_BIN="qemu-${_cpu}"
     if ! $QEMU_BIN -version >/dev/null 2>&1; then
         die "$QEMU_BIN binary is missing in your system, exiting."
     fi
@@ -278,7 +265,10 @@ register_binfmt() {
 
     # Only register if the map is incomplete
     if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
-        echo ":qemu-$_cpu:M::$_magic:$_mask:/usr/bin/$QEMU_BIN:F" > /proc/sys/fs/binfmt_misc/register 2>/dev/null
+        if ! command -v update-binfmts >/dev/null 2>&1; then
+            die "could not add binfmt: update-binfmts binary is missing in your system"
+        fi
+        update-binfmts --import "qemu-$_cpu"
     fi
 }
 
