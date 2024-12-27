@@ -14,7 +14,7 @@ on:
         type: boolean
       live_archs:
         description: "Archs to build live ISOs for"
-        default: "x86_64 x86_64-musl i686"
+        default: "x86_64 x86_64-musl i686 aarch64 aarch64-musl"
         required: false
         type: string
       live_flavors:
@@ -69,6 +69,11 @@ jobs:
       datecode: ${{ steps.prep.outputs.datecode }}
       revision: ${{ steps.prep.outputs.revision }}
       mirror: ${{ steps.prep.outputs.mirror }}
+      live_archs: ${{ steps.prep.outputs.live_archs }}
+      live_flavors: ${{ steps.prep.outputs.live_flavors }}
+      rootfs: ${{ steps.prep.outputs.rootfs }}
+      platformfs: ${{ steps.prep.outputs.platformfs }}
+      sbc_imgs: ${{ steps.prep.outputs.sbc_imgs }}
 
     steps:
       - name: Prepare Environment
@@ -82,11 +87,27 @@ jobs:
           echo "revision=${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
           echo "mirror=https://repo-ci.voidlinux.org/current" >> $GITHUB_OUTPUT
 
+          jsonify() {
+            sed 's/\s\+/ /g' | jq -Rrc 'split(" ")'
+          }
+
+          echo "live_archs=$(echo "${{ inputs.live_archs }}" | jsonify)" >> $GITHUB_OUTPUT
+          echo "live_flavors=$(echo "${{ inputs.live_flavors }}" | jsonify)" >> $GITHUB_OUTPUT
+
+          echo "rootfs=$(echo "${{ inputs.rootfs }}" | jsonify)" >> $GITHUB_OUTPUT
+          echo "platformfs=$(echo "${{ inputs.platformfs }}" | jsonify)" >> $GITHUB_OUTPUT
+          echo "sbc_imgs=$(echo "${{ inputs.sbc_imgs }}" | jsonify)" >> $GITHUB_OUTPUT
+
   build-live-isos:
     name: Build Live ISOs
     runs-on: ubuntu-latest
     needs: prepare
     if: ${{ inputs.live_iso_flag }}
+
+    strategy:
+      matrix:
+        arch: ${{ fromJson(needs.prepare.outputs.live_archs) }}
+        flavor: ${{ fromJson(needs.prepare.outputs.live_flavors) }}
 
     container:
       image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
@@ -105,12 +126,8 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
             /etc/xbps.d/*-repository-*.conf
-          # Sync and upgrade once, assume error comes from xbps update
-          xbps-install -Syu || xbps-install -yu xbps
-          # Upgrade again (in case there was a xbps update)
-          xbps-install -yu
-          # Install depedencies
-          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+          xbps-install -Syu xbps && xbps-install -yu
+          xbps-install -yu bash make git kmod xz lzo qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -119,7 +136,7 @@ jobs:
           make live-iso-all-print live-iso-all \
             SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
             DATECODE="${{ needs.prepare.outputs.datecode }}" \
-            LIVE_ARCHS="${{ inputs.live_archs }}" LIVE_FLAVORS="${{ inputs.live_flavors }}"
+            LIVE_ARCHS="${{ matrix.arch }}" LIVE_FLAVORS="${{ matrix.flavor }}"
 
       - name: Prepare artifacts for upload
         run: |
@@ -127,7 +144,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: void-iso-${{ needs.prepare.outputs.datecode }}
+          name: void-iso-${{ matrix.arch }}-${{ matrix.flavor }}-${{ needs.prepare.outputs.datecode }}
           path: |
             distdir-${{ needs.prepare.outputs.datecode }}/*
           if-no-files-found: error
@@ -138,6 +155,10 @@ jobs:
     needs: prepare
     if: ${{ inputs.rootfs_flag }}
 
+    strategy:
+      matrix:
+        arch: ${{ fromJson(needs.prepare.outputs.rootfs) }}
+
     container:
       image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
       options: --privileged
@@ -155,12 +176,8 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
             /etc/xbps.d/*-repository-*.conf
-          # Sync and upgrade once, assume error comes from xbps update
-          xbps-install -Syu || xbps-install -yu xbps
-          # Upgrade again (in case there was a xbps update)
-          xbps-install -yu
-          # Install depedencies
-          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+          xbps-install -Syu xbps && xbps-install -yu
+          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -169,7 +186,7 @@ jobs:
           make rootfs-all-print rootfs-all \
             SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
             DATECODE="${{ needs.prepare.outputs.datecode }}" \
-            ARCHS="${{ inputs.rootfs }}"
+            ARCHS="${{ matrix.arch }}"
 
       - name: Prepare artifacts for upload
         run: |
@@ -177,7 +194,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: void-rootfs-${{ needs.prepare.outputs.datecode }}
+          name: void-rootfs-${{ matrix.arch }}-${{ needs.prepare.outputs.datecode }}
           path: |
             distdir-${{ needs.prepare.outputs.datecode }}/*
           if-no-files-found: error
@@ -188,6 +205,10 @@ jobs:
     needs: prepare
     if: ${{ inputs.platformfs_flag }}
 
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.prepare.outputs.platformfs) }}
+
     container:
       image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
       options: --privileged
@@ -205,12 +226,8 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
             /etc/xbps.d/*-repository-*.conf
-          # Sync and upgrade once, assume error comes from xbps update
-          xbps-install -Syu || xbps-install -yu xbps
-          # Upgrade again (in case there was a xbps update)
-          xbps-install -yu
-          # Install depedencies
-          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+          xbps-install -Syu xbps && xbps-install -yu
+          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -219,7 +236,7 @@ jobs:
           make platformfs-all-print platformfs-all \
             SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
             DATECODE="${{ needs.prepare.outputs.datecode }}" \
-            PLATFORMS="${{ inputs.platformfs }}"
+            PLATFORMS="${{ matrix.platform }}"
 
       - name: Prepare artifacts for upload
         run: |
@@ -227,7 +244,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: void-platformfs-${{ needs.prepare.outputs.datecode }}
+          name: void-platformfs-${{ matrix.platform }}-${{ needs.prepare.outputs.datecode }}
           path: |
             distdir-${{ needs.prepare.outputs.datecode }}/*
             !distdir-${{ needs.prepare.outputs.datecode }}/*ROOTFS*
@@ -239,6 +256,10 @@ jobs:
     needs: prepare
     if: ${{ inputs.sbc_img_flag }}
 
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.prepare.outputs.sbc_imgs) }}
+
     container:
       image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
       options: --privileged
@@ -256,12 +277,8 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
             /etc/xbps.d/*-repository-*.conf
-          # Sync and upgrade once, assume error comes from xbps update
-          xbps-install -Syu || xbps-install -yu xbps
-          # Upgrade again (in case there was a xbps update)
-          xbps-install -yu
-          # Install depedencies
-          xbps-install -yu bash make git kmod xz lzo qemu-user-static outils dosfstools e2fsprogs
+          xbps-install -Syu xbps && xbps-install -yu
+          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -270,7 +287,7 @@ jobs:
           make images-all-sbc-print images-all-sbc \
             SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
             DATECODE="${{ needs.prepare.outputs.datecode }}" \
-            SBC_IMGS="${{ inputs.sbc_imgs }}"
+            SBC_IMGS="${{ matrix.platform }}"
 
       - name: Prepare artifacts for upload
         run: |
@@ -278,7 +295,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: void-sbc-img-${{ needs.prepare.outputs.datecode }}
+          name: void-sbc-img-${{ matrix.platform }}-${{ needs.prepare.outputs.datecode }}
           path: |
             distdir-${{ needs.prepare.outputs.datecode }}/*
             !distdir-${{ needs.prepare.outputs.datecode }}/*ROOTFS*
