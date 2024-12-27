@@ -1,7 +1,7 @@
 DATECODE:=$(shell date -u "+%Y%m%d")
 SHELL=/bin/bash
 
-T_LIVE_ARCHS=i686 x86_64{,-musl}
+T_LIVE_ARCHS=i686 x86_64{,-musl} aarch64{,-musl}
 
 T_PLATFORMS=rpi-{armv{6,7}l,aarch64}{,-musl} GCP{,-musl} pinebookpro{,-musl}
 T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
@@ -13,6 +13,7 @@ T_PXE_ARCHS=x86_64{,-musl}
 
 LIVE_ARCHS:=$(shell echo $(T_LIVE_ARCHS))
 LIVE_FLAVORS:=base enlightenment xfce mate cinnamon gnome kde lxde lxqt
+LIVE_PLATFORMS:=pinebookpro x13s
 ARCHS:=$(shell echo $(T_ARCHS))
 PLATFORMS:=$(shell echo $(T_PLATFORMS))
 SBC_IMGS:=$(shell echo $(T_SBC_IMGS))
@@ -61,7 +62,7 @@ live-iso-all-print:
 
 void-live-%.iso: mkiso.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
-	$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $*
+	$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $* -- -P "$(LIVE_PLATFORMS)"
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 rootfs-all: $(ALL_ROOTFS)
