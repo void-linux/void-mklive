@@ -56,6 +56,19 @@ cleanup() {
     rm -rf "$INCLUDEDIR"
 }
 
+include_installer() {
+    if [ -x installer.sh ]; then
+        MKLIVE_VERSION="$(PROGNAME='' version)"
+        installer=$(mktemp)
+        sed "s/@@MKLIVE_VERSION@@/${MKLIVE_VERSION}/" installer.sh > "$installer"
+        install -Dm755 "$installer" "$INCLUDEDIR"/usr/bin/void-installer
+        rm "$installer"
+    else
+        echo installer.sh not found >&2
+        exit 1
+    fi
+}
+
 setup_pipewire() {
     PKGS="$PKGS pipewire alsa-pipewire"
     mkdir -p "$INCLUDEDIR"/etc/xdg/autostart
@@ -72,10 +85,16 @@ build_variant() {
     variant="$1"
     shift
     IMG=void-live-${ARCH}-${DATE}-${variant}.iso
+
+    # el-cheapo installer is unsupported on arm because arm doesn't install a kernel by default
+    # and to work around that would add too much complexity to it
+    # thus everyone should just do a chroot install anyways
+    WANT_INSTALLER=no
     case "$ARCH" in
-        x86_64*|i686*) GRUB_PKGS="grub-i386-efi grub-x86_64-efi" ;;
+        x86_64*|i686*) GRUB_PKGS="grub-i386-efi grub-x86_64-efi"; WANT_INSTALLER=yes ;;
         aarch64*) GRUB_PKGS="grub-arm64-efi" ;;
     esac
+
     A11Y_PKGS="espeakup void-live-audio brltty"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror chrony tmux $A11Y_PKGS $GRUB_PKGS"
     XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf orca"
@@ -140,6 +159,14 @@ indicators = ~host;~spacer;~clock;~spacer;~layout;~session;~a11y;~power
 EOF
     fi
 
+    if [ "$WANT_INSTALLER" = yes ]; then
+        include_installer
+    else
+        mkdir -p "$INCLUDEDIR"/usr/bin
+        printf "#!/bin/sh\necho 'void-installer is not supported on this live image'\n" > "$INCLUDEDIR"/usr/bin/void-installer
+        chmod 755 "$INCLUDEDIR"/usr/bin/void-installer
+    fi
+
     if [ "$variant" != base ]; then
         setup_pipewire
     fi
@@ -151,17 +178,6 @@ EOF
 
 if [ ! -x mklive.sh ]; then
     echo mklive.sh not found >&2
-    exit 1
-fi
-
-if [ -x installer.sh ]; then
-    MKLIVE_VERSION="$(PROGNAME='' version)"
-    installer=$(mktemp)
-    sed "s/@@MKLIVE_VERSION@@/${MKLIVE_VERSION}/" installer.sh > "$installer"
-    install -Dm755 "$installer" "$INCLUDEDIR"/usr/bin/void-installer
-    rm "$installer"
-else
-    echo installer.sh not found >&2
     exit 1
 fi
 
