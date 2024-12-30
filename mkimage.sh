@@ -123,7 +123,7 @@ esac
 # Default for bigger boot partion on rk33xx devices since it needs to
 # fit at least 2 Kernels + initramfs
 case "$PLATFORM" in
-    pinebookpro*|rock64*|rockpro64*)
+    pinebookpro*|rock64*|rockpro64*|asahi*)
         : "${BOOT_FSSIZE:=512MiB}"
         ;;
 esac
@@ -352,8 +352,7 @@ GCP*)
     ;;
 asahi*)
     mount_pseudofs
-    run_cmd_chroot "${ROOTFS}" "mkdir -p /boot/efi/m1n1"
-    run_cmd_chroot "${ROOTFS}" "grub-install --target=arm64-efi --efi-directory=/boot/efi --removable"
+    run_cmd_chroot "${ROOTFS}" "grub-install --target=arm64-efi --efi-directory=/boot --removable"
     run_cmd_chroot "${ROOTFS}" "xbps-reconfigure -f linux-asahi"
     cleanup_chroot
     ;;

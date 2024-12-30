@@ -128,7 +128,7 @@ case "$PLATFORM" in
     pinephone*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     rock64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     rockpro64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
-    asahi*) PKGS="$BASEPKG asahi-base asahi-scripts grub-arm64-efi dracut asahi-uboot lzfse" ;;
+    asahi*) PKGS="$BASEPKG asahi-base asahi-scripts grub-arm64-efi dracut lzfse" ;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
