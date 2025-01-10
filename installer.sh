@@ -123,14 +123,14 @@ DIE() {
 }
 
 set_option() {
-    if grep -Eq "^${1}.*" $CONF_FILE; then
-        sed -i -e "/^${1}.*/d" $CONF_FILE
+    if grep -Eq "^${1} .*" $CONF_FILE; then
+        sed -i -e "/^${1} .*/d" $CONF_FILE
     fi
     echo "${1} ${2}" >>$CONF_FILE
 }
 
 get_option() {
-    echo $(grep -E "^${1}.*" $CONF_FILE|sed -e "s|${1}||")
+    grep -E "^${1} .*" $CONF_FILE | sed -e "s|^${1} ||"
 }
 
 # ISO-639 language names for locales
@@ -366,7 +366,7 @@ get_partfs() {
     # that the user is shown the proper fs type if they install the system.
     local part="$1"
     local default="${2:-none}"
-    local fstype=$(grep "MOUNTPOINT ${part}" "$CONF_FILE"|awk '{print $3}')
+    local fstype=$(grep "MOUNTPOINT ${part} " "$CONF_FILE"|awk '{print $3}')
     echo "${fstype:-$default}"
 }
 
@@ -482,9 +482,9 @@ menu_filesystems() {
             local bdev=$(basename $dev)
             local ddev=$(basename $(dirname $dev))
             if [ "$ddev" != "dev" ]; then
-                sed -i -e "/^MOUNTPOINT \/dev\/${ddev}\/${bdev}.*/d" $CONF_FILE
+                sed -i -e "/^MOUNTPOINT \/dev\/${ddev}\/${bdev} .*/d" $CONF_FILE
             else
-                sed -i -e "/^MOUNTPOINT \/dev\/${bdev}.*/d" $CONF_FILE
+                sed -i -e "/^MOUNTPOINT \/dev\/${bdev} .*/d" $CONF_FILE
             fi
             echo "MOUNTPOINT $dev $1 $2 $3 $4" >>$CONF_FILE
         fi
@@ -1024,7 +1024,7 @@ validate_filesystems() {
     local bootdev=$(get_option BOOTLOADER)
 
     unset TARGETFS
-    mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE)
+    mnts=$(grep -E '^MOUNTPOINT .*' $CONF_FILE)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         fmt=""
@@ -1067,7 +1067,7 @@ as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
 create_filesystems() {
     local mnts dev mntpt fstype fspassno mkfs size rv uuid
 
-    mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE | sort -k 5)
+    mnts=$(grep -E '^MOUNTPOINT .*' $CONF_FILE | sort -k 5)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         dev=$2; fstype=$3; mntpt="$5"; mkfs=$6
@@ -1137,7 +1137,7 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
     done
 
     # mount all filesystems in target rootfs
-    mnts=$(grep -E '^MOUNTPOINT.*' $CONF_FILE | sort -k 5)
+    mnts=$(grep -E '^MOUNTPOINT .*' $CONF_FILE | sort -k 5)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         dev=$2; fstype=$3; mntpt="$5"
@@ -1171,7 +1171,7 @@ mount_filesystems() {
 }
 
 umount_filesystems() {
-    local mnts="$(grep -E '^MOUNTPOINT.*swap.*$' $CONF_FILE | sort -r -k 5)"
+    local mnts="$(grep -E '^MOUNTPOINT .* swap .*$' $CONF_FILE | sort -r -k 5)"
     set -- ${mnts}
     while [ $# -ne 0 ]; do
         local dev=$2; local fstype=$3
@@ -1558,8 +1558,8 @@ menu() {
     if [ $? -eq 3 ]; then
         # Show settings
         cp $CONF_FILE /tmp/conf_hidden.$$;
-        sed -i "s/^ROOTPASSWORD.*/ROOTPASSWORD <-hidden->/" /tmp/conf_hidden.$$
-        sed -i "s/^USERPASSWORD.*/USERPASSWORD <-hidden->/" /tmp/conf_hidden.$$
+        sed -i "s/^ROOTPASSWORD .*/ROOTPASSWORD <-hidden->/" /tmp/conf_hidden.$$
+        sed -i "s/^USERPASSWORD .*/USERPASSWORD <-hidden->/" /tmp/conf_hidden.$$
         DIALOG --title "Saved settings for installation" --textbox /tmp/conf_hidden.$$ 14 60
         rm /tmp/conf_hidden.$$
         return
