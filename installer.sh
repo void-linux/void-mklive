@@ -1264,7 +1264,10 @@ install_packages() {
 
 menu_services() {
     local sv _status _checklist=""
-    find $TARGETDIR/etc/runit/runsvdir/default -mindepth 1 -maxdepth 1 -xtype d -printf '%f\n' | sort -u > "$TARGET_SERVICES"
+    # filter out services that probably shouldn't be messed with
+    local sv_ignore='^(agetty-(tty[1-9]|generic|serial|console)|udevd|sulogin)$'
+    find $TARGETDIR/etc/runit/runsvdir/default -mindepth 1 -maxdepth 1 -xtype d -printf '%f\n' | \
+        grep -Ev "$sv_ignore" | sort -u > "$TARGET_SERVICES"
     while true; do
         while read -r sv; do
             if [ -n "$sv" ]; then
@@ -1275,16 +1278,13 @@ menu_services() {
                 fi
                 _checklist+=" ${sv} ${sv} ${_status}"
             fi
-        done < <(find $TARGETDIR/etc/sv -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | \
-            # filter out services that probably shouldn't be messed with
-            grep -Ev '^(agetty-(tty[1-9]|generic|serial)|udevd|sulogin)$' | sort -u)
-        echo "$_checklist" 1>&2
+        done < <(find $TARGETDIR/etc/sv -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -Ev "$sv_ignore" | sort -u)
         DIALOG --no-tags --checklist "Select services to enable:" 20 60 18 ${_checklist}
         if [ $? -eq 0 ]; then
-            comm -13 "$TARGET_SERVICES" <(tr ' ' '\n' "$ANSWER") | while read -r sv; do
+            comm -13 "$TARGET_SERVICES" <(cat "$ANSWER" | tr ' ' '\n') | while read -r sv; do
                 enable_service "$sv"
             done
-            comm -23 "$TARGET_SERVICES" <(tr ' ' '\n' "$ANSWER") | while read -r sv; do
+            comm -23 "$TARGET_SERVICES" <(cat "$ANSWER" | tr ' ' '\n') | while read -r sv; do
                 disable_service "$sv"
             done
             break
