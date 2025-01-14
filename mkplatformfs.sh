@@ -53,8 +53,8 @@ usage() {
 
 	Supported platforms: i686, x86_64, GCP,
 	                     rpi-armv6l, rpi-armv7l, rpi-aarch64,
-	                     pinebookpro, pinephone, rock64, rockpro64
-	
+	                     pinebookpro, pinephone, rock64, rockpro64, asahi
+
 	OPTIONS
 	 -b <system-pkg>  Set an alternative base-system package (default: base-system)
 	 -c <cachedir>    Set the XBPS cache directory (default: ./xbps-cachedir-<arch>)
@@ -128,6 +128,7 @@ case "$PLATFORM" in
     pinephone*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     rock64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
     rockpro64*) PKGS="$BASEPKG ${PLATFORM%-*}-base" ;;
+    asahi*) PKGS="$BASEPKG asahi-base asahi-scripts grub-arm64-efi dracut" ;;
     *) die "$PROGNAME: invalid platform!";;
 esac
 
