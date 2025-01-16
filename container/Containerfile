@@ -1,0 +1,10 @@
+FROM ghcr.io/void-linux/void-glibc-full:latest
+
+ARG MIRROR="https://repo-default.voidlinux.org/"
+
+RUN xbps-install -SyuR "${MIRROR}/current" xbps \
+	&& xbps-install -yuR "${MIRROR}/current" \
+	&& xbps-install -yuR "${MIRROR}/current" \
+		bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
+
+CMD ["/bin/sh"]
