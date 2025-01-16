@@ -110,7 +110,7 @@ jobs:
         flavor: ${{ fromJson(needs.prepare.outputs.live_flavors) }}
 
     container:
-      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
       options: --privileged
       volumes:
         - /dev:/dev
@@ -121,13 +121,8 @@ jobs:
     steps:
       - name: Prepare container
         shell: sh
-        run: |
-          # Switch to mirror
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
-            /etc/xbps.d/*-repository-*.conf
-          xbps-install -Syu xbps && xbps-install -yu
-          xbps-install -yu bash make git kmod xz lzo qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
+        run: xbps-install -Syu xbps && xbps-install -yu
+
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -160,7 +155,7 @@ jobs:
         arch: ${{ fromJson(needs.prepare.outputs.rootfs) }}
 
     container:
-      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
       options: --privileged
       volumes:
         - /dev:/dev
@@ -171,13 +166,8 @@ jobs:
     steps:
       - name: Prepare container
         shell: sh
-        run: |
-          # Switch to mirror
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
-            /etc/xbps.d/*-repository-*.conf
-          xbps-install -Syu xbps && xbps-install -yu
-          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
+        run: xbps-install -Syu xbps && xbps-install -yu
+
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -210,7 +200,7 @@ jobs:
         platform: ${{ fromJson(needs.prepare.outputs.platformfs) }}
 
     container:
-      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
       options: --privileged
       volumes:
         - /dev:/dev
@@ -221,13 +211,8 @@ jobs:
     steps:
       - name: Prepare container
         shell: sh
-        run: |
-          # Switch to mirror
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
-            /etc/xbps.d/*-repository-*.conf
-          xbps-install -Syu xbps && xbps-install -yu
-          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
+        run: xbps-install -Syu xbps && xbps-install -yu
+
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -261,7 +246,7 @@ jobs:
         platform: ${{ fromJson(needs.prepare.outputs.sbc_imgs) }}
 
     container:
-      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
       options: --privileged
       volumes:
         - /dev:/dev
@@ -272,13 +257,8 @@ jobs:
     steps:
       - name: Prepare container
         shell: sh
-        run: |
-          # Switch to mirror
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
-            /etc/xbps.d/*-repository-*.conf
-          xbps-install -Syu xbps && xbps-install -yu
-          xbps-install -yu bash make git kmod xz lzo qemu-user-arm qemu-user-aarch64 binfmt-support outils dosfstools e2fsprogs
+        run: xbps-install -Syu xbps && xbps-install -yu
+
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -314,7 +294,7 @@ jobs:
       - build-sbc-img
 
     container:
-      image: 'ghcr.io/void-linux/void-glibc-full:20231230R1'
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
       env:
         PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
         MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
@@ -322,17 +302,8 @@ jobs:
     steps:
       - name: Prepare container
         shell: sh
-        run: |
-          # Switch to mirror
-          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
-          sed -i 's|https://repo-default.voidlinux.org/current|'"${{ needs.prepare.outputs.mirror }}"'|g' \
-            /etc/xbps.d/*-repository-*.conf
-          # Sync and upgrade once, assume error comes from xbps update
-          xbps-install -Syu || xbps-install -yu xbps
-          # Upgrade again (in case there was a xbps update)
-          xbps-install -yu
-          # Install depedencies
-          xbps-install -yu bash make git outils
+        run: xbps-install -Syu xbps && xbps-install -yu
+
       - name: Clone and checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
