@@ -14,7 +14,7 @@ on:
         type: boolean
       live_archs:
         description: "Archs to build live ISOs for"
-        default: "x86_64 x86_64-musl i686 aarch64 aarch64-musl"
+        default: "x86_64 x86_64-musl i686 aarch64 aarch64-musl asahi asahi-musl"
         required: false
         type: string
       live_flavors:
