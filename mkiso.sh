@@ -19,7 +19,7 @@ usage() {
 	Adds void-installer and other helpful utilities to the generated images.
 
 	OPTIONS
-	 -a <arch>     Set XBPS_ARCH in the image
+	 -a <arch>     Set architecture (or platform) in the image
 	 -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
 	               lxde, or lxqt (default: base). May be specified multiple times
 	               to build multiple variants
@@ -71,6 +71,12 @@ include_installer() {
 
 setup_pipewire() {
     PKGS="$PKGS pipewire alsa-pipewire"
+    case "$ARCH" in
+        asahi*)
+            PKGS="$PKGS asahi-audio"
+            SERVICES="$SERVICES speakersafetyd"
+            ;;
+    esac
     mkdir -p "$INCLUDEDIR"/etc/xdg/autostart
     ln -sf /usr/share/applications/pipewire.desktop "$INCLUDEDIR"/etc/xdg/autostart/
     mkdir -p "$INCLUDEDIR"/etc/pipewire/pipewire.conf.d
@@ -91,13 +97,28 @@ build_variant() {
     # thus everyone should just do a chroot install anyways
     WANT_INSTALLER=no
     case "$ARCH" in
-        x86_64*|i686*) GRUB_PKGS="grub-i386-efi grub-x86_64-efi"; WANT_INSTALLER=yes ;;
-        aarch64*) GRUB_PKGS="grub-arm64-efi" ;;
+        x86_64*|i686*)
+            GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
+            GFX_PKGS="xorg-video-drivers"
+            WANT_INSTALLER=yes
+            TARGET_ARCH="$ARCH"
+            ;;
+        aarch64*)
+            GRUB_PKGS="grub-arm64-efi"
+            GFX_PKGS="xorg-video-drivers"
+            TARGET_ARCH="$ARCH"
+            ;;
+        asahi*)
+            GRUB_PKGS="asahi-base asahi-scripts grub-arm64-efi"
+            GFX_PKGS="mesa-asahi-dri"
+            KERNEL_PKG="linux-asahi"
+            TARGET_ARCH="aarch64${ARCH#asahi}"
+            ;;
     esac
 
     A11Y_PKGS="espeakup void-live-audio brltty"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror chrony tmux $A11Y_PKGS $GRUB_PKGS"
-    XORG_PKGS="xorg-minimal xorg-input-drivers xorg-video-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf orca"
+    XORG_PKGS="$GFX_PKGS xorg-minimal xorg-input-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf orca"
     SERVICES="sshd chronyd"
 
     LIGHTDM_SESSION=''
@@ -171,7 +192,8 @@ EOF
         setup_pipewire
     fi
 
-    ./mklive.sh -a "$ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" ${REPO} "$@"
+    ./mklive.sh -a "$TARGET_ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" \
+        ${KERNEL_PKG:+-v $KERNEL_PKG} ${REPO} "$@"
 
 	cleanup
 }
