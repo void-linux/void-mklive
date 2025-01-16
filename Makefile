@@ -1,9 +1,9 @@
 DATECODE:=$(shell date -u "+%Y%m%d")
 SHELL=/bin/bash
 
-T_LIVE_ARCHS=i686 x86_64{,-musl} aarch64{,-musl}
+T_LIVE_ARCHS=i686 x86_64{,-musl} aarch64{,-musl} asahi{,-musl}
 
-T_PLATFORMS=rpi-{armv{6,7}l,aarch64}{,-musl} GCP{,-musl} pinebookpro{,-musl}
+T_PLATFORMS=rpi-{armv{6,7}l,aarch64}{,-musl} GCP{,-musl} pinebookpro{,-musl} asahi{,-musl}
 T_ARCHS=i686 x86_64{,-musl} armv{6,7}l{,-musl} aarch64{,-musl}
 
 T_SBC_IMGS=rpi-{armv{6,7}l,aarch64}{,-musl} pinebookpro{,-musl}
@@ -62,7 +62,9 @@ live-iso-all-print:
 
 void-live-%.iso: mkiso.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
-	$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $* -- -P "$(LIVE_PLATFORMS)"
+	$(if $(findstring aarch64,$*), \
+		$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $* -- -P $(LIVE_PLATFORMS), \
+		$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $*)
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
 rootfs-all: $(ALL_ROOTFS)
