@@ -626,6 +626,10 @@ case "$LINUX_VERSION" in
         PACKAGE_LIST+=("$LINUX_VERSION")
         LINUX_VERSION="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x "$LINUX_VERSION" | grep 'linux[0-9._]\+')"
         ;;
+    linux-asahi)
+        IGNORE_PKGS+=(linux)
+        PACKAGE_LIST+=(linux-asahi linux-base)
+        ;;
     linux)
         PACKAGE_LIST+=(linux)
         LINUX_VERSION="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')"
@@ -638,6 +642,10 @@ shopt -u extglob
 
 _kver="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver $LINUX_VERSION)"
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
+
+if [ "$LINUX_VERSION" = linux-asahi ]; then
+    KERNELVERSION="${KERNELVERSION%%_*}-asahi_${KERNELVERSION##*_}"
+fi
 
 if [ "$?" -ne "0" ]; then
     die "Failed to find kernel package version"
