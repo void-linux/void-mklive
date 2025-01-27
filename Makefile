@@ -63,7 +63,7 @@ live-iso-all-print:
 void-live-%.iso: mkiso.sh
 	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
 	$(if $(findstring aarch64,$*), \
-		$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $* -- -P $(LIVE_PLATFORMS), \
+		$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $* -- -P "$(LIVE_PLATFORMS)", \
 		$(SUDO) ./mkiso.sh -r $(REPOSITORY) -t $*)
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
