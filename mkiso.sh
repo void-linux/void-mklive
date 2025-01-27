@@ -21,7 +21,7 @@ usage() {
 	OPTIONS
 	 -a <arch>     Set architecture (or platform) in the image
 	 -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
-	               lxde, or lxqt (default: base). May be specified multiple times
+	               lxde, lxqt, or weston (default: base). May be specified multiple times
 	               to build multiple variants
 	 -d <date>     Override the datestamp on the generated image (YYYYMMDD format)
 	 -t <arch-date-variant>
@@ -100,17 +100,20 @@ build_variant() {
         x86_64*|i686*)
             GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
             GFX_PKGS="xorg-video-drivers"
+            GFX_WL_PKGS="mesa-dri"
             WANT_INSTALLER=yes
             TARGET_ARCH="$ARCH"
             ;;
         aarch64*)
             GRUB_PKGS="grub-arm64-efi"
             GFX_PKGS="xorg-video-drivers"
+            GFX_WL_PKGS="mesa-dri"
             TARGET_ARCH="$ARCH"
             ;;
         asahi*)
             GRUB_PKGS="asahi-base asahi-scripts grub-arm64-efi"
             GFX_PKGS="mesa-asahi-dri"
+            GFX_WL_PKGS="mesa-asahi-dri"
             KERNEL_PKG="linux-asahi"
             TARGET_ARCH="aarch64${ARCH#asahi}"
             ;;
@@ -118,7 +121,9 @@ build_variant() {
 
     A11Y_PKGS="espeakup void-live-audio brltty"
     PKGS="dialog cryptsetup lvm2 mdadm void-docs-browse xtools-minimal xmirror chrony tmux $A11Y_PKGS $GRUB_PKGS"
-    XORG_PKGS="$GFX_PKGS xorg-minimal xorg-input-drivers setxkbmap xauth font-misc-misc terminus-font dejavu-fonts-ttf orca"
+    FONTS="font-misc-misc terminus-font dejavu-fonts-ttf"
+    WAYLAND_PKGS="$GFX_WL_PKGS $FONTS orca"
+    XORG_PKGS="$GFX_PKGS $FONTS xorg-minimal xorg-input-drivers setxkbmap xauth orca"
     SERVICES="sshd chronyd"
 
     LIGHTDM_SESSION=''
@@ -163,6 +168,11 @@ build_variant() {
         lxqt)
             PKGS="$PKGS $XORG_PKGS lxqt sddm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus dhcpcd wpa_supplicant sddm polkitd"
+        ;;
+        weston)
+            PKGS="$PKGS $WAYLAND_PKGS weston dbus elogind lightdm NetworkManager firefox"
+            SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
+            LIGHTDM_SESSION=weston
         ;;
         *)
             >&2 echo "Unknown variant $variant"

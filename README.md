@@ -101,7 +101,7 @@ Adds void-installer and other helpful utilities to the generated images.
 OPTIONS
  -a <arch>     Set architecture (or platform) in the image
  -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
-               lxde, or lxqt (default: base). May be specified multiple times
+               lxde, lxqt, or weston (default: base). May be specified multiple times
                to build multiple variants
  -d <date>     Override the datestamp on the generated image (YYYYMMDD format)
  -t <arch-date-variant>

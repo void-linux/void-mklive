@@ -12,7 +12,7 @@ T_CLOUD_IMGS=GCP{,-musl}
 T_PXE_ARCHS=x86_64{,-musl}
 
 LIVE_ARCHS:=$(shell echo $(T_LIVE_ARCHS))
-LIVE_FLAVORS:=base enlightenment xfce mate cinnamon gnome kde lxde lxqt
+LIVE_FLAVORS:=base enlightenment xfce mate cinnamon gnome kde lxde lxqt weston
 LIVE_PLATFORMS:=pinebookpro x13s
 ARCHS:=$(shell echo $(T_ARCHS))
 PLATFORMS:=$(shell echo $(T_PLATFORMS))
