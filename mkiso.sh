@@ -116,6 +116,10 @@ build_variant() {
             GFX_WL_PKGS="mesa-asahi-dri"
             KERNEL_PKG="linux-asahi"
             TARGET_ARCH="aarch64${ARCH#asahi}"
+            if [ "$variant" = xfce ]; then
+                info_msg "xfce is not supported on asahi, switching to xfce-wayland"
+                variant="xfce-wayland"
+            fi
             ;;
     esac
 
