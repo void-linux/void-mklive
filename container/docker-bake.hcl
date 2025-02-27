@@ -16,5 +16,5 @@ target "_common" {
 
 target "void-mklive" {
   inherits = ["_common"]
-  platforms = ["linux/amd64"]
+  platforms = ["linux/amd64", "linux/arm64"]
 }
