@@ -21,6 +21,13 @@ VAI_welcome() {
     printf "=============================================================\n"
 }
 
+VAI_udev_settle() {
+    /usr/bin/udevd --daemon
+    /usr/bin/udevadm trigger --action=add --type=subsystems
+    /usr/bin/udevadm trigger --action=add --type=devices
+    /usr/bin/udevadm settle
+}
+
 VAI_get_address() {
     mkdir -p /var/lib/dhclient
 
@@ -236,9 +243,12 @@ VAI_configure_autoinstall() {
 
 VAI_main() {
     CURRENT_STEP=0
-    STEP_COUNT=16
+    STEP_COUNT=17
 
     VAI_welcome
+
+    VAI_print_step "Wait on hardware"
+    VAI_udev_settle
 
     VAI_print_step "Bring up the network"
     VAI_get_address

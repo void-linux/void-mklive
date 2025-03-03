@@ -40,5 +40,6 @@ install() {
     inst /etc/ssl/certs.pem
 
     inst_hook pre-mount 01 "$moddir/install.sh"
+    inst_hook cmdline 99 "$moddir/parse-vai-root.sh"
     inst "$moddir/autoinstall.cfg" /etc/autoinstall.default
 }
