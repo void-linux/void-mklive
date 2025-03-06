@@ -154,7 +154,7 @@ VAI_configure_grub() {
     echo "hostonly=yes" > "${target}/etc/dracut.conf.d/hostonly.conf"
 
     # Choose the newest kernel
-    kernel_version="$(chroot "${target}" xbps-query linux | awk -F "[-_]" '/pkgver/ {print $2}')"
+    kernel_version="$(xbps-uhelper -r ${target} version linux | sed 's/_.*//')"
 
     # Install grub
     chroot "${target}" grub-install "${disk}"
@@ -220,8 +220,10 @@ VAI_end_action() {
 
 VAI_configure_autoinstall() {
     # -------------------------- Setup defaults ---------------------------
-    disk="$(lsblk -ipo NAME,TYPE,MOUNTPOINT | awk '{if ($2=="disk") {disks[$1]=0; last=$1} if ($3=="/") {disks[last]++}} END {for (a in disks) {if(disks[a] == 0){print a; break}}}')"
-    hostname="$(ip -4 -o -r a | awk -F'[ ./]' '{x=$7} END {print x}')"
+    disk_expr=".blockdevices[0].name"
+    disk="/dev/$(lsblk --json | jq -r "$disk_expr")"
+    hostname_expr='[.[]|select(.operstate=="UP").addr_info.[]|select(.scope=="global").local].[0]'
+    hostname="$(ip --json -r a | jq -r "$hostname_expr")"
     target="/mnt"
     timezone="America/Chicago"
     keymap="us"
