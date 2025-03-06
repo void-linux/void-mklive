@@ -39,28 +39,44 @@ VAI_get_address() {
 
 VAI_partition_disk() {
     # Paritition Disk
-    sfdisk "${disk}" <<EOF
-,$bootpartitionsize
-,${swapsize}K
-;
+
+    if [ -d /sys/firmware/efi ] ; then
+        VAI_info_msg "Partitioning Disk for UEFI Boot"
+        sfdisk "${disk}" <<EOF
+label: gpt
+,100M,U,
+,,L,
 EOF
+    else
+        VAI_info_msg "Partitioning Disk for BIOS Boot"
+        sfdisk "${disk}" <<EOF
+label: dos
+,,L,*
+EOF
+    fi
 }
 
 VAI_format_disk() {
     # Make Filesystems
-    mkfs.ext4 -F "${disk}1"
-    mkfs.ext4 -F "${disk}3"
-    if [ "${swapsize}" -ne 0 ] ; then
-        mkswap -f "${disk}2"
+    if [ -d /sys/firmware/efi ] ; then
+        mkfs.vfat -F32 "${disk}1"
+        mkfs.ext4 -F "${disk}2"
+    else
+        mkfs.ext4 -F "${disk}1"
     fi
 }
 
 VAI_mount_target() {
     # Mount targetfs
     mkdir -p "${target}"
-    mount "${disk}3" "${target}"
-    mkdir "${target}/boot"
-    mount "${disk}1" "${target}/boot"
+
+    if [ -d /sys/firmware/efi ] ; then
+        mount "${disk}2" "${target}"
+        mkdir -p "${target}/boot/efi"
+        mount "${disk}1" "${target}/boot/efi"
+    else
+        mount "${disk}1" "${target}"
+    fi
 }
 
 VAI_install_xbps_keys() {
@@ -70,7 +86,12 @@ VAI_install_xbps_keys() {
 
 VAI_install_base_system() {
     # Install a base system
-    XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt base-system grub
+    _grub="grub"
+    if [ -d /sys/firmware/efi ] ; then
+        _grub="${_grub} grub-x86_64-efi"
+    fi
+
+    XBPS_ARCH="${XBPS_ARCH}" xbps-install -Sy -R "${xbpsrepository}" -r /mnt base-system ${_grub}
 
     # Install additional packages
     if [  -n "${pkgs}" ] ; then
@@ -80,6 +101,11 @@ VAI_install_base_system() {
 }
 
 VAI_prepare_chroot() {
+    # Mount efivars if this is an EFI system
+    if [ -d /sys/firmware/efi ] ; then
+        mount -t efivarfs none /sys/firmware/efi/efivars
+    fi
+
     # Mount dev, bind, proc, etc into chroot
     mount -t proc proc "${target}/proc"
     mount --rbind /sys "${target}/sys"
@@ -141,14 +167,13 @@ VAI_configure_grub() {
 VAI_configure_fstab() {
     # Grab UUIDs
     uuid1="$(blkid -s UUID -o value "${disk}1")"
-    uuid2="$(blkid -s UUID -o value "${disk}2")"
-    uuid3="$(blkid -s UUID -o value "${disk}3")"
+    if [ -d /sys/firmware/efi ] ; then
+        uuid2="$(blkid -s UUID -o value "${disk}2")"
+        echo "UUID=$uuid1 /boot/efi vfat defaults 0 0" >> "${target}/etc/fstab"
+        echo "UUID=$uuid2 / ext4 defaults,errors=remount-ro 0 1" >> "${target}/etc/fstab"
 
-    # Installl UUIDs into /etc/fstab
-    echo "UUID=$uuid3 / ext4 defaults,errors=remount-ro 0 1" >> "${target}/etc/fstab"
-    echo "UUID=$uuid1 /boot ext4 defaults 0 2" >> "${target}/etc/fstab"
-    if [ "${swapsize}" -ne 0 ] ; then
-        echo "UUID=$uuid2 swap swap defaults 0 0" >> "${target}/etc/fstab"
+    else
+        echo "UUID=$uuid1 / ext4 defaults,errors=remount-ro 0 1" >> "${target}/etc/fstab"
     fi
 }
 
@@ -195,11 +220,8 @@ VAI_end_action() {
 
 VAI_configure_autoinstall() {
     # -------------------------- Setup defaults ---------------------------
-    bootpartitionsize="500M"
     disk="$(lsblk -ipo NAME,TYPE,MOUNTPOINT | awk '{if ($2=="disk") {disks[$1]=0; last=$1} if ($3=="/") {disks[last]++}} END {for (a in disks) {if(disks[a] == 0){print a; break}}}')"
     hostname="$(ip -4 -o -r a | awk -F'[ ./]' '{x=$7} END {print x}')"
-    # XXX: Set a manual swapsize here if the default doesn't fit your use case
-    swapsize="$(awk -F"\n" '/MemTotal/ {split($0, b, " "); print b[2] }' /proc/meminfo)";
     target="/mnt"
     timezone="America/Chicago"
     keymap="us"
@@ -256,7 +278,7 @@ VAI_main() {
     VAI_print_step "Configuring installer"
     VAI_configure_autoinstall
 
-    VAI_print_step "Configuring disk using scheme 'Atomic'"
+    VAI_print_step "Configuring disk"
     VAI_partition_disk
     VAI_format_disk
 
@@ -307,4 +329,3 @@ if getargbool 0 auto  ; then
     # Very important to release this before returning to dracut code
     set +e
 fi
-
