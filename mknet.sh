@@ -170,7 +170,7 @@ else
     info_msg "Selecting u-boot bootloader"
     bootloader_pkg=uboot-mkimage
 fi
-run_cmd_target "xbps-install $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -Sy ${KERNELPKG-linux} dracut binutils dracut-network dialog ${INITRAMFS_COMPRESSION-xz} ${bootloader_pkg}"
+run_cmd_target "xbps-install $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY -r $ROOTFS -Sy ${KERNELPKG-linux} dracut binutils dracut-network dialog jq ${INITRAMFS_COMPRESSION-xz} ${bootloader_pkg}"
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 
 # Dracut needs to know the kernel version that will be using this

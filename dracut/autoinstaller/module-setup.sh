@@ -11,7 +11,6 @@ depends() {
 }
 
 install() {
-    inst /usr/bin/awk
     inst /usr/bin/chmod
     inst /usr/bin/chroot
     inst /usr/bin/clear
@@ -21,6 +20,7 @@ install() {
     inst /usr/bin/dhclient-script
     inst /usr/bin/halt
     inst /usr/bin/install
+    inst /usr/bin/jq
     inst /usr/bin/lsblk
     inst /usr/bin/mkdir
     inst /usr/bin/mkfs.ext4
