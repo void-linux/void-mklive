@@ -178,6 +178,24 @@ build_variant() {
             PKGS="$PKGS $XORG_PKGS lxqt sddm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox"
             SERVICES="$SERVICES dbus dhcpcd wpa_supplicant sddm polkitd"
         ;;
+        enterprise)
+            PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin activate-linux"
+            SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
+            LIGHTDM_SESSION=xfce
+
+            mkdir -p "$INCLUDEDIR"/etc/xdg/autostart
+            cat << EOF > "$INCLUDEDIR"/etc/xdg/autostart/activate-linux.desktop
+[Desktop Entry]
+Name=Activate Linux
+Exec=activate-linux -t "Activate Void Linux" -m "Run void-installer to activate Void Linux"
+Terminal=false
+Type=Application
+EOF
+            mkdir -p "$INCLUDEDIR"/usr/share/backgrounds/void
+            cp data/wallpaper.png "$INCLUDEDIR"/usr/share/backgrounds/void/void-wallpaper.png
+            mkdir -p "$INCLUDEDIR"/usr/share/backgrounds/xfce
+            ln -s /usr/share/backgrounds/void/void-wallpaper.png "$INCLUDEDIR"/usr/share/backgrounds/xfce/xfce-x.svg
+        ;;
         *)
             >&2 echo "Unknown variant $variant"
             exit 1

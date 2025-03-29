@@ -1234,6 +1234,10 @@ install_packages() {
         fi
     fi
 
+    if [ "$(get_option LICENSE_KEY)" = "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8" ]; then
+        _extra="activate-linux"
+    fi
+
     _syspkg="base-system"
 
     mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
@@ -1248,7 +1252,7 @@ install_packages() {
     _arch=$(xbps-uhelper arch)
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
+        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} ${_extra} 2>&1 | \
         DIALOG --title "Installing base system packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
@@ -1380,6 +1384,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         if [ "$(get_option BOOTLOADER)" = none ]; then
             TO_REMOVE+=" grub-x86_64-efi grub-i386-efi grub"
         fi
+        if [ "$(get_option LICENSE_KEY)" != "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8" ]; then
+            TO_REMOVE+=" activate-linux"
+        fi
         # uninstall separately to minimise errors
         for pkg in $TO_REMOVE; do
             xbps-remove -r $TARGETDIR -Ry "$pkg" >>$LOG 2>&1
@@ -1399,6 +1406,9 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     # Mount /tmp as tmpfs.
     echo "tmpfs /tmp tmpfs defaults,nosuid,nodev 0 0" >> $TARGETDIR/etc/fstab
 
+    if [ "$(get_option LICENSE_KEY)" != "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8" ]; then
+        rm -f "$TARGETDIR"/etc/xdg/autostart/activate-linux.desktop
+    fi
 
     # set up keymap, locale, timezone, hostname, root passwd and user account.
     set_keymap
@@ -1605,6 +1615,29 @@ available for XBPS, a new alternative binary package system.\n\n
 The installation should be pretty straightforward. If you are in trouble \
 please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.libera.chat${RESET}.\n\n
 ${BOLD}https://www.voidlinux.org${RESET}\n\n" 16 80
+
+TRIES=$(( ( RANDOM % 5 ) + 1 ))
+while true; do
+    DIALOG --inputbox "Enter Void Enterprise license key:" ${INPUTSIZE}
+    if [ "$?" -eq 0 ]; then
+        if [ "$(( RANDOM % 10 ))" -eq 0 ]; then
+            set_option LICENSE_KEY "$(cat $ANSWER)"
+            break
+        else
+            TRIES=$(( TRIES - 1 ))
+            if [ "$TRIES" -eq 0 ]; then
+                INFOBOX "License key invalid! Please contact your Void Enterprise representative. Continuing with a Preview license." 6 60
+                set_option LICENSE_KEY "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8"
+                sleep 3 && clear && break
+            else
+                INFOBOX "License key invalid! Please try again or contact your Void Enterprise representative." 6 60
+                sleep 3 && clear && continue
+            fi
+        fi
+    else
+        continue
+    fi
+done
 
 while true; do
     menu
