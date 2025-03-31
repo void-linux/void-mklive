@@ -99,7 +99,7 @@ build_variant() {
     case "$ARCH" in
         x86_64*|i686*)
             GRUB_PKGS="grub-i386-efi grub-x86_64-efi"
-            GFX_PKGS="xorg-video-drivers"
+            GFX_PKGS="xorg-video-drivers xf86-video-intel"
             GFX_WL_PKGS="mesa-dri"
             WANT_INSTALLER=yes
             TARGET_ARCH="$ARCH"
