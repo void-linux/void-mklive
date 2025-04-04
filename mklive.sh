@@ -227,13 +227,21 @@ generate_initramfs() {
 	esac
 }
 
+array_contains() {
+    local -n arr="$1"
+    local val="$2"
+    printf '%s\0' "${arr[@]}" | grep -Fxqz "$val"
+}
+
 cleanup_rootfs() {
     for f in "${INITRAMFS_PKGS[@]}"; do
-        revdeps=$(xbps-query -r "$ROOTFS" -X $f)
-        if [ -n "$revdeps" ]; then
-            xbps-pkgdb -r "$ROOTFS" -m auto $f
-        else
-            xbps-remove -r "$ROOTFS" -Ry ${f} >/dev/null 2>&1
+        if ! array_contains PACKAGE_LIST $f; then
+            revdeps=$(xbps-query -r "$ROOTFS" -X $f)
+            if [ -n "$revdeps" ]; then
+                xbps-pkgdb -r "$ROOTFS" -m auto $f
+            else
+                xbps-remove -r "$ROOTFS" -Ry ${f} >/dev/null 2>&1
+            fi
         fi
     done
     rm -r "$ROOTFS"/usr/lib/dracut/modules.d/01vmklive
