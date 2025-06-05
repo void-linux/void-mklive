@@ -510,11 +510,11 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
 		l) LOCALE="$OPTARG";;
 		i) INITRAMFS_COMPRESSION="$OPTARG";;
 		I) INCLUDE_DIRS+=("$OPTARG");;
-		S) SERVICE_LIST="$SERVICE_LIST $OPTARG";;
+		S) SERVICE_LIST+=" $OPTARG";;
 		e) ROOT_SHELL="$OPTARG";;
 		s) SQUASHFS_COMPRESSION="$OPTARG";;
 		o) OUTPUT_FILE="$OPTARG";;
-		p) PACKAGE_LIST+=($OPTARG);;
+		p) PACKAGE_LIST+=" $OPTARG";;
 		P) PLATFORMS+=($OPTARG) ;;
 		C) BOOT_CMDLINE="$OPTARG";;
 		T) BOOT_TITLE="$OPTARG";;
@@ -524,6 +524,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
 		*) usage >&2; exit 1;;
 	esac
 done
+
 shift $((OPTIND - 1))
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl --repository=https://repo-default.voidlinux.org/current/aarch64"
 
