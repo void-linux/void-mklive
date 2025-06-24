@@ -102,6 +102,7 @@ usage() {
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
 	                    Also accepts linux metapackages (linux-mainline, linux-lts).
+	 -L                 Add linux-lts metapackage as secondary kernel in addition to the default.
 	 -K                 Do not remove builddir
 	 -h                 Show this help and exit
 	 -V                 Show version and exit
@@ -212,19 +213,27 @@ copy_include_directories() {
 }
 
 generate_initramfs() {
-    local _args
+    local kernelversion=${1:-$KERNELVERSION} version_sfx="$2"
+    version_sfx=${version_sfx:+-$version_sfx}
 
     copy_dracut_files "$ROOTFS"
     copy_autoinstaller_files "$ROOTFS"
     chroot "$ROOTFS" env -i /usr/bin/dracut -N --"${INITRAMFS_COMPRESSION}" \
-        --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd" $KERNELVERSION
-    [ $? -ne 0 ] && die "Failed to generate the initramfs"
+        --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd${version_sfx}" $kernelversion
+    [ $? -ne 0 ] && die "Failed to generate the ${kernelversion} initramfs"
 
-    mv "$ROOTFS"/boot/initrd "$BOOT_DIR"
+    mv "$ROOTFS"/boot/initrd${version_sfx} "$BOOT_DIR"/
 	case "$TARGET_ARCH" in
-		i686*|x86_64*) cp "$ROOTFS/boot/vmlinuz-$KERNELVERSION" "$BOOT_DIR"/vmlinuz ;;
-		aarch64*) cp "$ROOTFS/boot/vmlinux-$KERNELVERSION" "$BOOT_DIR"/vmlinux ;;
+		i686*|x86_64*) cp "$ROOTFS/boot/vmlinuz-$kernelversion" "$BOOT_DIR"/vmlinuz${version_sfx} ;;
+		aarch64*) cp "$ROOTFS/boot/vmlinux-$kernelversion" "$BOOT_DIR"/vmlinux${version_sfx} ;;
 	esac
+}
+
+generate_initramfs_lts() {
+    _kver="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver $LTS_LINUX_VERSION)"
+    LTS_KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
+
+    generate_initramfs "$LTS_KERNELVERSION" 'lts'
 }
 
 array_contains() {
@@ -286,15 +295,17 @@ generate_grub_efi_boot() {
     esac
 
     write_entry() {
-        local entrytitle="$1" id="$2" cmdline="$3" dtb="$4" hotkey="$5"
+        # Kernel arguments configured here should be equal to those in
+        # isolinux/isolinux.cfg.in.
+        local entrytitle="$1" id="$2" cmdline="$3" dtb="$4" hotkey="$5" version_sfx="$6"
         cat << EOF >> "$GRUB_DIR"/grub_void.cfg
 menuentry "${entrytitle}" --id "${id}" ${hotkey:+--hotkey $hotkey} {
     set gfxpayload="keep"
-    linux (\${voidlive})/boot/${KERNEL_IMG} \\
+    linux (\${voidlive})/boot/${KERNEL_IMG}${version_sfx} \\
         root=live:CDLABEL=VOID_LIVE ro init=/sbin/init \\
         rd.luks=0 rd.md=0 rd.dm=0 loglevel=4 gpt add_efi_memmap \\
         vconsole.unicode=1 vconsole.keymap=${KEYMAP} locale.LANG=${LOCALE} ${cmdline}
-    initrd (\${voidlive})/boot/initrd
+    initrd (\${voidlive})/boot/initrd${version_sfx}
 EOF
         if [ -n "${dtb}" ]; then
             printf '    devicetree (${voidlive})/boot/dtbs/%s\n' "${dtb}" >> "$GRUB_DIR"/grub_void.cfg
@@ -307,10 +318,15 @@ EOF
 
         ENTRY_TITLE="${BOOT_TITLE} ${KERNELVERSION} ${title_sfx}(${TARGET_ARCH})"
 
+        if [ -n "$LTS_KERNELVERSION" ] ; then
+                LTS_ENTRY_TITLE="${BOOT_TITLE} ${LTS_KERNELVERSION} ${title_sfx}(${TARGET_ARCH})"
+                write_entry "${LTS_ENTRY_TITLE} (RAM)" "lts-linuxram${id_sfx}" \
+                    "rd.live.ram $BOOT_CMDLINE $cmdline" "$dtb" 'l' '-lts'
+        fi
         write_entry "${ENTRY_TITLE}" "linux${id_sfx}" \
             "$BOOT_CMDLINE $cmdline" "$dtb"
         write_entry "${ENTRY_TITLE} (RAM)" "linuxram${id_sfx}" \
-            "rd.live.ram $BOOT_CMDLINE $cmdline" "$dtb"
+            "rd.live.ram $BOOT_CMDLINE $cmdline" "$dtb" 'x'
         write_entry "${ENTRY_TITLE} (graphics disabled)" "linuxnogfx${id_sfx}" \
             "nomodeset $BOOT_CMDLINE $cmdline" "$dtb"
         write_entry "${ENTRY_TITLE} with speech" "linuxa11y${id_sfx}" \
@@ -498,7 +514,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:Lv:P:Vh" opt; do
 	case $opt in
 		a) TARGET_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -519,6 +535,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
 		C) BOOT_CMDLINE="$OPTARG";;
 		T) BOOT_TITLE="$OPTARG";;
 		v) LINUX_VERSION="$OPTARG";;
+		L) readonly ADD_LTS_KERNEL=1;;
 		V) version; exit 0;;
 		h) usage; exit 0;;
 		*) usage >&2; exit 1;;
@@ -596,6 +613,7 @@ ISOLINUX_DIR="$BOOT_DIR/isolinux"
 GRUB_DIR="$BOOT_DIR/grub"
 CURRENT_STEP=0
 STEP_COUNT=10
+[ "${ADD_LTS_KERNEL}" = '1' ] && STEP_COUNT=$((STEP_COUNT+1))
 [ "${IMAGE_TYPE}" = hybrid ] && STEP_COUNT=$((STEP_COUNT+1))
 [ "${#INCLUDE_DIRS[@]}" -gt 0 ] && STEP_COUNT=$((STEP_COUNT+1))
 [ "${#IGNORE_PKGS[@]}" -gt 0 ] && STEP_COUNT=$((STEP_COUNT+1))
@@ -648,6 +666,12 @@ case "$LINUX_VERSION" in
 esac
 shopt -u extglob
 
+if [ "$ADD_LTS_KERNEL" = '1' ] ; then
+    LTS_METAPKG=linux-lts
+    PACKAGE_LIST+=("$LTS_METAPKG")
+    LTS_LINUX_VERSION="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x "$LTS_METAPKG" | grep 'linux[0-9._]\+')"
+fi
+
 _kver="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -p pkgver $LINUX_VERSION)"
 KERNELVERSION=$($XBPS_UHELPER_CMD getpkgversion ${_kver})
 
@@ -695,6 +719,11 @@ fi
 
 print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
 generate_initramfs
+
+if [ "$ADD_LTS_KERNEL" = '1' ] ; then
+    print_step "Generating LTS initramfs image ($INITRAMFS_COMPRESSION)..."
+    generate_initramfs_lts
+fi
 
 if [ "$IMAGE_TYPE" = hybrid ]; then
     print_step "Generating isolinux support for PC-BIOS systems..."
