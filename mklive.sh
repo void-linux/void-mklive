@@ -24,6 +24,158 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
+
+# git clone https://github.com/void-linux/void-mklive.git
+
+# LANG=en_US.UTF-8 ./mklive.sh -h
+# LANG=pt_BR.UTF-8 ./mklive.sh -h
+
+# Traduzir para o Espanhol
+
+
+# Parei no arquivo installer.sh
+
+# https://www.youtube.com/watch?v=378rU-wpLX4&t=348s
+
+# script (addvm.sh) para gera maquina virtual
+
+# https://youtu.be/378rU-wpLX4?t=657
+
+
+# $ xbps-query -L
+# 14641 https://repo-default.voidlinux.org/current (RSA signed)
+#  5993 https://repo-default.voidlinux.org/current/multilib (RSA signed)
+#    62 https://repo-default.voidlinux.org/current/nonfree (RSA signed)
+
+
+# unrar rar nmap p7zip-unrar trans firefox-esr firefox-esr-i18n-pt-BR
+
+# $ echo $SHELL
+# /bin/bash
+
+
+# setxkbmap -query
+# rules:      evdev
+# model:      pc105
+# layout:     br
+# variant:    thinkpad
+
+# -l pt_BR.UTF-8 -k br
+
+# https://repo-default.voidlinux.org/current/multilib https://repo-default.voidlinux.org/current/nonfree 
+
+
+# Software para gerenciar máquinas virtuais:
+
+# VirtualBox
+# QEMU
+# virsh
+
+
+# https://youtu.be/378rU-wpLX4?t=957
+# https://www.youtube.com/watch?v=378rU-wpLX4&t=348s
+# Instalador void funcionando: https://www.youtube.com/watch?v=378rU-wpLX4&t=348s
+
+
+# Crear live iso personal con void-mklive
+
+# https://youtu.be/qLurRFQhMbs?t=193
+# https://www.youtube.com/watch?v=qLurRFQhMbs
+
+
+# https://www.youtube.com/results?search_query=iso+void-mklive
+# https://www.youtube.com/results?search_query=void-mklive
+
+# void-mklive - Linux selber machen
+# https://www.youtube.com/watch?v=oe53VL7pl7c
+
+
+# Papel de parede
+
+# ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+
+# Experimento | usando void-mklive
+# https://www.youtube.com/watch?v=kLn_vtnkick
+
+
+# Na tela de boot da ISO (Live GRUB/syslinux menu)
+
+# Quando a ISO iniciar e aparecer o menu:
+
+# Pressione a tecla e (no GRUB) ou TAB (no syslinux)
+
+# Vá até a linha que começa com linux ou vmlinuz
+
+# Adicione no final:
+
+# locale.LANG=pt_BR.UTF-8 vconsole.keymap=br-abnt2
+
+# ou
+
+# locale.LANG=pt_BR.UTF-8 vconsole.keymap=br
+
+
+clear
+
+# ----------------------------------------------------------------------------------------
+
+export TEXTDOMAIN=mklive
+export TEXTDOMAINDIR=./locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# echo $LANG
+
+# ----------------------------------------------------------------------------------------
+
+check_pacote(){
+
+
+# Lista de pacotes individuais
+
+packages=(git make dialog)
+
+# Verificar pacotes individuais
+
+for pkg in "${packages[@]}"; do
+    if command -v "$pkg" 1> /dev/null 2> /dev/null ; then
+        echo "$(gettext "Package installed"): $pkg"
+    else
+        echo "$(gettext "Package not installed"): $pkg"
+    fi
+done
+
+
+# Lista de pacotes individuais
+
+# Esse padrão (20181003_2) pode se um problema para identificar o pacote instalado.
+
+packages=(base-devel-20181003_2)
+
+installed=$(xbps-query -l | awk '{print $2}')
+
+for pkg in "${packages[@]}"; do
+    if echo "$installed" | grep -qx "$pkg"; then
+        echo "$(gettext "Package installed"): $pkg"
+    else
+        echo "$(gettext "Package not installed"): $pkg"
+    fi
+done
+
+
+echo -e "\n\n"
+
+}
+
+# check_pacote
+
+# ----------------------------------------------------------------------------------------
+
+
 umask 022
 
 . ./lib.sh
@@ -38,7 +190,7 @@ readonly PROGNAME="$(basename "$0")"
 declare -a INCLUDE_DIRS=()
 
 die() {
-    info_msg "ERROR: $*"
+    info_msg "$(gettext "ERROR"): $*"
     error_out 1 $LINENO
 }
 
@@ -57,7 +209,7 @@ mount_pseudofs() {
 umount_pseudofs() {
 	for f in sys dev proc; do
 		if [ -d "$ROOTFS/$f" ] && ! umount -R -f "$ROOTFS/$f"; then
-			info_msg "ERROR: failed to unmount $ROOTFS/$f/"
+			info_msg "$(printf "$(gettext "ERROR: failed to unmount %s")"  "$ROOTFS/$f/")"
 			return 1
 		fi
 	done
@@ -72,39 +224,39 @@ error_out() {
 
 usage() {
 	cat <<-EOH
-	Usage: $PROGNAME [options]
+	$(printf "$(gettext "Usage: %s [options]")"  "$PROGNAME")
 
-	Generates a basic live ISO image of Void Linux. This ISO image can be written
-	to a CD/DVD-ROM or any USB stick.
+	$(gettext "Generates a basic live ISO image of Void Linux. This ISO image can be written")
+	$(gettext "to a CD/DVD-ROM or any USB stick.")
 
-	To generate a more complete live ISO image, use mkiso.sh.
+	$(gettext "To generate a more complete live ISO image, use mkiso.sh.")
 
-	OPTIONS
-	 -a <arch>          Set XBPS_ARCH in the ISO image
-	 -b <system-pkg>    Set an alternative base package (default: base-system)
-	 -r <repo>          Use this XBPS repository. May be specified multiple times
-	 -c <cachedir>      Use this XBPS cache directory (default: ./xbps-cachedir-<arch>)
-	 -k <keymap>        Default keymap to use (default: us)
-	 -l <locale>        Default locale to use (default: en_US.UTF-8)
-	 -i <lz4|gzip|bzip2|xz>
-	                    Compression type for the initramfs image (default: xz)
-	 -s <gzip|lzo|xz>   Compression type for the squashfs image (default: xz)
-	 -o <file>          Output file name for the ISO image (default: automatic)
-	 -p "<pkg> ..."     Install additional packages in the ISO image
-	 -g "<pkg> ..."     Ignore packages when building the ISO image
-	 -I <includedir>    Include directory structure under given path in the ROOTFS
-	 -S "<service> ..." Enable services in the ISO image
-	 -e <shell>         Default shell of the root user (must be absolute path).
-	                    Set the live.shell kernel argument to change the default shell of anon.
-	 -C "<arg> ..."     Add additional kernel command line arguments
-	 -P "<platform> ..."
-	                    Platforms to enable for aarch64 EFI ISO images (available: pinebookpro, x13s)
-	 -T <title>         Modify the bootloader title (default: Void Linux)
-	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
-	                    Also accepts linux metapackages (linux-mainline, linux-lts).
-	 -K                 Do not remove builddir
-	 -h                 Show this help and exit
-	 -V                 Show version and exit
+	$(gettext "OPTIONS")
+	$(gettext " -a <arch>          Set XBPS_ARCH in the ISO image")
+	$(gettext " -b <system-pkg>    Set an alternative base package (default: base-system)")
+	$(gettext " -r <repo>          Use this XBPS repository. May be specified multiple times")
+	$(gettext " -c <cachedir>      Use this XBPS cache directory (default: ./xbps-cachedir-<arch>)")
+	$(gettext " -k <keymap>        Default keymap to use (default: us)")
+	$(gettext " -l <locale>        Default locale to use (default: en_US.UTF-8)")
+	$(gettext " -i <lz4|gzip|bzip2|xz>")
+	$(gettext "                    Compression type for the initramfs image (default: xz)")
+	$(gettext " -s <gzip|lzo|xz>   Compression type for the squashfs image (default: xz)")
+	$(gettext " -o <file>          Output file name for the ISO image (default: automatic)")
+	$(gettext ' -p "<pkg> ..."     Install additional packages in the ISO image')
+	$(gettext ' -g "<pkg> ..."     Ignore packages when building the ISO image')
+	$(gettext " -I <includedir>    Include directory structure under given path in the ROOTFS")
+	$(gettext ' -S "<service> ..." Enable services in the ISO image')
+	$(gettext " -e <shell>         Default shell of the root user (must be absolute path).")
+	$(gettext "                    Set the live.shell kernel argument to change the default shell of anon.")
+	$(gettext ' -C "<arg> ..."     Add additional kernel command line arguments')
+	$(gettext ' -P "<platform> ..."')
+	$(gettext "                    Platforms to enable for aarch64 EFI ISO images (available: pinebookpro, x13s)")
+	$(gettext " -T <title>         Modify the bootloader title (default: Void Linux)")
+	$(gettext " -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).")
+	$(gettext "                    Also accepts linux metapackages (linux-mainline, linux-lts).")
+	$(gettext " -K                 Do not remove builddir")
+	$(gettext " -h                 Show this help and exit")
+	$(gettext " -V                 Show version and exit")
 	EOH
 }
 
@@ -126,13 +278,13 @@ copy_autoinstaller_files() {
 install_prereqs() {
     XBPS_ARCH=$HOST_ARCH "$XBPS_INSTALL_CMD" -r "$VOIDHOSTDIR" ${XBPS_REPOSITORY} \
          -c "$XBPS_HOST_CACHEDIR" -y "${REQUIRED_PKGS[@]}"
-    [ $? -ne 0 ] && die "Failed to install required software, exiting..."
+    [ $? -ne 0 ] && die "$(gettext "Failed to install required software, exiting...")"
 }
 
 install_target_pkgs() {
     XBPS_ARCH=$TARGET_ARCH "$XBPS_INSTALL_CMD" -r "$VOIDTARGETDIR" ${XBPS_REPOSITORY} \
          -c "$XBPS_HOST_CACHEDIR" -y "${TARGET_PKGS[@]}"
-    [ $? -ne 0 ] && die "Failed to install required software, exiting..."
+    [ $? -ne 0 ] && die "$(gettext "Failed to install required software, exiting...")"
 }
 
 post_install_packages() {
@@ -149,13 +301,13 @@ post_install_packages() {
 install_packages() {
     XBPS_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -yn "${PACKAGE_LIST[@]}" "${INITRAMFS_PKGS[@]}"
-    [ $? -ne 0 ] && die "Missing required binary packages, exiting..."
+    [ $? -ne 0 ] && die "$(gettext "Missing required binary packages, exiting...")"
 
     mount_pseudofs
 
     LANG=C XBPS_TARGET_ARCH=$TARGET_ARCH "${XBPS_INSTALL_CMD}" -U -r "$ROOTFS" \
         ${XBPS_REPOSITORY} -c "$XBPS_CACHEDIR" -y "${PACKAGE_LIST[@]}" "${INITRAMFS_PKGS[@]}"
-    [ $? -ne 0 ] && die "Failed to install ${PACKAGE_LIST[*]} ${INITRAMFS_PKGS[*]}"
+    [ $? -ne 0 ] && die "printf "$(gettext "Failed to install: %s %s\n")" "${PACKAGE_LIST[*]}" "${INITRAMFS_PKGS[*]}" "
 
     xbps-reconfigure -r "$ROOTFS" -f base-files >/dev/null 2>&1
     chroot "$ROOTFS" env -i xbps-reconfigure -f base-files
@@ -193,7 +345,7 @@ enable_services() {
     SERVICE_LIST="$*"
     for service in $SERVICE_LIST; do
         if ! [ -e $ROOTFS/etc/sv/$service ]; then
-            die "service $service not in /etc/sv"
+            die "$(printf "$(gettext "service %s not in /etc/sv \n")" "$service")"
         fi
         ln -sf /etc/sv/$service $ROOTFS/etc/runit/runsvdir/default/
     done
@@ -201,12 +353,13 @@ enable_services() {
 
 change_shell() {
     chroot "$ROOTFS" chsh -s "$ROOT_SHELL" root
-    [ $? -ne 0 ] && die "Failed to change the shell for root"
+    [ $? -ne 0 ] && die "$(gettext "Failed to change the shell for root")"
 }
 
 copy_include_directories() {
     for includedir in "${INCLUDE_DIRS[@]}"; do
-        info_msg "=> copying include directory '$includedir' ..."
+        info_msg "=> "$(printf "$(gettext "copying include directory '%s' ...")" "$includedir")""
+
         find "$includedir" -mindepth 1 -maxdepth 1 -exec cp -rfpPv {} "$ROOTFS"/ \;
     done
 }
@@ -218,7 +371,7 @@ generate_initramfs() {
     copy_autoinstaller_files "$ROOTFS"
     chroot "$ROOTFS" env -i /usr/bin/dracut -N --"${INITRAMFS_COMPRESSION}" \
         --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd" $KERNELVERSION
-    [ $? -ne 0 ] && die "Failed to generate the initramfs"
+    [ $? -ne 0 ] && die "$(gettext "Failed to generate the initramfs")"
 
     mv "$ROOTFS"/boot/initrd "$BOOT_DIR"
 	case "$TARGET_ARCH" in
@@ -492,7 +645,7 @@ generate_iso_image() {
         -output "$OUTPUT_FILE" "$IMAGEDIR"
     )
 
-    "$VOIDHOSTDIR"/usr/bin/xorriso -as mkisofs "${XORRISO_ARGS[@]}" || die "Failed to generate ISO image"
+    "$VOIDHOSTDIR"/usr/bin/xorriso -as mkisofs "${XORRISO_ARGS[@]}" || die "$(gettext "Failed to generate ISO image")"
 }
 
 #
@@ -561,14 +714,14 @@ case "$TARGET_ARCH" in
             if [ -r "platforms/${platform}.sh" ]; then
                 . "platforms/${platform}.sh"
             else
-                die "unknown platform: ${platform}"
+                die "$(printf "$(gettext "unknown platform: %s")" "${platform}" )"
             fi
             PACKAGE_LIST+=("${PLATFORM_PKGS[@]}")
             unset PLATFORM_PKGS PLATFORM_CMDLINE PLATFORM_DTB
         done
 
 		;;
-    *) >&2 echo "architecture $TARGET_ARCH not supported by mklive.sh"; exit 1;;
+    *) >&2 echo "$(printf "$(gettext "architecture %s not supported by mklive.sh")" "$TARGET_ARCH" )" ; exit 1;;
 esac
 
 # Required packages in the image for a working system.
@@ -576,7 +729,7 @@ PACKAGE_LIST+=("$BASE_SYSTEM_PKG")
 
 # Check for root permissions.
 if [ "$(id -u)" -ne 0 ]; then
-    die "Must be run as root, exiting..."
+    die "$(gettext "Must be run as root, exiting...")"
 fi
 
 trap 'error_out $? $LINENO' INT TERM 0
@@ -613,7 +766,7 @@ STEP_COUNT=10
 
 mkdir -p "$ROOTFS" "$VOIDHOSTDIR" "$VOIDTARGETDIR" "$GRUB_DIR" "$ISOLINUX_DIR"
 
-print_step "Synchronizing XBPS repository data..."
+print_step "$(gettext "Synchronizing XBPS repository data...")"
 copy_void_keys "$ROOTFS"
 XBPS_ARCH=$TARGET_ARCH $XBPS_INSTALL_CMD -r "$ROOTFS" ${XBPS_REPOSITORY} -S
 copy_void_keys "$VOIDHOSTDIR"
@@ -643,7 +796,7 @@ case "$LINUX_VERSION" in
         LINUX_VERSION="$(XBPS_ARCH=$TARGET_ARCH $XBPS_QUERY_CMD -r "$ROOTFS" ${XBPS_REPOSITORY:=-R} -x linux | grep 'linux[0-9._]\+')"
         ;;
     *)
-        die "-v option must be in format linux<version> or linux-<series>"
+        die "$(gettext "-v option must be in format linux<version> or linux-<series>")"
         ;;
 esac
 shopt -u extglob
@@ -656,15 +809,15 @@ if [ "$LINUX_VERSION" = linux-asahi ]; then
 fi
 
 if [ "$?" -ne "0" ]; then
-    die "Failed to find kernel package version"
+    die "$(gettext "Failed to find kernel package version")"
 fi
 
 : ${OUTPUT_FILE="void-live-${TARGET_ARCH}-${KERNELVERSION}-$(date -u +%Y%m%d).iso"}
 
-print_step "Installing software to generate the image: ${REQUIRED_PKGS[*]} ..."
+print_step "$(printf "$(gettext "Installing software to generate the image: %s ...")" "${REQUIRED_PKGS[*]}" )"
 install_prereqs "${REQUIRED_PKGS[@]}"
 
-print_step "Installing software to generate the image: ${TARGET_PKGS[*]} ..."
+print_step "$(printf "$(gettext "Installing software to generate the image: %s ...")" "${TARGET_PKGS[*]}" )"
 install_target_pkgs "${TARGET_PKGS[@]}"
 
 mkdir -p "$ROOTFS"/etc
@@ -672,46 +825,47 @@ mkdir -p "$ROOTFS"/etc
 [ -s data/issue ] && cp data/issue "$ROOTFS"/etc
 
 if [ "${#IGNORE_PKGS[@]}" -gt 0 ]; then
-	print_step "Ignoring packages in the rootfs: ${IGNORE_PKGS[*]} ..."
+	print_step "$(printf "$(gettext "Ignoring packages in the rootfs: %s ...")" "${IGNORE_PKGS[*]}" )"
 	ignore_packages
 fi
 
-print_step "Installing void pkgs into the rootfs: ${PACKAGE_LIST[*]} ..."
+print_step "$(printf "$(gettext "Installing void pkgs into the rootfs: %s ...")" "${PACKAGE_LIST[*]}" )"
 install_packages
 
 : ${DEFAULT_SERVICE_LIST:=agetty-tty1 agetty-tty2 agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6 udevd}
-print_step "Enabling services: ${SERVICE_LIST} ..."
+print_step "$(printf "$(gettext "Enabling services: %s ...")" "${SERVICE_LIST}" ) "
 enable_services ${DEFAULT_SERVICE_LIST} ${SERVICE_LIST}
 
 if [ -n "$ROOT_SHELL" ]; then
-    print_step "Changing the root shell ..."
+    print_step "$(gettext "Changing the root shell ...")"
     change_shell
 fi
 
 if [ "${#INCLUDE_DIRS[@]}" -gt 0 ];then
-    print_step "Copying directory structures into the rootfs ..."
+    print_step "$(gettext "Copying directory structures into the rootfs ...")"
     copy_include_directories
 fi
 
-print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
+print_step "$(printf "$(gettext "Generating initramfs image (%s)...")" "$INITRAMFS_COMPRESSION" )"
 generate_initramfs
 
 if [ "$IMAGE_TYPE" = hybrid ]; then
-    print_step "Generating isolinux support for PC-BIOS systems..."
+    print_step "$(gettext "Generating isolinux support for PC-BIOS systems...")"
     generate_isolinux_boot
 fi
 
-print_step "Generating GRUB support for EFI systems..."
+print_step "$(gettext "Generating GRUB support for EFI systems...")"
 generate_grub_efi_boot
 
-print_step "Cleaning up rootfs..."
+print_step "$(gettext "Cleaning up rootfs...")"
 cleanup_rootfs
 
-print_step "Generating squashfs image ($SQUASHFS_COMPRESSION) from rootfs..."
+print_step "$(printf "$(gettext "Generating squashfs image (%s) from rootfs...")" "$SQUASHFS_COMPRESSION" )"
 generate_squashfs
 
-print_step "Generating ISO image..."
+print_step "$(gettext "Generating ISO image...")"
 generate_iso_image
 
 hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
-info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."
+info_msg "$(printf "$(gettext "Created %s (%s) successfully.")" "$(readlink -f "$OUTPUT_FILE")" "$hsize")"
+
