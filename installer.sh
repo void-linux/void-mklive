@@ -25,6 +25,32 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
+
+# https://www.vivaolinux.com.br/artigo/Introducao-ao-Void-Linux?pagina=2
+# https://edpsblog.wordpress.com/2019/09/02/how-to-void-linux-mate/
+
+clear
+
+# ----------------------------------------------------------------------------------------
+
+export TEXTDOMAIN=installer
+
+export TEXTDOMAINDIR=./locale
+
+# A variável de ambiente TEXTDOMAINDIR deve apontar para o diretório raiz onde ficam os 
+# subdiretórios de idiomas, como /usr/share/locale.
+
+# export TEXTDOMAINDIR=/usr/share/locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# ----------------------------------------------------------------------------------------
+
+
 # Make sure we don't inherit these from env.
 SOURCE_DONE=
 HOSTNAME_DONE=
@@ -86,8 +112,8 @@ UNDERLINE="\Zu"
 RESET="\Zn"
 
 # Properties shared per widget.
-MENULABEL="${BOLD}Use UP and DOWN keys to navigate \
-menus. Use TAB to switch between buttons and ENTER to select.${RESET}"
+MENULABEL="${BOLD}$(gettext "Use UP and DOWN keys to navigate menus. 
+Use TAB to switch between buttons and ENTER to select.")${RESET}"
 MENUSIZE="14 60 0"
 INPUTSIZE="8 60"
 MSGBOXSIZE="8 70"
@@ -95,17 +121,29 @@ YESNOSIZE="$INPUTSIZE"
 WIDGET_SIZE="10 70"
 
 DIALOG() {
+
+# VERSION=$(git ls-remote https://github.com/void-linux/void-mklive.git HEAD | awk '{print substr($1,1,7)}')
+
+VERSION=$(cat commit.txt)
+
+MKLIVE="$(cat version)"
+
     rm -f $ANSWER
+
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
-        --cancel-label "Back" --aspect 20 "$@" 2>$ANSWER
+        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s %s)")"  "$MKLIVE" "$VERSION")${RESET}" \
+        --cancel-label "$(gettext "Back")" --aspect 20 "$@" 2>$ANSWER
+
+
     return $?
 }
 
 INFOBOX() {
+
     # Note: dialog --infobox and --keep-tite don't work together
+
     dialog --colors --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}Void Linux installation -- https://www.voidlinux.org (@@MKLIVE_VERSION@@)${RESET}" \
+        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s %s)")"  "$MKLIVE" "$VERSION")${RESET}" \
         --title "${TITLE}" --aspect 20 --infobox "$@"
 }
 
@@ -437,19 +475,19 @@ menu_filesystems() {
     local dev fstype fssize mntpoint reformat
 
     while true; do
-        DIALOG --ok-label "Change" --cancel-label "Done" \
-            --title " Select the partition to edit " --menu "$MENULABEL" \
+        DIALOG --ok-label "$(gettext "Change")" --cancel-label "$(gettext "Done")" \
+            --title "$(gettext " Select the partition to edit ")" --menu "$MENULABEL" \
             ${MENUSIZE} $(show_partitions)
         [ $? -ne 0 ] && return
 
         dev=$(cat $ANSWER)
-        DIALOG --title " Select the filesystem type for $dev " \
+        DIALOG --title " $(printf "$(gettext "Select the filesystem type for %s")"  "$dev") " \
             --menu "$MENULABEL" ${MENUSIZE} \
             "btrfs" "Oracle's Btrfs" \
             "ext2" "Linux ext2 (no journaling)" \
             "ext3" "Linux ext3 (journal)" \
             "ext4" "Linux ext4 (journal)" \
-            "f2fs" "Flash-Friendly Filesystem" \
+            "f2fs" "$(gettext "Flash-Friendly Filesystem")" \
             "swap" "Linux swap" \
             "vfat" "FAT32" \
             "xfs" "SGI's XFS"
@@ -459,7 +497,7 @@ menu_filesystems() {
             continue
         fi
         if [ "$fstype" != "swap" ]; then
-            DIALOG --inputbox "Please specify the mount point for $dev:" ${INPUTSIZE}
+            DIALOG --inputbox "$(printf "$(gettext "Please specify the mount point for %s:")" "$dev")" ${INPUTSIZE}
             if [ $? -eq 0 ]; then
                 mntpoint=$(cat $ANSWER)
             elif [ $? -eq 1 ]; then
@@ -468,7 +506,7 @@ menu_filesystems() {
         else
             mntpoint=swap
         fi
-        DIALOG --yesno "Do you want to create a new filesystem on $dev?" ${YESNOSIZE}
+        DIALOG --yesno "$(printf "$(gettext "Do you want to create a new filesystem on %s?")"  "$dev")" ${YESNOSIZE}
         if [ $? -eq 0 ]; then
             reformat=1
         elif [ $? -eq 1 ]; then
@@ -493,24 +531,24 @@ menu_filesystems() {
 }
 
 menu_partitions() {
-    DIALOG --title " Select the disk to partition " \
+    DIALOG --title "$(gettext " Select the disk to partition ")" \
         --menu "$MENULABEL" ${MENUSIZE} $(show_disks)
     if [ $? -eq 0 ]; then
         local device=$(cat $ANSWER)
 
-        DIALOG --title " Select the software for partitioning " \
+        DIALOG --title "$(gettext " Select the software for partitioning ")" \
             --menu "$MENULABEL" ${MENUSIZE} \
-            "cfdisk" "Easy to use" \
-            "fdisk" "More advanced"
+            "cfdisk" "$(gettext "Easy to use")" \
+            "fdisk"  "$(gettext "More advanced")"
         if [ $? -eq 0 ]; then
             local software=$(cat $ANSWER)
 
-            DIALOG --title "Modify Partition Table on $device" --msgbox "\n
-${BOLD}${software} will be executed in disk $device.${RESET}\n\n
+            DIALOG --title "$(printf "$(gettext "Modify Partition Table on %s")"  "$device")" --msgbox "$(printf "$(gettext "\n
+%s%s will be executed in disk %s.%s\n\n
 For BIOS systems, MBR or GPT partition tables are supported. To use GPT\n
 on PC BIOS systems, an empty partition of 1MB must be added at the first\n
 2GB of the disk with the partition type \`BIOS Boot'.\n
-${BOLD}NOTE: you don't need this on EFI systems.${RESET}\n\n
+%sNOTE: you don't need this on EFI systems.%s\n\n
 For EFI systems, GPT is mandatory and a FAT32 partition with at least 100MB\n
 must be created with the partition type \`EFI System'. This will be used as\n
 the EFI System Partition. This partition must have the mountpoint \`/boot/efi'.\n\n
@@ -518,8 +556,8 @@ At least 1 partition is required for the rootfs (/). For this partition,\n
 at least 2GB is required, but more is recommended. The rootfs partition\n
 should have the partition type \`Linux Filesystem'. For swap, RAM*2\n
 should be enough and the partition type \`Linux swap' should be used.\n\n
-${BOLD}WARNING: /usr is not supported as a separate partition.${RESET}\n
-${RESET}\n" 23 80
+%sWARNING: /usr is not supported as a separate partition.%s\n
+%s\n")"  "${BOLD}" "${software}" "$device" "${RESET}" "${BOLD}" "${RESET}" "${BOLD}" "${RESET}" "${RESET}")" 23 80
             if [ $? -eq 0 ]; then
                 while true; do
                     clear; $software $device; PARTITIONS_DONE=1
@@ -540,7 +578,7 @@ menu_keymap() {
         _KEYMAPS="${_KEYMAPS} ${f} -"
     done
     while true; do
-        DIALOG --title " Select your keymap " --menu "$MENULABEL" 14 70 14 ${_KEYMAPS}
+        DIALOG --title "$(gettext " Select your keymap ")" --menu "$MENULABEL" 14 70 14 ${_KEYMAPS}
         if [ $? -eq 0 ]; then
             set_option KEYMAP "$(cat $ANSWER)"
             loadkeys "$(cat $ANSWER)"
@@ -566,7 +604,7 @@ menu_locale() {
     local _locales="$(grep -E '\.UTF-8' /etc/default/libc-locales|awk '{print $1}'|sed -e 's/^#//')"
     local LOCALES ISO639 ISO3166
     local TMPFILE=$(mktemp -t vinstall-XXXXXXXX || exit 1)
-    INFOBOX "Scanning locales ..." 4 60
+    INFOBOX "$(gettext "Scanning locales ...")" 4 60
     for f in ${_locales}; do
         eval $(echo $f | awk 'BEGIN { FS="." } \
             { FS="_"; split($1, a); printf "ISO639=%s ISO3166=%s\n", a[1], a[2] }')
@@ -577,7 +615,7 @@ menu_locale() {
     LOCALES=$(sort -t '|' -k 2 < $TMPFILE | xargs | sed -e's/| /|/g')
     rm -f $TMPFILE
     while true; do
-        (IFS="|"; DIALOG --title " Select your locale " --menu "$MENULABEL" 18 70 18 ${LOCALES})
+        (IFS="|"; DIALOG --title "$(gettext " Select your locale ")" --menu "$MENULABEL" 18 70 18 ${LOCALES})
         if [ $? -eq 0 ]; then
             set_option LOCALE "$(cat $ANSWER)"
             LOCALE_DONE=1
@@ -595,7 +633,7 @@ set_locale() {
         sed -i -e "s|LANG=.*|LANG=$LOCALE|g" $TARGETDIR/etc/locale.conf
         # Uncomment locale from /etc/default/libc-locales and regenerate it.
         sed -e "/${LOCALE}/s/^\#//" -i $TARGETDIR/etc/default/libc-locales
-        echo "Running xbps-reconfigure -f glibc-locales ..." >$LOG
+        echo "$(gettext "Running xbps-reconfigure -f glibc-locales ...")" >$LOG
         chroot $TARGETDIR xbps-reconfigure -f glibc-locales >$LOG 2>&1
     fi
 }
@@ -604,10 +642,10 @@ menu_timezone() {
     local areas=(Africa America Antarctica Arctic Asia Atlantic Australia Europe Indian Pacific)
 
     local area locations location
-    while (IFS='|'; DIALOG ${area:+--default-item|"$area"} --title " Select area " --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${areas[@]}")); do
+    while (IFS='|'; DIALOG ${area:+--default-item|"$area"} --title "$(gettext " Select area ")" --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${areas[@]}")); do
         area=$(cat $ANSWER)
         read -a locations -d '\n' < <(find /usr/share/zoneinfo/$area -type f -printf '%P\n' | sort)
-        if (IFS='|'; DIALOG --title " Select location (${area}) " --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${locations[@]//_/ }")); then
+        if (IFS='|'; DIALOG --title " $(printf "$(gettext "Select location (%s)")"  "${area}") " --menu "$MENULABEL" 19 51 19 $(printf '%s||' "${locations[@]//_/ }")); then
             location=$(tr ' ' '_' < $ANSWER)
             set_option TIMEZONE "$area/$location"
             TIMEZONE_DONE=1
@@ -627,7 +665,7 @@ set_timezone() {
 
 menu_hostname() {
     while true; do
-        DIALOG --inputbox "Set the machine hostname:" ${INPUTSIZE}
+        DIALOG --inputbox "$(gettext "Set the machine hostname"):" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
             set_option HOSTNAME "$(cat $ANSWER)"
             HOSTNAME_DONE=1
@@ -648,9 +686,9 @@ menu_rootpassword() {
 
     while true; do
         if [ -z "${_firstpass}" ]; then
-            _desc="Enter the root password"
+            _desc="$(gettext "Enter the root password")"
         else
-            _again=" again"
+            _again=" $(gettext "again")"
         fi
         DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
@@ -661,7 +699,7 @@ menu_rootpassword() {
             fi
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
-                    INFOBOX "Passwords do not match! Please enter again." 6 60
+                    INFOBOX "$(gettext "Passwords do not match! Please enter again.")" 6 60
                     unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
@@ -687,7 +725,7 @@ menu_useraccount() {
     while true; do
         _preset=$(get_option USERLOGIN)
         [ -z "$_preset" ] && _preset="void"
-        DIALOG --inputbox "Enter a primary login name:" ${INPUTSIZE} "$_preset"
+        DIALOG --inputbox "$(gettext "Enter a primary login name"):" ${INPUTSIZE} "$_preset"
         if [ $? -eq 0 ]; then
             _userlogin="$(cat $ANSWER)"
             # based on useradd(8) § Caveats
@@ -696,7 +734,7 @@ menu_useraccount() {
                 USERLOGIN_DONE=1
                 break
             else
-                INFOBOX "Invalid login name! Please try again." 6 60
+                INFOBOX "$(gettext "Invalid login name! Please try again.")" 6 60
                 unset _userlogin
                 sleep 2 && clear && continue
             fi
@@ -707,8 +745,8 @@ menu_useraccount() {
 
     while true; do
         _preset=$(get_option USERNAME)
-        [ -z "$_preset" ] && _preset="Void User"
-        DIALOG --inputbox "Enter a display name for login '$(get_option USERLOGIN)' :" \
+        [ -z "$_preset" ] && _preset="$(gettext "Void User")"
+        DIALOG --inputbox "$(gettext "Enter a display name for login") '$(get_option USERLOGIN)' :" \
             ${INPUTSIZE} "$_preset"
         if [ $? -eq 0 ]; then
             set_option USERNAME "$(cat $ANSWER)"
@@ -721,9 +759,9 @@ menu_useraccount() {
 
     while true; do
         if [ -z "${_firstpass}" ]; then
-            _desc="Enter the password for login '$(get_option USERLOGIN)'"
+            _desc="$(gettext "Enter the password for login") '$(get_option USERLOGIN)'"
         else
-            _again=" again"
+            _again=" $(gettext "again")"
         fi
         DIALOG --insecure --passwordbox "${_desc}${_again}" ${INPUTSIZE}
         if [ $? -eq 0 ]; then
@@ -734,7 +772,7 @@ menu_useraccount() {
             fi
             if [ -n "${_firstpass}" -a -n "${_secondpass}" ]; then
                 if [ "${_firstpass}" != "${_secondpass}" ]; then
-                    INFOBOX "Passwords do not match! Please enter again." 6 60
+                    INFOBOX "$(gettext "Passwords do not match! Please enter again.")" 6 60
                     unset _firstpass _secondpass _again
                     sleep 2 && clear && continue
                 fi
@@ -749,7 +787,7 @@ menu_useraccount() {
 
     _groups="wheel,audio,video,floppy,cdrom,optical,kvm,users,xbuilder"
     while true; do
-        _desc="Select group membership for login '$(get_option USERLOGIN)':"
+        _desc="$(gettext "Select group membership for login") '$(get_option USERLOGIN)':"
         for _group in $(cat /etc/group); do
             _gid="$(echo ${_group} | cut -d: -f3)"
             _group="$(echo ${_group} | cut -d: -f1)"
@@ -790,7 +828,7 @@ set_useraccount() {
 
 menu_bootloader() {
     while true; do
-        DIALOG --title " Select the disk to install the bootloader" \
+        DIALOG --title "$(gettext " Select the disk to install the bootloader")" \
             --menu "$MENULABEL" ${MENUSIZE} $(show_disks) none "Manage bootloader otherwise"
         if [ $? -eq 0 ]; then
             set_option BOOTLOADER "$(cat $ANSWER)"
@@ -801,7 +839,7 @@ menu_bootloader() {
         fi
     done
     while true; do
-        DIALOG --yesno "Use a graphical terminal for the boot loader?" ${YESNOSIZE}
+        DIALOG --yesno "$(gettext "Use a graphical terminal for the boot loader?")" ${YESNOSIZE}
         if [ $? -eq 0 ]; then
             set_option TEXTCONSOLE 0
             break
@@ -823,18 +861,18 @@ set_bootloader() {
     if [ -n "$EFI_SYSTEM" ]; then
         grub_args="--target=$EFI_TARGET --efi-directory=/boot/efi --bootloader-id=void_grub --recheck"
     fi
-    echo "Running grub-install $grub_args $dev..." >$LOG
+    echo "$(printf "$(gettext "Running grub-install %s %s...")"  "$grub_args" "$dev")" >$LOG
     chroot $TARGETDIR grub-install $grub_args $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to install GRUB to $dev!\nCheck $LOG for errors." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to install GRUB to %s!\nCheck %s for errors.")"  "$dev" "$LOG")" ${MSGBOXSIZE}
         DIE 1
     fi
-    echo "Running grub-mkconfig on $TARGETDIR..." >$LOG
+    echo "$(printf "$(gettext "Running grub-mkconfig on %s...")"  "$TARGETDIR")" >$LOG
     chroot $TARGETDIR grub-mkconfig -o /boot/grub/grub.cfg >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR${RESET}: \
-failed to run grub-mkconfig!\nCheck $LOG for errors." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR")${RESET}: \
+$(printf "$(gettext "failed to run grub-mkconfig!\nCheck %s for errors.")"  "$LOG")" ${MSGBOXSIZE}
         DIE 1
     fi
 }
@@ -849,35 +887,35 @@ test_network() {
     rm -f otime
 
     if [ "$status" -eq 0 ]; then
-        DIALOG --msgbox "Network is working properly!" ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Network is working properly!")" ${MSGBOXSIZE}
         NETWORK_DONE=1
         return 1
     fi
     if [ "$1" = "nm" ]; then
-        DIALOG --msgbox "Network Manager is enabled but network is inaccessible, please set it up externally with nmcli, nmtui, or the Network Manager tray applet." ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Network Manager is enabled but network is inaccessible, please set it up externally with nmcli, nmtui, or the Network Manager tray applet.")" ${MSGBOXSIZE}
     else
-        DIALOG --msgbox "Network is inaccessible, please set it up properly." ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Network is inaccessible, please set it up properly.")" ${MSGBOXSIZE}
     fi
 }
 
 configure_wifi() {
     local dev="$1" ssid enc pass _wpasupconf=/etc/wpa_supplicant/wpa_supplicant.conf
 
-    DIALOG --form "Wireless configuration for ${dev}\n(encryption type: wep or wpa)" 0 0 0 \
-        "SSID:" 1 1 "" 1 16 30 0 \
-        "Encryption:" 2 1 "" 2 16 4 3 \
-        "Password:" 3 1 "" 3 16 63 0 || return 1
+    DIALOG --form "$(printf "$(gettext "Wireless configuration for %s\n(encryption type: wep or wpa)")"  "${dev}")" 0 0 0 \
+        "$(gettext "SSID"):" 1 1 "" 1 16 30 0 \
+        "$(gettext "Encryption"):" 2 1 "" 2 16 4 3 \
+        "$(gettext "Password"):" 3 1 "" 3 16 63 0 || return 1
     readarray -t values <<<$(cat $ANSWER)
     ssid="${values[0]}"; enc="${values[1]}"; pass="${values[2]}"
 
     if [ -z "$ssid" ]; then
-        DIALOG --msgbox "Invalid SSID." ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Invalid SSID.")" ${MSGBOXSIZE}
         return 1
     elif [ -z "$enc" -o "$enc" != "wep" -a "$enc" != "wpa" ]; then
-        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Invalid encryption type (possible values: wep or wpa).")" ${MSGBOXSIZE}
         return 1
     elif [ -z "$pass" ]; then
-        DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
+        DIALOG --msgbox "$(gettext "Invalid AP password.")" ${MSGBOXSIZE}
     fi
 
     # reset the configuration to the default, if necessary
@@ -908,7 +946,7 @@ EOF
 configure_net() {
     local dev="$1" rval
 
-    DIALOG --yesno "Do you want to use DHCP for $dev?" ${YESNOSIZE}
+    DIALOG --yesno "$(printf "$(gettext "Do you want to use DHCP for %s?")"  "$dev")" ${YESNOSIZE}
     rval=$?
     if [ $rval -eq 0 ]; then
         configure_net_dhcp $dev
@@ -928,15 +966,15 @@ configure_net_dhcp() {
     iface_setup $dev
     if [ $? -eq 1 ]; then
         sv restart dhcpcd 2>&1 | tee $LOG | \
-            DIALOG --progressbox "Initializing $dev via DHCP..." ${WIDGET_SIZE}
+            DIALOG --progressbox "$(printf "$(gettext "Initializing %s via DHCP...")"  "$dev")" ${WIDGET_SIZE}
         if [ $? -ne 0 ]; then
-            DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to run dhcpcd. See $LOG for details." ${MSGBOXSIZE}
+            DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} $(printf "$(gettext "failed to run dhcpcd. See %s for details.")"  "$LOG")" ${MSGBOXSIZE}
             return 1
         fi
         export -f iface_setup
         timeout 10s bash -c "while true; do iface_setup $dev; sleep 0.25; done"
         if [ $? -eq 1 ]; then
-            DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} DHCP request failed for $dev. Check $LOG for errors." ${MSGBOXSIZE}
+            DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} $(printf "$(gettext "DHCP request failed for %s. Check %s for errors.")"  "$dev" "$LOG")" ${MSGBOXSIZE}
             return 1
         fi
     fi
@@ -949,29 +987,29 @@ configure_net_dhcp() {
 configure_net_static() {
     local ip gw dns1 dns2 dev=$1
 
-    DIALOG --form "Static IP configuration for $dev:" 0 0 0 \
-        "IP address:" 1 1 "192.168.0.2" 1 21 20 0 \
-        "Gateway:" 2 1 "192.168.0.1" 2 21 20 0 \
-        "DNS Primary" 3 1 "8.8.8.8" 3 21 20 0 \
-        "DNS Secondary" 4 1 "8.8.4.4" 4 21 20 0 || return 1
+    DIALOG --form "$(printf "$(gettext "Static IP configuration for %s:")"  "$dev")" 0 0 0 \
+        "$(gettext "IP address"):" 1 1 "192.168.0.2" 1 21 20 0 \
+        "$(gettext "Gateway"):" 2 1 "192.168.0.1" 2 21 20 0 \
+        "$(gettext "DNS Primary")" 3 1 "8.8.8.8" 3 21 20 0 \
+        "$(gettext "DNS Secondary")" 4 1 "8.8.4.4" 4 21 20 0 || return 1
 
     set -- $(cat $ANSWER)
     ip=$1; gw=$2; dns1=$3; dns2=$4
-    echo "running: ip link set dev $dev up" >$LOG
+    echo "$(printf "$(gettext "running: ip link set dev %s up")"  "$dev")" >$LOG
     ip link set dev $dev up >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to bring $dev interface." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} $(printf "$(gettext "Failed to bring %s interface.")"  "$dev")" ${MSGBOXSIZE}
         return 1
     fi
-    echo "running: ip addr add $ip dev $dev" >$LOG
+    echo "$(printf "$(gettext "running: ip addr add %s dev %s")"  "$ip" "$dev")" >$LOG
     ip addr add $ip dev $dev >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} Failed to set ip to the $dev interface." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} $(printf "$(gettext "Failed to set ip to the %s interface.")"  "$dev")" ${MSGBOXSIZE}
         return 1
     fi
     ip route add default via $gw >$LOG 2>&1
     if [ $? -ne 0 ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} failed to setup your gateway." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} $(gettext "failed to setup your gateway.")" ${MSGBOXSIZE}
         return 1
     fi
     echo "nameserver $dns1" >/etc/resolv.conf
@@ -995,7 +1033,7 @@ menu_network() {
         addr=$(cat /sys/class/net/$f/address)
         DEVICES="$DEVICES $f $addr"
     done
-    DIALOG --title " Select the network interface to configure " \
+    DIALOG --title "$(gettext " Select the network interface to configure ")" \
         --menu "$MENULABEL" ${MENUSIZE} ${DEVICES}
     if [ $? -eq 0 ]; then
         dev=$(cat $ANSWER)
@@ -1048,17 +1086,17 @@ validate_filesystems() {
         fi
     done
     if [ -z "$rootfound" ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-the mount point for the root filesystem (/) has not yet been configured." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(gettext "the mount point for the root filesystem (/) has not yet been configured.")" ${MSGBOXSIZE}
         return 1
     elif [ -n "$usrfound" ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-/usr mount point has been configured but is not supported, please remove it to continue." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(gettext "/usr mount point has been configured but is not supported, please remove it to continue.")" ${MSGBOXSIZE}
         return 1
     elif [ -n "$EFI_SYSTEM" -a "$bootdev" != "none" -a -z "$efi_system_partition" ]; then
-        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-The EFI System Partition has not yet been configured, please create it\n
-as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(gettext "The EFI System Partition has not yet been configured, please create it\n
+as FAT32, mountpoint /boot/efi and at least with 100MB of size.")" ${MSGBOXSIZE}
         return 1
     fi
     FILESYSTEMS_DONE=1
@@ -1079,15 +1117,15 @@ create_filesystems() {
             if [ "$mkfs" -eq 1 ]; then
                 mkswap $dev >$LOG 2>&1
                 if [ $? -ne 0 ]; then
-                    DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to create swap on ${dev}!\ncheck $LOG for errors." ${MSGBOXSIZE}
+                    DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to create swap on %s!\ncheck %s for errors.")"  "${dev}" "$LOG")" ${MSGBOXSIZE}
                     DIE 1
                 fi
             fi
             swapon $dev >$LOG 2>&1
             if [ $? -ne 0 ]; then
-                DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
+                DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to activate swap on %s!\ncheck %s for errors.")"  "$dev" "$LOG")" ${MSGBOXSIZE}
                 DIE 1
             fi
             # Add entry for target fstab
@@ -1106,24 +1144,24 @@ failed to activate swap on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
             vfat) MKFS="mkfs.vfat -F32"; modprobe vfat >$LOG 2>&1;;
             xfs) MKFS="mkfs.xfs -f -i sparse=0"; modprobe xfs >$LOG 2>&1;;
             esac
-            TITLE="Check $LOG for details ..."
-            INFOBOX "Creating filesystem $fstype on $dev for $mntpt ..." 8 60
-            echo "Running $MKFS $dev..." >$LOG
+            TITLE="$(printf "$(gettext "Check %s for details ...")"  "$LOG")"
+            INFOBOX "$(printf "$(gettext "Creating filesystem %s on %s for %s ...")"  "$fstype" "$dev" "$mntpt")" 8 60
+            echo "$(printf "$(gettext "Running %s %s...")"  "$MKFS" "$dev")" >$LOG
             $MKFS $dev >$LOG 2>&1; rv=$?
             if [ $rv -ne 0 ]; then
-                DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to create filesystem $fstype on $dev!\ncheck $LOG for errors." ${MSGBOXSIZE}
+                DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to create filesystem %s on %s!\ncheck %s for errors.")"  "$fstype" "$dev" "$LOG")" ${MSGBOXSIZE}
                 DIE 1
             fi
         fi
         # Mount rootfs the first one.
         [ "$mntpt" != "/" ] && continue
         mkdir -p $TARGETDIR
-        echo "Mounting $dev on $mntpt ($fstype)..." >$LOG
+        echo "$(printf "$(gettext "Mounting %s on %s (%s)...")"  "$dev" "$mntpt" "$fstype")" >$LOG
         mount -t $fstype $dev $TARGETDIR >$LOG 2>&1
         if [ $? -ne 0 ]; then
-            DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
+            DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to mount %s on %s! check %s for errors.")"  "$dev" "${mntpt}" "$LOG")" ${MSGBOXSIZE}
             DIE 1
         fi
         # Add entry to target fstab
@@ -1144,11 +1182,11 @@ failed to mount $dev on ${mntpt}! check $LOG for errors." ${MSGBOXSIZE}
         shift 6
         [ "$mntpt" = "/" -o "$fstype" = "swap" ] && continue
         mkdir -p ${TARGETDIR}${mntpt}
-        echo "Mounting $dev on $mntpt ($fstype)..." >$LOG
+        echo "$(printf "$(gettext "Mounting %s on %s (%s)...")"  "$dev" "$mntpt" "$fstype")" >$LOG
         mount -t $fstype $dev ${TARGETDIR}${mntpt} >$LOG 2>&1
         if [ $? -ne 0 ]; then
-            DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
-failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
+            DIALOG --msgbox "${BOLD}${RED}$(gettext "ERROR"):${RESET} \
+$(printf "$(gettext "failed to mount %s on %s! check %s for errors.")"  "$dev" "$mntpt" "$LOG")" ${MSGBOXSIZE}
             DIE
         fi
         # Add entry to target fstab
@@ -1165,7 +1203,7 @@ failed to mount $dev on $mntpt! check $LOG for errors." ${MSGBOXSIZE}
 mount_filesystems() {
     for f in sys proc dev; do
         [ ! -d $TARGETDIR/$f ] && mkdir $TARGETDIR/$f
-        echo "Mounting $TARGETDIR/$f..." >$LOG
+        echo "$(printf "$(gettext "Mounting %s/%s...")"  "$TARGETDIR" "$f")" >$LOG
         mount --rbind /$f $TARGETDIR/$f >$LOG 2>&1
     done
 }
@@ -1177,12 +1215,12 @@ umount_filesystems() {
         local dev=$2; local fstype=$3
         shift 6
         if [ "$fstype" = "swap" ]; then
-            echo "Disabling swap space on $dev..." >$LOG
+            echo "$(printf "$(gettext "Disabling swap space on %s...")"  "$dev")" >$LOG
             swapoff $dev >$LOG 2>&1
             continue
         fi
     done
-    echo "Unmounting $TARGETDIR..." >$LOG
+    echo "$(printf "$(gettext "Unmounting %s...")"  "$TARGETDIR")" >$LOG
     umount -R $TARGETDIR >$LOG 2>&1
 }
 
@@ -1195,7 +1233,7 @@ log_and_count() {
         if [ "$progress" != "$copy_progress" ]; then
             whole=$((progress / 10))
             tenth=$((progress % 10))
-            printf "Progress: %d.%d%% (%d of %d files)\n" $whole $tenth $copy_count $copy_total
+            printf "$(gettext "Progress: %d.%d%% (%d of %d files)")\n" $whole $tenth $copy_count $copy_total
             copy_progress=$progress
         fi
     done
@@ -1203,8 +1241,8 @@ log_and_count() {
 
 copy_rootfs() {
     local tar_in="--create --one-file-system --xattrs"
-    TITLE="Check $LOG for details ..."
-    INFOBOX "Counting files, please be patient ..." 4 60
+    TITLE="$(printf "$(gettext "Check %s for details ...")"  "$LOG")"
+    INFOBOX "$(gettext "Counting files, please be patient ...")" 4 60
     copy_total=$(tar ${tar_in} -v -f /dev/null / 2>/dev/null | wc -l)
     export copy_total copy_count=0 copy_progress=
     clear
@@ -1212,7 +1250,7 @@ copy_rootfs() {
         tar --extract --xattrs --xattrs-include='*' --preserve-permissions -v -f - -C $TARGETDIR | \
         log_and_count | \
         DIALOG --title "${TITLE}" \
-            --progressbox "Copying live image to target rootfs." 5 60
+            --progressbox "$(gettext "Copying live image to target rootfs.")" 5 60
     if [ $? -ne 0 ]; then
         DIE 1
     fi
@@ -1249,14 +1287,14 @@ install_packages() {
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
         xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
-        DIALOG --title "Installing base system packages..." \
+        DIALOG --title "$(gettext "Installing base system packages...")" \
         --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     stdbuf -oL chroot $TARGETDIR xbps-reconfigure -a 2>&1 | \
-        DIALOG --title "Configuring base system packages..." --programbox 24 80
+        DIALOG --title "$(gettext "Configuring base system packages...")" --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
@@ -1279,7 +1317,7 @@ menu_services() {
                 _checklist+=" ${sv} ${sv} ${_status}"
             fi
         done < <(find $TARGETDIR/etc/sv -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -Ev "$sv_ignore" | sort -u)
-        DIALOG --no-tags --checklist "Select services to enable:" 20 60 18 ${_checklist}
+        DIALOG --no-tags --checklist "$(gettext "Select services to enable"):" 20 60 18 ${_checklist}
         if [ $? -eq 0 ]; then
             comm -13 "$TARGET_SERVICES" <(cat "$ANSWER" | tr ' ' '\n') | while read -r sv; do
                 enable_service "$sv"
@@ -1307,12 +1345,12 @@ menu_install() {
     BOOTLOADER_DONE="$(get_option BOOTLOADER)"
 
     if [ -z "$ROOTPASSWORD_DONE" ]; then
-        DIALOG --msgbox "${BOLD}The root password has not been configured, \
-please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}$(gettext "The root password has not been configured, \
+please do so before starting the installation.")${RESET}" ${MSGBOXSIZE}
         return 1
     elif [ -z "$BOOTLOADER_DONE" ]; then
-        DIALOG --msgbox "${BOLD}The disk to install the bootloader has not been \
-configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}$(gettext "The disk to install the bootloader has not been \
+configured, please do so before starting the installation.")${RESET}" ${MSGBOXSIZE}
         return 1
     fi
 
@@ -1321,8 +1359,8 @@ configured, please do so before starting the installation.${RESET}" ${MSGBOXSIZE
     validate_filesystems || return 1
 
     if [ -z "$FILESYSTEMS_DONE" ]; then
-        DIALOG --msgbox "${BOLD}Required filesystems were not configured, \
-please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
+        DIALOG --msgbox "${BOLD}$(gettext "Required filesystems were not configured, \
+please do so before starting the installation.")${RESET}" ${MSGBOXSIZE}
         return 1
     fi
 
@@ -1330,17 +1368,17 @@ please do so before starting the installation.${RESET}" ${MSGBOXSIZE}
     validate_useraccount
 
     if [ -z "$USERACCOUNT_DONE" ]; then
-        DIALOG --yesno "${BOLD}The user account is not set up properly.${RESET}\n\n
-${BOLD}${RED}WARNING: no user will be created. You will only be able to login \
-with the root user in your new system.${RESET}\n\n
-${BOLD}Do you want to continue?${RESET}" 10 60 || return
+        DIALOG --yesno "$(printf "$(gettext "%sThe user account is not set up properly.%s\n\n
+%s%sWARNING: no user will be created. You will only be able to login \
+with the root user in your new system.%s\n\n
+%sDo you want to continue?%s")"  "${BOLD}" "${RESET}" "${BOLD}" "${RED}" "${RESET}" "${BOLD}" "${RESET}")" 10 60 || return
     fi
 
-    DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
-${BOLD}${TARGETFS}${RESET}\n
-${BOLD}${RED}WARNING: data on partitions will be COMPLETELY DESTROYED for new \
-filesystems.${RESET}\n\n
-${BOLD}Do you want to continue?${RESET}" 20 80 || return
+    DIALOG --yesno "$(printf "$(gettext "%sThe following operations will be executed:%s\n\n
+%s%s%s\n
+%s%sWARNING: data on partitions will be COMPLETELY DESTROYED for new \
+filesystems.%s\n\n
+%sDo you want to continue?%s")"  "${BOLD}" "${RESET}" "${BOLD}" "${TARGETFS}" "${RESET}" "${BOLD}" "${RED}" "${RESET}" "${BOLD}" "${RESET}")" 20 80 || return
     unset TARGETFS
 
     # Create and mount filesystems
@@ -1357,18 +1395,18 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         # Remove modified sddm.conf to let sddm use the defaults.
         rm -f $TARGETDIR/etc/sddm.conf
         # Remove live user.
-        echo "Removing $USERNAME live user from targetdir ..." >$LOG
+        echo "$(printf "$(gettext "Removing %s live user from targetdir ...")"  "$USERNAME")" >$LOG
         chroot $TARGETDIR userdel -r $USERNAME >$LOG 2>&1
         rm -f $TARGETDIR/etc/sudoers.d/99-void-live
         sed -i "s,GETTY_ARGS=\"--noclear -a $USERNAME\",GETTY_ARGS=\"--noclear\",g" $TARGETDIR/etc/sv/agetty-tty1/conf
-        TITLE="Check $LOG for details ..."
-        INFOBOX "Rebuilding initramfs for target ..." 4 60
-        echo "Rebuilding initramfs for target ..." >$LOG
+        TITLE="$(printf "$(gettext "Check %s for details ...")"  "$LOG")"
+        INFOBOX "$(gettext "Rebuilding initramfs for target ...")" 4 60
+        echo "$(gettext "Rebuilding initramfs for target ...")" >$LOG
         # mount required fs
         mount_filesystems
         chroot $TARGETDIR dracut --no-hostonly --add-drivers "ahci" --force >>$LOG 2>&1
-        INFOBOX "Removing temporary packages from target ..." 4 60
-        echo "Removing temporary packages from target ..." >$LOG
+        INFOBOX "$(gettext "Removing temporary packages from target ...")" 4 60
+        echo "$(gettext "Removing temporary packages from target ...")" >$LOG
         TO_REMOVE="dialog xtools-minimal xmirror"
         # only remove espeakup and brltty if it wasn't enabled in the live environment
         if ! [ -e "/var/service/espeakup" ]; then
@@ -1392,7 +1430,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         install_packages
     fi
 
-    INFOBOX "Applying installer settings..." 4 60
+    INFOBOX "$(gettext "Applying installer settings...")" 4 60
 
     # copy target fstab.
     install -Dm644 $TARGET_FSTAB $TARGETDIR/etc/fstab
@@ -1429,7 +1467,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhcpcd.conf.orig
-            echo "# Static IP configuration set by the void-installer for $_dev." \
+            echo "# $(printf "$(gettext "Static IP configuration set by the void-installer for %s.")"  "$_dev")" \
                 >$TARGETDIR/etc/dhcpcd.conf
             echo "interface $_dev" >>$TARGETDIR/etc/dhcpcd.conf
             echo "static ip_address=$_ip" >>$TARGETDIR/etc/dhcpcd.conf
@@ -1443,7 +1481,7 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
         USERLOGIN="$(get_option USERLOGIN)"
         if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
             # enable sudo for primary user USERLOGIN who is not member of wheel
-            echo "# Enable sudo for login '$USERLOGIN'" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
+            echo "# $(printf "$(gettext "Enable sudo for login '%s'")"  "$USERLOGIN")" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
             echo "$USERLOGIN ALL=(ALL:ALL) ALL" >> "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
         else
             # enable the sudoers entry for members of group wheel
@@ -1474,8 +1512,8 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
     umount_filesystems
 
     # installed successfully.
-    DIALOG --yesno "${BOLD}Void Linux has been installed successfully!${RESET}\n
-Do you want to reboot the system?" ${YESNOSIZE}
+    DIALOG --yesno "${BOLD}$(gettext "Void Linux has been installed successfully!")${RESET}\n
+$(gettext "Do you want to reboot the system?")" ${YESNOSIZE}
     if [ $? -eq 0 ]; then
         shutdown -r now
     else
@@ -1486,10 +1524,10 @@ Do you want to reboot the system?" ${YESNOSIZE}
 menu_source() {
     local src=
 
-    DIALOG --title " Select installation source " \
+    DIALOG --title "$(gettext " Select installation source ")" \
         --menu "$MENULABEL" 8 70 0 \
-        "Local" "Packages from ISO image" \
-        "Network" "Base system only, downloaded from official repository"
+        "Local"   "$(gettext "Packages from ISO image")" \
+        "Network" "$(gettext "Base system only, downloaded from official repository")"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
         "Network") src="net";
@@ -1517,42 +1555,42 @@ menu() {
     if xbps-uhelper arch | grep -qe '-musl$'; then
         AFTER_HOSTNAME="Timezone"
         DIALOG --default-item $DEFITEM \
-            --extra-button --extra-label "Settings" \
-            --title " Void Linux installation menu " \
+            --extra-button --extra-label "$(gettext "Settings")" \
+            --title "$(gettext " Void Linux installation menu ")" \
             --menu "$MENULABEL" 10 70 0 \
-            "Keyboard" "Set system keyboard" \
-            "Network" "Set up the network" \
-            "Source" "Set source installation" \
-            "Mirror" "Select XBPS mirror" \
-            "Hostname" "Set system hostname" \
-            "Timezone" "Set system time zone" \
-            "RootPassword" "Set system root password" \
-            "UserAccount" "Set primary user name and password" \
-            "BootLoader" "Set disk to install bootloader" \
-            "Partition" "Partition disk(s)" \
-            "Filesystems" "Configure filesystems and mount points" \
-            "Install" "Start installation with saved settings" \
-            "Exit" "Exit installation"
+            "Keyboard" "$(gettext "Set system keyboard")" \
+            "Network" "$(gettext "Set up the network")" \
+            "Source" "$(gettext "Set source installation")" \
+            "Mirror" "$(gettext "Select XBPS mirror")" \
+            "Hostname" "$(gettext "Set system hostname")" \
+            "Timezone" "$(gettext "Set system time zone")" \
+            "RootPassword" "$(gettext "Set system root password")" \
+            "UserAccount" "$(gettext "Set primary user name and password")" \
+            "BootLoader" "$(gettext "Set disk to install bootloader")" \
+            "Partition" "$(gettext "Partition disk(s)")" \
+            "Filesystems" "$(gettext "Configure filesystems and mount points")" \
+            "Install" "$(gettext "Start installation with saved settings")" \
+            "Exit" "$(gettext "Exit installation")"
     else
         AFTER_HOSTNAME="Locale"
         DIALOG --default-item $DEFITEM \
-            --extra-button --extra-label "Settings" \
-            --title " Void Linux installation menu " \
+            --extra-button --extra-label "$(gettext "Settings")" \
+            --title "$(gettext " Void Linux installation menu ")" \
             --menu "$MENULABEL" 10 70 0 \
-            "Keyboard" "Set system keyboard" \
-            "Network" "Set up the network" \
-            "Source" "Set source installation" \
-            "Mirror" "Select XBPS mirror" \
-            "Hostname" "Set system hostname" \
-            "Locale" "Set system locale" \
-            "Timezone" "Set system time zone" \
-            "RootPassword" "Set system root password" \
-            "UserAccount" "Set primary user name and password" \
-            "BootLoader" "Set disk to install bootloader" \
-            "Partition" "Partition disk(s)" \
-            "Filesystems" "Configure filesystems and mount points" \
-            "Install" "Start installation with saved settings" \
-            "Exit" "Exit installation"
+            "Keyboard" "$(gettext "Set system keyboard")" \
+            "Network" "$(gettext "Set up the network")" \
+            "Source" "$(gettext "Set source installation")" \
+            "Mirror" "$(gettext "Select XBPS mirror")" \
+            "Hostname" "$(gettext "Set system hostname")" \
+            "Locale" "$(gettext "Set system locale")" \
+            "Timezone" "$(gettext "Set system time zone")" \
+            "RootPassword" "$(gettext "Set system root password")" \
+            "UserAccount" "$(gettext "Set primary user name and password")" \
+            "BootLoader" "$(gettext "Set disk to install bootloader")" \
+            "Partition" "$(gettext "Partition disk(s)")" \
+            "Filesystems" "$(gettext "Configure filesystems and mount points")" \
+            "Install" "$(gettext "Start installation with saved settings")" \
+            "Exit" "$(gettext "Exit installation")"
     fi
 
     if [ $? -eq 3 ]; then
@@ -1560,7 +1598,24 @@ menu() {
         cp $CONF_FILE /tmp/conf_hidden.$$;
         sed -i "s/^ROOTPASSWORD .*/ROOTPASSWORD <-hidden->/" /tmp/conf_hidden.$$
         sed -i "s/^USERPASSWORD .*/USERPASSWORD <-hidden->/" /tmp/conf_hidden.$$
-        DIALOG --title "Saved settings for installation" --textbox /tmp/conf_hidden.$$ 14 60
+
+
+
+sed -i \
+  -e "s/^KEYMAP/$(gettext "KEYMAP"):/" \
+  -e "s/^SOURCE/$(gettext "SOURCE"):/" \
+  -e "s/^HOSTNAME/$(gettext "HOSTNAME"):/" \
+  -e "s/^TIMEZONE/$(gettext "TIMEZONE"):/" \
+  -e "s/^ROOTPASSWORD/$(gettext "ROOTPASSWORD"):/" \
+  -e "s/^USERLOGIN/$(gettext "USERLOGIN"):/" \
+  -e "s/^USERNAME/$(gettext "USERNAME"):/" \
+  -e "s/^USERPASSWORD/$(gettext "USERPASSWORD"):/" \
+  -e "s/^USERGROUPS/$(gettext "USERGROUPS"):/" \
+  /tmp/conf_hidden.$$
+
+
+        DIALOG --title "$(gettext "Saved settings for installation")" --exit-label "$(gettext "EXIT")" --textbox /tmp/conf_hidden.$$ 14 60 
+
         rm /tmp/conf_hidden.$$
         return
     fi
@@ -1581,34 +1636,50 @@ menu() {
         "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
         "Install") menu_install;;
         "Exit") DIE;;
-        *) DIALOG --yesno "Abort Installation?" ${YESNOSIZE} && DIE
+
+        *)
+
+          DIALOG  --yes-label "$(gettext "Yes")" --no-label "$(gettext "No")" --yesno "$(gettext "Abort Installation?")" ${YESNOSIZE} && DIE
+
     esac
 }
 
 if ! command -v dialog >/dev/null; then
-    echo "ERROR: missing dialog command, exiting..."
+    echo "$(gettext "ERROR: missing dialog command, exiting...")"
     exit 1
 fi
 
 if [ "$(id -u)" != "0" ]; then
-   echo "void-installer must run as root" 1>&2
+   echo "$(gettext "void-installer must run as root")" 1>&2
    exit 1
 fi
 
 #
 # main()
 #
-DIALOG --title "${BOLD}${RED} Enter the void ... ${RESET}" --msgbox "\n
+DIALOG --title "${BOLD}${RED}$(gettext " Enter the void ... ")${RESET}" --msgbox "$(printf "$(gettext "
 Welcome to the Void Linux installation. A simple and minimal \
 Linux distribution made from scratch and built from the source package tree \
-available for XBPS, a new alternative binary package system.\n\n
+available for XBPS, a new alternative binary package system.
+
+
 The installation should be pretty straightforward. If you are in trouble \
-please join us at ${BOLD}#voidlinux${RESET} on ${BOLD}irc.libera.chat${RESET}.\n\n
-${BOLD}https://www.voidlinux.org${RESET}\n\n" 16 80
+please join us at %s#voidlinux%s on %sirc.libera.chat%s.
+
+
+%shttps://www.voidlinux.org%s
+
+")"  "${BOLD}" "${RESET}" "${BOLD}" "${RESET}" "${BOLD}" "${RESET}")" 16 80
+
+
+
 
 while true; do
     menu
 done
 
 exit 0
+
 # vim: set ts=4 sw=4 et:
+
+
