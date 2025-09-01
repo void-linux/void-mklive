@@ -1,0 +1,30 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Void Linux Docs
+Name[pt]=Documentação do Void Linux
+Name[es]=Documentación de Void Linux
+Name[fr]=Documentation de Void Linux
+Name[de]=Void Linux Dokumentation
+Comment=Access the official Void Linux documentation
+Comment[pt]=Acesse a documentação oficial do Void Linux
+Comment[es]=Accede a la documentación oficial de Void Linux
+Comment[fr]=Accédez à la documentation officielle de Void Linux
+Comment[de]=Greifen Sie auf die offizielle Void Linux-Dokumentation zu
+Exec=xdg-open https://docs.voidlinux.org/
+
+# Icon=internet-web-browser
+Icon=/usr/share/icons/extras/void.svg
+
+Terminal=false
+
+# Categories=System;Network;
+Categories=System;
+
+Keywords=Void;Linux;Documentation;Manual;Help;Docs;
+Keywords[pt]=Void;Linux;Documentação;Manual;Ajuda;Docs;
+Keywords[es]=Void;Linux;Documentación;Manual;Ayuda;Docs;
+Keywords[fr]=Void;Linux;Documentation;Manuel;Aide;Docs;
+Keywords[de]=Void;Linux;Dokumentation;Handbuch;Hilfe;Docs;
+StartupNotify=true
+

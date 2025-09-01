@@ -1,0 +1,29 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+
+Name=Atualizar Sistema
+Name[en]=System Update
+Name[es]=Actualizar Sistema
+Name[fr]=Mise à jour du système
+
+Comment=Atualiza todos os pacotes do sistema com xbps
+Comment[en]=Updates all system packages using xbps
+Comment[es]=Actualiza todos los paquetes del sistema con xbps
+Comment[fr]=Met à jour tous les paquets du système avec xbps
+
+Exec=pkexec /bin/bash -c 'clear && echo -e "\nAtualizando o sistema...\n" && xbps-install -Suvy && echo -e "\nRemovendo pacotes órfãos...\n" && xbps-remove -Ooy && sleep 30'
+
+# Icon=system-software-update
+Icon=/usr/share/icons/extras/void.svg
+
+StartupNotify=true
+Terminal=true
+Categories=System;
+
+Keywords=update;upgrade;xbps;void;atualizar;atualização;actualizar;mise à jour;
+Keywords[en]=update;upgrade;xbps;void;system;
+Keywords[es]=actualizar;upgrade;xbps;void;sistema;
+Keywords[fr]=mise à jour;upgrade;xbps;void;système;
+
+

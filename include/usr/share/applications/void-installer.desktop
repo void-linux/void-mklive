@@ -1,0 +1,35 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+
+
+Name=Void Linux Installer
+Name[pt_BR]=Instalador do Void Linux
+Name[es]=Instalador de Void Linux
+Name[fr]=Installateur de Void Linux
+Name[de]=Void-Installer
+Name[it]=Programma di installazione di Void Linux
+
+Comment=Install Void Linux from a terminal-based interface
+Comment[pt_BR]=Instale o Void Linux a partir de uma interface no terminal
+Comment[es]=Instala Void Linux desde una interfaz basada en terminal
+Comment[fr]=Installez Void Linux via une interface en terminal
+Comment[de]=Installiere Void Linux über eine terminalbasierte Oberfläche
+Comment[it]=Installa Void Linux da un'interfaccia terminale
+
+
+Exec=sudo void-installer
+
+# Icon=system-software-install
+Icon=/usr/share/icons/hicolor/48x48/apps/void-logo.png
+
+Terminal=true
+Categories=System;Settings;
+
+Keywords=installer;void;linux;setup;system;
+Keywords[pt_BR]=instalador;void;linux;instalação;sistema;
+Keywords[es]=instalador;void;linux;configuración;sistema;
+Keywords[fr]=installateur;void;linux;installation;système;
+Keywords[de]=installateur;void;linux;installation;system;
+Keywords[it]=installatore;void;linux;installazione;sistema;
+
