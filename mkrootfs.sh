@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #-
 # Copyright (c) 2013-2015 Juan Romero Pardines.
 # Copyright (c) 2017 Google
@@ -25,50 +25,150 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #-
 
+clear
+
+# ----------------------------------------------------------------------------------------
+
+export TEXTDOMAIN=mkrootfs
+export TEXTDOMAINDIR=./locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# echo $LANG
+
+# ----------------------------------------------------------------------------------------
+
+check_pacote(){
+
+
+# Lista de pacotes individuais
+
+packages=(gettext xbps-install xbps-reconfigure cp tar chpasswd  xz)
+
+# Verificar pacotes individuais
+
+for pkg in "${packages[@]}"; do
+
+    if command -v "$pkg" 1> /dev/null 2> /dev/null ; then
+
+        echo "$(gettext "Package installed"): $pkg"
+    else
+
+        echo "$(gettext "Package not installed"): $pkg"
+
+        exit 1
+    fi
+
+done
+
+
+# Lista de pacotes individuais
+
+packages=(base-container-full-0.11_3)
+
+installed=$(xbps-query -l | awk '{print $2}')
+
+for pkg in "${packages[@]}"; do
+
+    if echo "$installed" | grep -qx "$pkg"; then
+        echo "$(gettext "Package installed"): $pkg"
+    else
+        echo "$(gettext "Package not installed"): $pkg"
+
+        exit 1
+    fi
+
+done
+
+
+echo -e "\n\n"
+
+sleep 2
+
+clear
+
+}
+
+# check_pacote
+
+# ----------------------------------------------------------------------------------------
+
+
 readonly PROGNAME=$(basename "$0")
 readonly ARCH=$(uname -m)
 readonly REQTOOLS="xbps-install xbps-reconfigure tar xz"
+
+echo -e "\n$(gettext "Run the lib.sh script...")\n"
 
 # This source pulls in all the functions from lib.sh.  This set of
 # functions makes it much easier to work with chroots and abstracts
 # away all the problems with running binaries with QEMU.
 # shellcheck source=./lib.sh
+
+# Este código-fonte extrai todas as funções de lib.sh. Este conjunto de
+# funções facilita muito o trabalho com chroots e abstrações
+# elimina todos os problemas de execução de binários com o QEMU.
+# shellcheck source=./lib.sh
+
 . ./lib.sh
+
+sleep 1
+clear
+
+# ----------------------------------------------------------------------------------------
+
 
 # Die is a function provided in lib.sh which handles the cleanup of
 # the mounts and removal of temporary directories if the running
 # program exists unexpectedly.
-trap 'die "Interrupted! exiting..."' INT TERM HUP
+
+# Die é uma função fornecida em lib.sh que lida com a limpeza de
+# montagens e remoção de diretórios temporários se o programa em execução
+# existir inesperadamente.
+
+trap 'die "$(gettext "Interrupted! exiting...")"' INT TERM HUP
+
+
 
 # Even though we only support really one target for most of these
 # architectures this lets us refer to these quickly and easily by
 # XBPS_ARCH.  This makes it a lot more obvious what is happening later
 # in the script, and it makes it easier to consume the contents of
 # these down the road in later scripts.
+
 usage() {
-    cat <<-EOH
-	Usage: $PROGNAME [options] <arch>
 
-	Generate a Void Linux ROOTFS tarball for the specified architecture.
+    # Substituido cat <<-EOH (heredoc indentado com tab) por echo
 
-	Supported architectures:
-	 i686, i686-musl, x86_64, x86_64-musl,
-	 armv5tel, armv5tel-musl, armv6l, armv6l-musl, armv7l, armv7l-musl
-	 aarch64, aarch64-musl,
-	 mipsel, mipsel-musl,
-	 ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl
-	 riscv64, riscv64-musl
-	
-	OPTIONS
-	 -b <system-pkg>  Set an alternative base-system package (default: base-container-full)
-	 -c <cachedir>    Set XBPS cache directory (default: ./xbps-cachedir-<arch>)
-	 -C <file>        Full path to the XBPS configuration file
-	 -r <repo>        Use this XBPS repository. May be specified multiple times
-	 -o <file>        Filename to write the ROOTFS to (default: automatic)
-	 -x <num>         Number of threads to use for image compression (default: dynamic)
-	 -h               Show this help and exit
-	 -V               Show version and exit
-	EOH
+
+	echo $(printf "$(gettext "Usage: %s [options] <%s>")" "$PROGNAME" "arch")
+    echo
+	echo $(gettext "Generate a Void Linux ROOTFS tarball for the specified architecture.")
+    echo
+	echo $(gettext "Supported architectures:")
+    echo
+	echo "  i686, i686-musl, x86_64, x86_64-musl,"
+	echo "  armv5tel, armv5tel-musl, armv6l, armv6l-musl, armv7l, armv7l-musl"
+	echo "  aarch64, aarch64-musl,"
+	echo "  mipsel, mipsel-musl,"
+	echo "  ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl"
+	echo "  riscv64, riscv64-musl"
+	echo
+	echo $(gettext "OPTIONS")
+    echo
+	echo "  -b <system-pkg>  $(gettext "Set an alternative base-system package (default: base-container-full)")"
+	echo "  -c <cachedir>    $(gettext "Set XBPS cache directory (default: ./xbps-cachedir-<arch>)")"
+	echo "  -C <$(gettext "file")>     $(gettext "Full path to the XBPS configuration file")"
+	echo "  -r <repo>        $(gettext "Use this XBPS repository. May be specified multiple times")"
+	echo "  -o <$(gettext "file")>     $(gettext "Filename to write the ROOTFS to (default: automatic)")"
+	echo "  -x <num>         $(gettext "Number of threads to use for image compression (default: dynamic)")"
+	echo "  -h               $(gettext "Show this help and exit")"
+	echo "  -V               $(gettext "Show version and exit")"
+    echo
 }
 
 # ########################################
@@ -93,6 +193,7 @@ while getopts "b:C:c:hr:x:o:V" opt; do
         *) usage >&2; exit 1;;
     esac
 done
+
 shift $((OPTIND - 1))
 XBPS_TARGET_ARCH="$1"
 
@@ -106,8 +207,11 @@ set_cachedir
 
 # This is an aweful hack since the script isn't using privesc
 # mechanisms selectively.  This is a TODO item.
+
 if [ "$(id -u)" -ne 0 ]; then
-    die "need root perms to continue, exiting."
+
+    die "$(gettext "need root perms to continue, exiting.")"
+
 fi
 
 # Before going any further, check that the tools that are needed are
@@ -117,15 +221,18 @@ check_tools
 
 # If the arch wasn't set let's bail out now, nothing else in this
 # script will work without knowing what we're trying to build for.
+
 if [ -z "$XBPS_TARGET_ARCH" ]; then
-    echo "$PROGNAME: arch was not set!"
+
+    echo -e "\n$(printf "$(gettext "%s: arch was not set!")"  "$PROGNAME") \n"
+
     usage >&2; exit 1
 fi
 
 # We need to operate on a tempdir, if this fails to create, it is
 # absolutely crucial to bail out so that we don't hose the system that
 # is running the script.
-ROOTFS=$(mktemp -d) || die "failed to create tempdir, exiting..."
+ROOTFS=$(mktemp -d) || die "$(gettext "failed to create tempdir, exiting...")"
 
 # This maintains the chain of trust, the keys in the repo are known to
 # be good and so we copy those.  Why don't we just use the ones on the
@@ -164,14 +271,17 @@ run_cmd_target "xbps-install -SU $XBPS_CONFFILE $XBPS_CACHEDIR $XBPS_REPOSITORY 
 # language at least enough to enable thier preferred locale.  If this
 # truly becomes an issue in the future this hack can be revisited.
 if [ -e "$ROOTFS/etc/default/libc-locales" ]; then
-    LOCALE=en_US.UTF-8
+
+    # LOCALE=en_US.UTF-8
+    LOCALE=${LANG:-en_US.UTF-8}
+
     sed -e "s/\#\(${LOCALE}.*\)/\1/g" -i "$ROOTFS/etc/default/libc-locales"
 fi
 
 # The reconfigure step needs to execute code that's been compiled for
 # the target architecture.  Since the target isn't garanteed to be the
 # same as the host, this needs to be done via qemu.
-info_msg "Reconfiguring packages for ${XBPS_TARGET_ARCH} ..."
+info_msg "$(printf "$(gettext "Reconfiguring packages for %s ...")"  "${XBPS_TARGET_ARCH}")"
 
 # This step sets up enough of the base-files that the chroot will work
 # and they can be reconfigured natively.  Without this step there
@@ -189,6 +299,44 @@ fi
 # pass, so this cleans up any issues that linger.
 run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
 
+
+# ----------------------------------------------------------------------------------------
+
+# Verificar se Flatpak está instalado no chroot
+
+# Instalar Flatpak e adicionar repositório Flathub, se possível
+
+if ! run_cmd_chroot "$ROOTFS" "command -v flatpak >/dev/null 2>&1"; then
+
+    info_msg "$(printf "$(gettext "Flatpak not found on %s. Installing...")"  "$ROOTFS")"
+
+    if ! run_cmd_chroot "$ROOTFS" "xbps-install -y flatpak"; then
+
+        echo -e "\n$(gettext "[WARN] Failed to install Flatpak. Ignoring Flathub configuration.")\n"
+
+    fi
+fi
+
+# Se Flatpak está instalado, adiciona o Flathub
+
+if run_cmd_chroot "$ROOTFS" "command -v flatpak >/dev/null 2>&1"; then
+
+    info_msg "$(gettext "Adding the Flathub repository to Flatpak...")"
+
+    if ! run_cmd_chroot "$ROOTFS" \
+        "flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"; then
+
+        echo -e "\n$(gettext "[WARN] Failed to add Flathub repository.")\n"
+    fi
+
+else
+
+    echo -e "\n$(gettext "[WARN] Flatpak not available after attempted installation. Flathub will not be added.")\n"
+fi
+
+
+# ----------------------------------------------------------------------------------------
+
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
@@ -199,11 +347,15 @@ run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
 # chrooted.  We also remove the lock file in this step to clean up the
 # lock on the passwd database, lest it be left in the system and
 # propogated to other points.
-info_msg "Setting the default root password ('voidlinux')"
+
+info_msg "$(gettext "Setting the default root password ('voidlinux')")"
+
 if [ ! -f "$ROOTFS/etc/shadow" ] ; then
     run_cmd_chroot "$ROOTFS" pwconv
 fi
-echo root:voidlinux | run_cmd_chroot "$ROOTFS" "chpasswd -c SHA512" || die "Could not set default credentials"
+
+echo root:voidlinux | run_cmd_chroot "$ROOTFS" "chpasswd -c SHA512" || die "$(gettext "Could not set default credentials")"
+
 rm -f "$ROOTFS/etc/.pwd.lock"
 
 # At this point we're done running things in the chroot and we can
@@ -229,4 +381,7 @@ rm -rf "$ROOTFS"
 # this succeeded.  This also ensures that there's something visible
 # that the user can look for at the end of the script, which can make
 # it easier to see what's going on if something above failed.
-info_msg "Successfully created $FILENAME ($XBPS_TARGET_ARCH)"
+
+info_msg "$(printf "$(gettext "Successfully created %s (%s)")"  "$FILENAME" "$XBPS_TARGET_ARCH")"
+
+

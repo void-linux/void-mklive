@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# clear
+
+# ----------------------------------------------------------------------------------------
+
+export TEXTDOMAIN=release
+export TEXTDOMAINDIR=./locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# echo $LANG
+
+# ----------------------------------------------------------------------------------------
+
 set -e
 
 usage() {
@@ -13,7 +30,7 @@ usage() {
 check_programs() {
 	for prog; do
 		if ! type $prog &>/dev/null; then
-			echo "missing program: $prog"
+			echo "$(printf "$(gettext "missing program: %s")"  "$prog")"
 			exit 1
 		fi
 	done
@@ -41,6 +58,7 @@ start_build() {
 # this assumes that the latest successful build is the one to download
 # wish it could be better but alas:
 # https://github.com/cli/cli/issues/4001
+
 download_build() {
 	local run
 	check_programs gh
@@ -55,9 +73,12 @@ download_build() {
 	elif [ "$1" == "--" ]; then
 		shift
 	fi
-	echo "Downloading artifacts from run ${run} [this may take a while] ..."
+
+	echo "$(printf "$(gettext "Downloading artifacts from run %s [this may take a while] ...")"  "${run}")"
+
 	gh run download "$run" -p 'void-live*' "$@"
-	echo "Done."
+
+	echo "$(gettext "Done.")"
 }
 
 sign_build() {
@@ -66,14 +87,16 @@ sign_build() {
 	SUMFILE="$2"
 	mkdir -p release
 
-	echo "Creating key..."
+	echo "$(gettext "Creating key...")"
+
 	pwgen -cny 25 1 > "release/void-release-$DATECODE.key"
 	minisign -G -p "release/void-release-$DATECODE.pub" \
 		-s "release/void-release-$DATECODE.sec" \
 		-c "This key is only valid for images with date $DATECODE." \
 		< <(cat "release/void-release-$DATECODE.key" "release/void-release-$DATECODE.key")
 
-	echo "Signing $SUMFILE..."
+	echo "$(printf "$(gettext "Signing %s...")"  "$SUMFILE")"
+
 	minisign -S -x "${SUMFILE//txt/sig}" -s "release/void-release-$DATECODE.sec" \
 		-c "This key is only valid for images with date $DATECODE." \
 		-t "This key is only valid for images with date $DATECODE." \
@@ -86,3 +109,4 @@ case "$1" in
 	si*) shift; sign_build "$@" ;;
 	*) usage ;;
 esac
+

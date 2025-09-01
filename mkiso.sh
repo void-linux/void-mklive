@@ -1,5 +1,21 @@
 #!/bin/bash
 
+
+clear
+
+# ----------------------------------------------------------------------------------------
+
+export TEXTDOMAIN=mkiso
+export TEXTDOMAINDIR=./locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# ----------------------------------------------------------------------------------------
+
 set -eu
 
 . ./lib.sh
@@ -13,25 +29,29 @@ DATE=$(date -u +%Y%m%d)
 
 usage() {
 	cat <<-EOH
-	Usage: $PROGNAME [options ...] [-- mklive options ...]
 
-	Wrapper script around mklive.sh for several standard flavors of live images.
-	Adds void-installer and other helpful utilities to the generated images.
+	$(printf "$(gettext "Usage: %s [options ...] [-- mklive options ...]")"  "$PROGNAME")
 
-	OPTIONS
-	 -a <arch>     Set architecture (or platform) in the image
-	 -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
+	$(gettext "Wrapper script around mklive.sh for several standard flavors of live images.")
+	$(gettext "Adds void-installer and other helpful utilities to the generated images.")
+
+
+	$(gettext "OPTIONS")
+
+	$(gettext " -a <arch>     Set architecture (or platform) in the image")
+	$(gettext " -b <variant>  One of base, enlightenment, xfce, mate, cinnamon, gnome, kde,
 	               lxde, lxqt, or xfce-wayland (default: base). May be specified multiple times
-	               to build multiple variants
-	 -d <date>     Override the datestamp on the generated image (YYYYMMDD format)
-	 -t <arch-date-variant>
-	               Equivalent to setting -a, -b, and -d
-	 -r <repo>     Use this XBPS repository. May be specified multiple times
-	 -h            Show this help and exit
-	 -V            Show version and exit
+	               to build multiple variants")
+	$(gettext " -d <date>     Override the datestamp on the generated image (YYYYMMDD format)")
+	$(gettext " -t <arch-date-variant>             Equivalent to setting -a, -b, and -d")
+	$(gettext " -r <repo>     Use this XBPS repository. May be specified multiple times")
+	$(gettext " -h            Show this help and exit")
+	$(gettext " -V            Show version and exit")
 
-	Other options can be passed directly to mklive.sh by specifying them after the --.
-	See mklive.sh -h for more details.
+	$(gettext "Other options can be passed directly to mklive.sh by specifying them after the --.")
+
+	$(gettext "See mklive.sh -h for more details.")
+
 	EOH
 }
 
@@ -64,7 +84,7 @@ include_installer() {
         install -Dm755 "$installer" "$INCLUDEDIR"/usr/bin/void-installer
         rm "$installer"
     else
-        echo installer.sh not found >&2
+        echo $(gettext "installer.sh not found") >&2
         exit 1
     fi
 }
@@ -117,7 +137,7 @@ build_variant() {
             KERNEL_PKG="linux-asahi"
             TARGET_ARCH="aarch64${ARCH#asahi}"
             if [ "$variant" = xfce ]; then
-                info_msg "xfce is not supported on asahi, switching to xfce-wayland"
+                info_msg "$(gettext "xfce is not supported on asahi, switching to xfce-wayland")"
                 variant="xfce-wayland"
             fi
             ;;
@@ -142,7 +162,7 @@ build_variant() {
             LIGHTDM_SESSION=enlightenment
         ;;
         xfce*)
-            PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin"
+            PKGS="$PKGS $XORG_PKGS lightdm lightdm-gtk-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox-esr xfce4-pulseaudio-plugin"
             SERVICES="$SERVICES dbus lightdm NetworkManager polkitd"
             LIGHTDM_SESSION=xfce
 
@@ -179,7 +199,7 @@ build_variant() {
             SERVICES="$SERVICES dbus dhcpcd wpa_supplicant sddm polkitd"
         ;;
         *)
-            >&2 echo "Unknown variant $variant"
+            >&2 echo "$(printf "$(gettext "Unknown variant %s")" "$variant" )"
             exit 1
         ;;
     esac
@@ -198,7 +218,7 @@ EOF
         include_installer
     else
         mkdir -p "$INCLUDEDIR"/usr/bin
-        printf "#!/bin/sh\necho 'void-installer is not supported on this live image'\n" > "$INCLUDEDIR"/usr/bin/void-installer
+        printf "#!/bin/sh\necho '$(gettext "void-installer is not supported on this live image")'\n" > "$INCLUDEDIR"/usr/bin/void-installer
         chmod 755 "$INCLUDEDIR"/usr/bin/void-installer
     fi
 
@@ -213,7 +233,7 @@ EOF
 }
 
 if [ ! -x mklive.sh ]; then
-    echo mklive.sh not found >&2
+    echo $(gettext "mklive.sh not found") >&2
     exit 1
 fi
 
@@ -225,3 +245,4 @@ else
         build_variant "$image" "$@"
     done
 fi
+

@@ -137,15 +137,19 @@ check_pacote(){
 
 # Lista de pacotes individuais
 
-packages=(git make dialog)
+packages=(git make dialog  jq xz dash sed tar gawk xorriso   xz dhclient)
 
 # Verificar pacotes individuais
 
 for pkg in "${packages[@]}"; do
     if command -v "$pkg" 1> /dev/null 2> /dev/null ; then
+
         echo "$(gettext "Package installed"): $pkg"
     else
+
         echo "$(gettext "Package not installed"): $pkg"
+
+        exit 1
     fi
 done
 
@@ -154,7 +158,7 @@ done
 
 # Esse padrão (20181003_2) pode se um problema para identificar o pacote instalado.
 
-packages=(base-devel-20181003_2)
+packages=(base-devel-20181003_2 base-files-0.145_1 libgcc-14.2.1+20250405_2 coreutils-9.4_3 squashfs-tools-4.7_1 binutils-2.44_2 device-mapper-2.03.29_1 dracut-network-107_1 openresolv-3.17.0_1)
 
 installed=$(xbps-query -l | awk '{print $2}')
 
@@ -163,11 +167,17 @@ for pkg in "${packages[@]}"; do
         echo "$(gettext "Package installed"): $pkg"
     else
         echo "$(gettext "Package not installed"): $pkg"
+
+        exit 1
     fi
 done
 
 
 echo -e "\n\n"
+
+sleep 2
+
+clear
 
 }
 

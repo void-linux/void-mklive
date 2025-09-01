@@ -1,4 +1,25 @@
-#!/bin/sh
+#!/bin/bash
+
+# clear
+
+# ----------------------------------------------------------------------------------------
+
+# Quando os export estão dentro do lib.sh, os outros arquivos .sh não usa as traduções dos 
+# seus aequivos .mo, mas sim as de lib.
+
+# Ou seja, o lib "sobrepõe" os outros arquivos.
+
+# export TEXTDOMAIN=lib
+# export TEXTDOMAINDIR=./locale
+
+# ----------------------------------------------------------------------------------------
+
+# Detectar idioma atual do sistema
+
+LANG=${LANG:-en_US}
+
+# ----------------------------------------------------------------------------------------
+
 
 # This contains the COMPLETE list of binaries that this script needs
 # to function.  The only exception is the QEMU binary since it is not
@@ -46,15 +67,27 @@ info_msg() {
     printf "\033[1m%s\n\033[m" "$@"
 }
 
+
 die() {
+
     # This function is registered in all the scripts to make sure that
     # the important mounts get cleaned up and the $ROOTFS location is
     # removed.
-    printf "FATAL: %s\n" "$@"
+
+    # Esta função é usada em todos os scripts para garantir que
+    # os mounts importantes sejam desmontados e o local $ROOTFS seja removido.
+
+    # printf "$(gettext 'FATAL'): %s\n" "$@"
+
+    printf '%s: %s\n' "$(gettext "FATAL")" "$@"
+
     umount_pseudofs
+
     [ -d "$ROOTFS" ] && rm -rf "$ROOTFS"
+
     exit 1
 }
+
 
 check_tools() {
     # All scripts within mklive declare the tools they will use in a
@@ -62,23 +95,31 @@ check_tools() {
     # tools are available and prints out the path to each tool that
     # will be used.  This can be useful to figure out what is broken
     # if a different version of something is used than was expected.
+
     for tool in $LIBTOOLS $REQTOOLS ; do
+
         if ! which "$tool" > /dev/null ; then
-            die "Required tool $tool is not available on this system!"
+
+            die "$(printf "$(gettext "Required tool %s is not available on this system!")" "$tool" )"
+
         fi
+
     done
 
-    info_msg "The following tools will be used:"
+    info_msg "$(gettext "The following tools will be used:")"
+
     for tool in $LIBTOOLS $REQTOOLS ; do
         which "$tool"
     done
 }
 
 mount_pseudofs() {
+
     # This function ensures that the psuedofs mountpoints are present
     # in the chroot.  Strictly they are not necessary to have for many
     # commands, but bind-mounts are cheap and it isn't too bad to just
     # mount them all the time.
+
     for f in dev proc sys; do
         # In a naked chroot there is nothing to bind the mounts to, so
         # we need to create directories for these first.
@@ -91,6 +132,7 @@ mount_pseudofs() {
             mount -r --rbind /$f "$ROOTFS/$f" --make-rslave
         fi
     done
+
     if ! mountpoint -q "$ROOTFS/tmp" ; then
         mkdir -p "$ROOTFS/tmp"
         mount -o mode=0755,nosuid,nodev -t tmpfs tmpfs "$ROOTFS/tmp"
@@ -98,11 +140,13 @@ mount_pseudofs() {
 }
 
 umount_pseudofs() {
+
     # This function cleans up the mounts in the chroot.  Failure to
     # clean up these mounts will prevent the tmpdir from being
     # deletable instead throwing the error "Device or Resource Busy".
     # The '-f' option is passed to umount to account for the
     # contingency where the psuedofs mounts are not present.
+
     if [ -d "${ROOTFS}" ]; then
         for f in dev proc sys; do
             umount -R -f "$ROOTFS/$f" >/dev/null 2>&1
@@ -112,19 +156,19 @@ umount_pseudofs() {
 }
 
 run_cmd_target() {
-    info_msg "Running $* for target $XBPS_TARGET_ARCH ..."
+    info_msg "$(printf "$(gettext "Running %s for target %s ...")" "$*" "$XBPS_TARGET_ARCH")"
     if is_target_native "$XBPS_TARGET_ARCH"; then
         # This is being run on the same architecture as the host,
         # therefore we should set XBPS_ARCH.
         if ! eval XBPS_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
-            die "Could not run command $*"
+            die "$(printf "$(gettext "Could not run command %s")" "$*" )"
         fi
     else
         # This is being run on a foriegn arch, therefore we should set
         # XBPS_TARGET_ARCH.  In this case XBPS will not attempt
         # certain actions and will require reconfiguration later.
         if ! eval XBPS_TARGET_ARCH="$XBPS_TARGET_ARCH" "$@" ; then
-            die "Could not run command $*"
+            die "$(printf "$(gettext "Could not run command %s")" "$*" )"
         fi
     fi
 }
@@ -134,11 +178,12 @@ run_cmd() {
     # may wish to see.  For example its useful to see the tar/xz
     # pipeline to not need to delve into the scripts to see what
     # options its set up with.
-    info_msg "Running $*"
+    info_msg "$(printf "$(gettext "Running %s")" "$*" )"
     eval "$@"
 }
 
 run_cmd_chroot() {
+
     # General purpose chroot function which makes sure the chroot is
     # prepared.  This function takes 2 arguments, the location to
     # chroot to and the command to run.
@@ -159,6 +204,7 @@ run_cmd_chroot() {
 }
 
 cleanup_chroot() {
+
     # This function cleans up the chroot shims that are used by QEMU
     # to allow builds on alien platforms.  It takes no arguments but
     # expects the global $ROOTFS variable to be set.
@@ -168,6 +214,7 @@ cleanup_chroot() {
 }
 
 register_binfmt() {
+
     # This function sets up everything that is needed to be able to
     # chroot into a ROOTFS and be able to run commands there.  This
     # really matters on platforms where the host architecture is
@@ -185,6 +232,7 @@ register_binfmt() {
     # If the XBPS_TARGET_ARCH is unset but the PLATFORM is known, it
     # may be possible to set the architecture from the static
     # platforms map.
+
     if [ -z "$XBPS_TARGET_ARCH" ] && [ ! -z "$PLATFORM" ] ; then
         set_target_arch_from_platform
     fi
@@ -193,6 +241,7 @@ register_binfmt() {
     # without doing anything else
     # This is only a basic check for identical archs, with more careful
     # checks below for cases like ppc64 -> ppc and x86_64 -> i686.
+
     _hostarch="${HOSTARCH%-musl}"
     _targetarch="${XBPS_TARGET_ARCH%-musl}"
     if [ "$_hostarch" = "$_targetarch" ] ; then
@@ -245,7 +294,7 @@ register_binfmt() {
             _cpu=riscv64
             ;;
         *)
-            die "Unknown target architecture!"
+            die "$(gettext "Unknown target architecture!")"
             ;;
     esac
 
@@ -253,7 +302,7 @@ register_binfmt() {
     # qemu binary will be required.
     QEMU_BIN="qemu-${_cpu}"
     if ! $QEMU_BIN -version >/dev/null 2>&1; then
-        die "$QEMU_BIN binary is missing in your system, exiting."
+        die "$(printf "$(gettext "%s binary is missing in your system, exiting.")" "$QEMU_BIN" )"
     fi
 
     # In order to use the binfmt system the binfmt_misc mountpoint
@@ -265,18 +314,22 @@ register_binfmt() {
 
     # Only register if the map is incomplete
     if [ ! -f /proc/sys/fs/binfmt_misc/qemu-$_cpu ] ; then
+
         if ! command -v update-binfmts >/dev/null 2>&1; then
-            die "could not add binfmt: update-binfmts binary is missing in your system"
+            die "$(gettext "could not add binfmt: update-binfmts binary is missing in your system")"
         fi
+
         update-binfmts --import "qemu-$_cpu"
     fi
 }
 
 set_target_arch_from_platform() {
+
     # This function maintains a lookup from platform to target
     # architecture.  This is required for scripts that need to know
     # the target architecture, but don't necessarily need to know it
     # internally (i.e. only run_cmd_chroot).
+
     case "$PLATFORM" in
         rpi-aarch64*) XBPS_TARGET_ARCH="aarch64";;
         rpi-armv7l*) XBPS_TARGET_ARCH="armv7l";;
@@ -289,7 +342,8 @@ set_target_arch_from_platform() {
         rock64*) XBPS_TARGET_ARCH="aarch64";;
         rockpro64*) XBPS_TARGET_ARCH="aarch64";;
         asahi*) XBPS_TARGET_ARCH="aarch64";;
-        *) die "$PROGNAME: Unable to compute target architecture from platform";;
+
+        *) die "$(printf "$(gettext "%s: Unable to compute target architecture from platform")" "$PROGNAME" )";;
     esac
 
     if [ -z "${PLATFORM##*-musl}" ] ; then
@@ -298,16 +352,20 @@ set_target_arch_from_platform() {
 }
 
 set_dracut_args_from_platform() {
+
     # In rare cases it is necessary to set platform specific dracut
     # args.  This is mostly the case on ARM platforms.
+
     case "$PLATFORM" in
         *) ;;
     esac
 }
 
 set_cachedir() {
+
     # The package artifacts are cacheable, but they need to be isolated
     # from the host cache.
+
     : "${XBPS_CACHEDIR:=--cachedir=$PWD/xbps-cache/${XBPS_TARGET_ARCH}}"
 }
 
@@ -329,6 +387,7 @@ rk33xx_flash_uboot() {
 # line.  This select allows us to get that information out.  This
 # fails silently if the toolname isn't known since this script is
 # sourced.
+
 case "${1:-}" in
     platform2arch)
         PLATFORM=$2
@@ -336,3 +395,4 @@ case "${1:-}" in
         echo "$XBPS_TARGET_ARCH"
         ;;
 esac
+
