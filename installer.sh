@@ -26,8 +26,10 @@
 #-
 
 
+# https://github.com/void-linux/void-mklive
 # https://www.vivaolinux.com.br/artigo/Introducao-ao-Void-Linux?pagina=2
 # https://edpsblog.wordpress.com/2019/09/02/how-to-void-linux-mate/
+
 
 clear
 
@@ -120,20 +122,23 @@ MSGBOXSIZE="8 70"
 YESNOSIZE="$INPUTSIZE"
 WIDGET_SIZE="10 70"
 
-DIALOG() {
+
+# Com problema
 
 # VERSION=$(git ls-remote https://github.com/void-linux/void-mklive.git HEAD | awk '{print substr($1,1,7)}')
 
-VERSION=$(cat commit.txt)
+# VERSION=$(cat commit.txt)
 
-MKLIVE="$(cat version)"
+# MKLIVE="$(cat version)"
+
+
+DIALOG() {
 
     rm -f $ANSWER
 
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s %s)")"  "$MKLIVE" "$VERSION")${RESET}" \
+        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s)")"  "@@MKLIVE_VERSION@@")${RESET}" \
         --cancel-label "$(gettext "Back")" --aspect 20 "$@" 2>$ANSWER
-
 
     return $?
 }
@@ -143,9 +148,12 @@ INFOBOX() {
     # Note: dialog --infobox and --keep-tite don't work together
 
     dialog --colors --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s %s)")"  "$MKLIVE" "$VERSION")${RESET}" \
+        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s)")"  "@@MKLIVE_VERSION@@")${RESET}" \
         --title "${TITLE}" --aspect 20 --infobox "$@"
 }
+
+
+
 
 DIE() {
     rval=$1
