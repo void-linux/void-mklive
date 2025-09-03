@@ -18,15 +18,15 @@ Comment[de]=Installiere Void Linux über eine terminalbasierte Oberfläche
 Comment[it]=Installa Void Linux da un'interfaccia terminale
 
 
-# Exec=sudo void-installer
+Exec=sudo /usr/sbin/void-installer
 
-Exec=sudo /usr/local/bin/installer.sh
+# Exec=sudo /usr/local/bin/installer.sh
 
 # Icon=system-software-install
 Icon=/usr/share/icons/hicolor/48x48/apps/void-logo.png
 
 Terminal=true
-Categories=System;Settings;
+Categories=System;
 
 Keywords=installer;void;linux;setup;system;
 Keywords[pt_BR]=instalador;void;linux;instalação;sistema;

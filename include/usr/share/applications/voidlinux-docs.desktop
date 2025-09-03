@@ -11,6 +11,7 @@ Comment[pt]=Acesse a documentação oficial do Void Linux
 Comment[es]=Accede a la documentación oficial de Void Linux
 Comment[fr]=Accédez à la documentation officielle de Void Linux
 Comment[de]=Greifen Sie auf die offizielle Void Linux-Dokumentation zu
+
 Exec=xdg-open https://docs.voidlinux.org/
 
 # Icon=internet-web-browser
