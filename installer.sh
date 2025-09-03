@@ -132,16 +132,38 @@ WIDGET_SIZE="10 70"
 # MKLIVE="$(cat version)"
 
 
+
+# Se quiser tornar isso padrão em todos os diálogos com "yesno", pode alterar a função 
+# DIALOG() para aceitar esses labels por padrão.
+
+# DIALOG() {
+
+#    rm -f $ANSWER
+
+#    dialog --colors --keep-tite --no-shadow --no-mouse \
+#        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s)")"  "@@MKLIVE_VERSION@@")${RESET}" \
+#        --cancel-label "$(gettext "Back")" --aspect 20 "$@" 2>$ANSWER
+
+#    return $?
+# }
+
+
+
 DIALOG() {
 
     rm -f $ANSWER
 
     dialog --colors --keep-tite --no-shadow --no-mouse \
-        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s)")"  "@@MKLIVE_VERSION@@")${RESET}" \
-        --cancel-label "$(gettext "Back")" --aspect 20 "$@" 2>$ANSWER
+        --backtitle "${BOLD}${WHITE}$(printf "$(gettext "Void Linux installation -- https://www.voidlinux.org (%s)")" "@@MKLIVE_VERSION@@")${RESET}" \
+        --cancel-label "$(gettext "Back")" \
+        --yes-label "$(gettext "Yes")" \
+        --no-label "$(gettext "No")" \
+        --aspect 20 "$@" 2>$ANSWER
 
     return $?
 }
+
+
 
 INFOBOX() {
 
@@ -551,21 +573,29 @@ menu_partitions() {
         if [ $? -eq 0 ]; then
             local software=$(cat $ANSWER)
 
-            DIALOG --title "$(printf "$(gettext "Modify Partition Table on %s")"  "$device")" --msgbox "$(printf "$(gettext "\n
-%s%s will be executed in disk %s.%s\n\n
-For BIOS systems, MBR or GPT partition tables are supported. To use GPT\n
-on PC BIOS systems, an empty partition of 1MB must be added at the first\n
-2GB of the disk with the partition type \`BIOS Boot'.\n
-%sNOTE: you don't need this on EFI systems.%s\n\n
-For EFI systems, GPT is mandatory and a FAT32 partition with at least 100MB\n
-must be created with the partition type \`EFI System'. This will be used as\n
-the EFI System Partition. This partition must have the mountpoint \`/boot/efi'.\n\n
-At least 1 partition is required for the rootfs (/). For this partition,\n
-at least 2GB is required, but more is recommended. The rootfs partition\n
-should have the partition type \`Linux Filesystem'. For swap, RAM*2\n
-should be enough and the partition type \`Linux swap' should be used.\n\n
-%sWARNING: /usr is not supported as a separate partition.%s\n
-%s\n")"  "${BOLD}" "${software}" "$device" "${RESET}" "${BOLD}" "${RESET}" "${BOLD}" "${RESET}" "${RESET}")" 23 80
+
+            DIALOG --title "$(printf "$(gettext "Modify Partition Table on %s")"  "$device")" --msgbox "$(printf "$(gettext "
+%s%s will be executed in disk %s.%s
+
+For BIOS systems, MBR or GPT partition tables are supported. To use GPT
+on PC BIOS systems, an empty partition of 1MB must be added at the first
+2GB of the disk with the partition type BIOS Boot.
+
+%sNOTE: you don't need this on EFI systems.%s
+
+For EFI systems, GPT is mandatory and a FAT32 partition with at least 100MB
+must be created with the partition type EFI System. This will be used as
+the EFI System Partition. This partition must have the mountpoint /boot/efi.
+
+At least 1 partition is required for the rootfs (/). For this partition,
+at least 2GB is required, but more is recommended. The rootfs partition
+should have the partition type Linux Filesystem. For swap, RAM*2
+should be enough and the partition type Linux swap should be used.
+
+%sWARNING: /usr is not supported as a separate partition.%s
+%s
+")"  "${BOLD}" "${software}" "$device" "${RESET}" "${BOLD}" "${RESET}" "${BOLD}" "${RESET}" "${RESET}")" 27 90
+
             if [ $? -eq 0 ]; then
                 while true; do
                     clear; $software $device; PARTITIONS_DONE=1
@@ -1376,17 +1406,22 @@ please do so before starting the installation.")${RESET}" ${MSGBOXSIZE}
     validate_useraccount
 
     if [ -z "$USERACCOUNT_DONE" ]; then
-        DIALOG --yesno "$(printf "$(gettext "%sThe user account is not set up properly.%s\n\n
-%s%sWARNING: no user will be created. You will only be able to login \
-with the root user in your new system.%s\n\n
-%sDo you want to continue?%s")"  "${BOLD}" "${RESET}" "${BOLD}" "${RED}" "${RESET}" "${BOLD}" "${RESET}")" 10 60 || return
+
+        DIALOG --yesno "$(printf "$(gettext "%sThe user account is not set up properly.%s
+
+%s%sWARNING: no user will be created. You will only be able to login with the root user in your new system.%s
+
+%sDo you want to continue?%s")"  "${BOLD}" "${RESET}" "${BOLD}" "${RED}" "${RESET}" "${BOLD}" "${RESET}")" 15 60 || return
+
     fi
 
-    DIALOG --yesno "$(printf "$(gettext "%sThe following operations will be executed:%s\n\n
-%s%s%s\n
-%s%sWARNING: data on partitions will be COMPLETELY DESTROYED for new \
-filesystems.%s\n\n
+    DIALOG --yesno "$(printf "$(gettext "%sThe following operations will be executed:%s
+
+%s%s%s
+%s%sWARNING: data on partitions will be COMPLETELY DESTROYED for new filesystems.%s
+
 %sDo you want to continue?%s")"  "${BOLD}" "${RESET}" "${BOLD}" "${TARGETFS}" "${RESET}" "${BOLD}" "${RED}" "${RESET}" "${BOLD}" "${RESET}")" 20 80 || return
+
     unset TARGETFS
 
     # Create and mount filesystems
@@ -1400,6 +1435,11 @@ filesystems.%s\n\n
         rm -f $TARGETDIR/etc/motd
         rm -f $TARGETDIR/etc/issue
         rm -f $TARGETDIR/usr/sbin/void-installer
+
+        rm -f $TARGETDIR/usr/share/locale/pt_BR/LC_MESSAGES/installer.mo
+        rm -f $TARGETDIR/usr/share/applications/void-installer.desktop
+        rm -f $TARGETDIR/etc/skel/Desktop/void-installer.desktop
+
         # Remove modified sddm.conf to let sddm use the defaults.
         rm -f $TARGETDIR/etc/sddm.conf
         # Remove live user.
