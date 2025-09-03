@@ -37,12 +37,12 @@ clear
 
 export TEXTDOMAIN=installer
 
-export TEXTDOMAINDIR=./locale
+# export TEXTDOMAINDIR=./locale
 
 # A variável de ambiente TEXTDOMAINDIR deve apontar para o diretório raiz onde ficam os 
 # subdiretórios de idiomas, como /usr/share/locale.
 
-# export TEXTDOMAINDIR=/usr/share/locale
+export TEXTDOMAINDIR=/usr/share/locale
 
 # ----------------------------------------------------------------------------------------
 
@@ -201,7 +201,9 @@ get_option() {
     grep -E "^${1} .*" $CONF_FILE | sed -e "s|^${1} ||"
 }
 
+
 # ISO-639 language names for locales
+
 iso639_language() {
     case "$1" in
     aa)  echo "Afar" ;;
