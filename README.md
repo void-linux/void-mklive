@@ -253,3 +253,5 @@ OPTIONS
  -V                 Show version and exit
 ```
 
+
+If you like the project, don't forget to give the repository a star! :)
