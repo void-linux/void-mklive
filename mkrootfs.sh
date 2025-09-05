@@ -300,43 +300,6 @@ fi
 run_cmd_chroot "$ROOTFS" "env -i xbps-reconfigure -f base-files"
 
 
-# ----------------------------------------------------------------------------------------
-
-# Verificar se Flatpak está instalado no chroot
-
-# Instalar Flatpak e adicionar repositório Flathub, se possível
-
-if ! run_cmd_chroot "$ROOTFS" "command -v flatpak >/dev/null 2>&1"; then
-
-    info_msg "$(printf "$(gettext "Flatpak not found on %s. Installing...")"  "$ROOTFS")"
-
-    if ! run_cmd_chroot "$ROOTFS" "xbps-install -y flatpak"; then
-
-        echo -e "\n$(gettext "[WARN] Failed to install Flatpak. Ignoring Flathub configuration.")\n"
-
-    fi
-fi
-
-# Se Flatpak está instalado, adiciona o Flathub
-
-if run_cmd_chroot "$ROOTFS" "command -v flatpak >/dev/null 2>&1"; then
-
-    info_msg "$(gettext "Adding the Flathub repository to Flatpak...")"
-
-    if ! run_cmd_chroot "$ROOTFS" \
-        "flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"; then
-
-        echo -e "\n$(gettext "[WARN] Failed to add Flathub repository.")\n"
-    fi
-
-else
-
-    echo -e "\n$(gettext "[WARN] Flatpak not available after attempted installation. Flathub will not be added.")\n"
-fi
-
-
-# ----------------------------------------------------------------------------------------
-
 # Once base-files is configured and functional its possible to
 # configure the rest of the system.
 run_cmd_chroot "$ROOTFS" "xbps-reconfigure -a"
