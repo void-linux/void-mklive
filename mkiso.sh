@@ -207,7 +207,7 @@ EOF
     fi
 
     ./mklive.sh -a "$TARGET_ARCH" -o "$IMG" -p "$PKGS" -S "$SERVICES" -I "$INCLUDEDIR" \
-        ${KERNEL_PKG:+-v $KERNEL_PKG} ${REPO} "$@"
+        ${KERNEL_PKG:+-v $KERNEL_PKG} -r ${REPO} "$@"
 
 	cleanup
 }
