@@ -102,6 +102,7 @@ usage() {
 	 -T <title>         Modify the bootloader title (default: Void Linux)
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
 	                    Also accepts linux metapackages (linux-mainline, linux-lts).
+	 -x <script>        Path to a postsetup script to run before generating the initramfs
 	 -K                 Do not remove builddir
 	 -h                 Show this help and exit
 	 -V                 Show version and exit
@@ -498,7 +499,7 @@ generate_iso_image() {
 #
 # main()
 #
-while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
+while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:x:Vh" opt; do
 	case $opt in
 		a) TARGET_ARCH="$OPTARG";;
 		b) BASE_SYSTEM_PKG="$OPTARG";;
@@ -519,6 +520,7 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:Vh" opt; do
 		C) BOOT_CMDLINE="$OPTARG";;
 		T) BOOT_TITLE="$OPTARG";;
 		v) LINUX_VERSION="$OPTARG";;
+		x) POSTSETUP_SCRIPT="$OPTARG";;
 		V) version; exit 0;;
 		h) usage; exit 0;;
 		*) usage >&2; exit 1;;
@@ -691,6 +693,15 @@ fi
 if [ "${#INCLUDE_DIRS[@]}" -gt 0 ];then
     print_step "Copying directory structures into the rootfs ..."
     copy_include_directories
+fi
+
+if [ -n "$POSTSETUP_SCRIPT" ]; then
+    print_step "Running postsetup script: $POSTSETUP_SCRIPT ..."
+    if [ -f "$POSTSETUP_SCRIPT" ] && [ -x "$POSTSETUP_SCRIPT" ]; then
+        "$POSTSETUP_SCRIPT" "$ROOTFS" || die "Postsetup script failed"
+    else
+        die "Postsetup script not found or not executable: $POSTSETUP_SCRIPT"
+    fi
 fi
 
 print_step "Generating initramfs image ($INITRAMFS_COMPRESSION)..."
