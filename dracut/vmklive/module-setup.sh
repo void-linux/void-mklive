@@ -23,10 +23,10 @@ install() {
         inst_hook pre-udev 01 "$moddir/mtd.sh"
     fi
 
-    inst_hook pre-pivot 01 "$moddir/adduser.sh"
-    inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
-    inst_hook pre-pivot 02 "$moddir/getty-serial.sh"
-    inst_hook pre-pivot 03 "$moddir/locale.sh"
-    inst_hook pre-pivot 04 "$moddir/accessibility.sh"
-    inst_hook pre-pivot 05 "$moddir/nomodeset.sh"
+    [ -f "$moddir/adduser.sh" ]                   && inst_hook pre-pivot 01 "$moddir/adduser.sh"
+    [ -f "$moddir/display-manager-autologin.sh" ] && inst_hook pre-pivot 02 "$moddir/display-manager-autologin.sh"
+    [ -f "$moddir/getty-serial.sh" ]              && inst_hook pre-pivot 02 "$moddir/getty-serial.sh"
+    [ -f "$moddir/locale.sh" ]                    && inst_hook pre-pivot 03 "$moddir/locale.sh"
+    [ -f "$moddir/accessibility.sh" ]             && inst_hook pre-pivot 04 "$moddir/accessibility.sh"
+    [ -f "$moddir/nomodeset.sh" ]                 && inst_hook pre-pivot 05 "$moddir/nomodeset.sh"
 }
