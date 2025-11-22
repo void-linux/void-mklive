@@ -103,6 +103,7 @@ usage() {
 	 -v linux<version>  Install a custom Linux version on ISO image (default: linux metapackage).
 	                    Also accepts linux metapackages (linux-mainline, linux-lts).
 	 -x <script>        Path to a postsetup script to run before generating the initramfs
+                            (receives the path to the ROOTFS as an argument)
 	 -K                 Do not remove builddir
 	 -h                 Show this help and exit
 	 -V                 Show version and exit
