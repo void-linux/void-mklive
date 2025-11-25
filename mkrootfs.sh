@@ -26,7 +26,7 @@
 #-
 
 readonly PROGNAME=$(basename "$0")
-readonly ARCH=$(uname -m)
+readonly ARCH="$(uname -m)"
 readonly REQTOOLS="xbps-install xbps-reconfigure tar xz"
 
 # This source pulls in all the functions from lib.sh.  This set of
@@ -58,7 +58,7 @@ usage() {
 	 mipsel, mipsel-musl,
 	 ppc, ppc-musl, ppc64le, ppc64le-musl, ppc64, ppc64-musl
 	 riscv64, riscv64-musl
-	
+
 	OPTIONS
 	 -b <system-pkg>  Set an alternative base-system package (default: base-container-full)
 	 -c <cachedir>    Set XBPS cache directory (default: ./xbps-cachedir-<arch>)
