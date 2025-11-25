@@ -48,7 +48,7 @@ cleanup() {
         partx -d "$LOOPDEV" 2>/dev/null
         losetup -d "$LOOPDEV" 2>/dev/null
     fi
-
+	
     [ -d "$ROOTFS" ] && rmdir "$ROOTFS"
 }
 
