@@ -26,7 +26,7 @@
 #-
 
 readonly PROGNAME=$(basename "$0")
-readonly ARCH=$(uname -m)
+readonly ARCH="$(uname -m)"
 readonly REQTOOLS="xbps-install xbps-reconfigure tar xz"
 
 # This source pulls in all the functions from lib.sh.  This set of

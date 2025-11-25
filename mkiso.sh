@@ -5,7 +5,7 @@ set -eu
 . ./lib.sh
 
 PROGNAME=$(basename "$0")
-ARCH=$(uname -m)
+ARCH="$(uname -m)"
 IMAGES="base"
 TRIPLET=
 REPO=

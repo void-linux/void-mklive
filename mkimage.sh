@@ -26,7 +26,7 @@
 #-
 
 readonly PROGNAME=$(basename "$0")
-readonly ARCH=$(uname -m)
+readonly ARCH="$(uname -m)"
 
 trap 'printf "\nInterrupted! exiting...\n"; cleanup; exit 0' INT TERM HUP
 
