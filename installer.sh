@@ -863,7 +863,7 @@ test_network() {
 configure_wifi() {
     local dev="$1" ssid enc pass _wpasupconf=/etc/wpa_supplicant/wpa_supplicant.conf
 
-    DIALOG --form "Wireless configuration for ${dev}\n(encryption type: wep or wpa)" 0 0 0 \
+    DIALOG --form "Wireless configuration for ${dev}\n(encryption type: wep, wpa, or sae)" 0 0 0 \
         "SSID:" 1 1 "" 1 16 30 0 \
         "Encryption:" 2 1 "" 2 16 4 3 \
         "Password:" 3 1 "" 3 16 63 0 || return 1
@@ -873,8 +873,8 @@ configure_wifi() {
     if [ -z "$ssid" ]; then
         DIALOG --msgbox "Invalid SSID." ${MSGBOXSIZE}
         return 1
-    elif [ -z "$enc" -o "$enc" != "wep" -a "$enc" != "wpa" ]; then
-        DIALOG --msgbox "Invalid encryption type (possible values: wep or wpa)." ${MSGBOXSIZE}
+    elif [ -z "$enc" ] || [[ "$enc" != "wep" && "$enc" != "wpa" && "$enc" != "sae" ]]; then
+        DIALOG --msgbox "Invalid encryption type (possible values: wep, wpa, or sae)." ${MSGBOXSIZE}
         return 1
     elif [ -z "$pass" ]; then
         DIALOG --msgbox "Invalid AP password." ${MSGBOXSIZE}
@@ -894,6 +894,15 @@ network={
   wep_key0="$pass"
   wep_tx_keyidx=0
   auth_alg=SHARED
+}
+EOF
+    elif [ "$enc" = "sae" ]; then
+        cat << EOF >> ${_wpasupconf}
+network={
+    ssid="$ssid"
+    key_mgmt=SAE
+    sae_password="$pass"
+    ieee80211w=2
 }
 EOF
     else
