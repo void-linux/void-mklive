@@ -226,7 +226,7 @@ iso3166_country() {
     AR) echo "Argentina" ;;
     AT) echo "Austria" ;;
     AU) echo "Australia" ;;
-    BA) echo "Bonsia and Herzegovina" ;;
+    BA) echo "Bosnia and Herzegovina" ;;
     BE) echo "Belgium" ;;
     BG) echo "Bulgaria" ;;
     BH) echo "Bahrain" ;;
