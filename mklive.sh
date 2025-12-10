@@ -603,6 +603,7 @@ STEP_COUNT=10
 [ "${#INCLUDE_DIRS[@]}" -gt 0 ] && STEP_COUNT=$((STEP_COUNT+1))
 [ "${#IGNORE_PKGS[@]}" -gt 0 ] && STEP_COUNT=$((STEP_COUNT+1))
 [ -n "$ROOT_SHELL" ] && STEP_COUNT=$((STEP_COUNT+1))
+[ -n "$POSTSETUP_SCRIPT" ] && STEP_COUNT=$((STEP_COUNT+1))
 
 : ${SYSLINUX_DATADIR:="$VOIDTARGETDIR"/usr/lib/syslinux}
 : ${GRUB_DATADIR:="$VOIDTARGETDIR"/usr/share/grub}
