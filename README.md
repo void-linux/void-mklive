@@ -129,6 +129,7 @@ OPTIONS
  -b <system-pkg>    Set an alternative base package (default: base-system)
  -r <repo>          Use this XBPS repository. May be specified multiple times
  -c <cachedir>      Use this XBPS cache directory (default: ./xbps-cachedir-<arch>)
+ -H <host_cachedir> Use this Host XBPS cache directory (default: ./xbps-cachedir-<host_arch>)
  -k <keymap>        Default keymap to use (default: us)
  -l <locale>        Default locale to use (default: en_US.UTF-8)
  -i <lz4|gzip|bzip2|xz>
