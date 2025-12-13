@@ -28,6 +28,13 @@ umask 022
 
 . ./lib.sh
 
+
+## Store `lib.sh / XBPS_REPOSITORY` to `DEFAULT_XBPS_REPOSITORY`
+DEFAULT_XBPS_REPOSITORY="${XBPS_REPOSITORY}"
+## Reset `XBPS_REPOSITORY` to `empty string`
+XBPS_REPOSITORY=""
+
+
 REQUIRED_PKGS=(base-files libgcc dash coreutils sed tar gawk squashfs-tools xorriso)
 TARGET_PKGS=(base-files)
 INITRAMFS_PKGS=(binutils xz device-mapper dhclient dracut-network openresolv)
@@ -528,7 +535,11 @@ while getopts "a:b:r:c:C:T:Kk:l:i:I:S:e:s:o:p:g:v:P:x:Vh" opt; do
 	esac
 done
 shift $((OPTIND - 1))
-XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl --repository=https://repo-default.voidlinux.org/current/aarch64"
+
+
+#XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl --repository=https://repo-default.voidlinux.org/current/aarch64"
+: ${XBPS_REPOSITORY:=${DEFAULT_XBPS_REPOSITORY}}
+
 
 # Configure dracut to use overlayfs for the writable overlay.
 BOOT_CMDLINE="$BOOT_CMDLINE rd.live.overlay.overlayfs=1 "
