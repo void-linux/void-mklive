@@ -11,6 +11,8 @@ T_CLOUD_IMGS=GCP{,-musl}
 
 T_PXE_ARCHS=x86_64{,-musl}
 
+T_WSL_ARCHS={x86_64,aarch64}{,-musl}
+
 LIVE_ARCHS:=$(shell echo $(T_LIVE_ARCHS))
 LIVE_FLAVORS:=base enlightenment xfce mate cinnamon gnome kde lxde lxqt xfce-wayland
 LIVE_PLATFORMS:=pinebookpro x13s
@@ -19,6 +21,7 @@ PLATFORMS:=$(shell echo $(T_PLATFORMS))
 SBC_IMGS:=$(shell echo $(T_SBC_IMGS))
 CLOUD_IMGS:=$(shell echo $(T_CLOUD_IMGS))
 PXE_ARCHS:=$(shell echo $(T_PXE_ARCHS))
+WSL_ARCHS:=$(shell echo $(T_WSL_ARCHS))
 
 ALL_LIVE_ISO=$(foreach arch,$(LIVE_ARCHS), $(foreach flavor,$(LIVE_FLAVORS),void-live-$(arch)-$(DATECODE)-$(flavor).iso))
 ALL_ROOTFS=$(foreach arch,$(ARCHS),void-$(arch)-ROOTFS-$(DATECODE).tar.xz)
@@ -26,6 +29,7 @@ ALL_PLATFORMFS=$(foreach platform,$(PLATFORMS),void-$(platform)-PLATFORMFS-$(DAT
 ALL_SBC_IMAGES=$(foreach platform,$(SBC_IMGS),void-$(platform)-$(DATECODE).img.xz)
 ALL_CLOUD_IMAGES=$(foreach cloud,$(CLOUD_IMGS),void-$(cloud)-$(DATECODE).tar.gz)
 ALL_PXE_ARCHS=$(foreach arch,$(PXE_ARCHS),void-$(arch)-NETBOOT-$(DATECODE).tar.gz)
+ALL_WSL=$(foreach arch,$(WSL_ARCHS),void-$(arch)-$(DATECODE).wsl)
 
 SUDO := sudo
 
@@ -122,4 +126,14 @@ void-%-NETBOOT-$(DATECODE).tar.gz: void-%-ROOTFS-$(DATECODE).tar.xz mknet.sh
 	$(SUDO) ./mknet.sh void-$*-ROOTFS-$(DATECODE).tar.xz
 	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
 
-.PHONY: all checksum dist live-iso-all live-iso-all-print rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all
+wsl-all: $(ALL_WSL)
+
+wsl-all-print:
+	@echo $(ALL_WSL) | sed "s: :\n:g"
+
+void-%-$(DATECODE).wsl: mkrootfs.sh
+	@[ -n "${CI}" ] && printf "::group::\x1b[32mBuilding $@...\x1b[0m\n" || true
+	$(SUDO) ./mkrootfs.sh $(XBPS_REPOSITORY) -x $(COMPRESSOR_THREADS) -b wsl-base -o $@ $*
+	@[ -n "${CI}" ] && printf '::endgroup::\n' || true
+
+.PHONY: all checksum dist live-iso-all live-iso-all-print rootfs-all-print rootfs-all platformfs-all-print platformfs-all pxe-all-print pxe-all wsl-all-print wsl-all
