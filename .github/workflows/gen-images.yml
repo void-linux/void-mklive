@@ -52,6 +52,16 @@ on:
         default: "rpi-armv6l rpi-armv6l-musl rpi-armv7l rpi-armv7l-musl rpi-aarch64 rpi-aarch64-musl"
         required: false
         type: string
+      wsl_flag:
+        description: "Build WSL images"
+        default: true
+        required: true
+        type: boolean
+      wsl:
+        description: "Archs to build WSL images for"
+        default: "x86_64 x86_64-musl aarch64 aarch64-musl"
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -74,6 +84,7 @@ jobs:
       rootfs: ${{ steps.prep.outputs.rootfs }}
       platformfs: ${{ steps.prep.outputs.platformfs }}
       sbc_imgs: ${{ steps.prep.outputs.sbc_imgs }}
+      wsl: ${{ steps.prep.outputs.wsl }}
 
     steps:
       - name: Prepare Environment
@@ -97,6 +108,7 @@ jobs:
           echo "rootfs=$(echo "${{ inputs.rootfs }}" | jsonify)" >> $GITHUB_OUTPUT
           echo "platformfs=$(echo "${{ inputs.platformfs }}" | jsonify)" >> $GITHUB_OUTPUT
           echo "sbc_imgs=$(echo "${{ inputs.sbc_imgs }}" | jsonify)" >> $GITHUB_OUTPUT
+          echo "wsl=$(echo "${{ inputs.wsl }}" | jsonify)" >> $GITHUB_OUTPUT
 
   build-live-isos:
     name: Build Live ISOs
@@ -282,6 +294,52 @@ jobs:
             !distdir-${{ needs.prepare.outputs.datecode }}/*PLATFORMFS*
           if-no-files-found: error
 
+  build-wsl:
+    name: Build WSL Images
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ inputs.wsl_flag }}
+
+    strategy:
+      matrix:
+        arch: ${{ fromJson(needs.prepare.outputs.wsl) }}
+
+    container:
+      image: 'ghcr.io/void-linux/void-mklive:20250116R1'
+      options: --privileged
+      volumes:
+        - /dev:/dev
+      env:
+        PATH: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin:/tmp/bin'
+        MKLIVE_REV: "${{ needs.prepare.outputs.revision }}"
+
+    steps:
+      - name: Prepare container
+        shell: sh
+        run: xbps-install -Syu xbps && xbps-install -yu
+
+      - name: Clone and checkout
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Build WSL Images
+        run: |
+          make wsl-all-print wsl-all \
+            SUDO= REPOSITORY="${{ needs.prepare.outputs.mirror }}" \
+            DATECODE="${{ needs.prepare.outputs.datecode }}" \
+            ARCHS="${{ matrix.arch }}"
+
+      - name: Prepare artifacts for upload
+        run: |
+          make dist DATECODE="${{ needs.prepare.outputs.datecode }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-wsl-${{ matrix.arch }}-${{ needs.prepare.outputs.datecode }}
+          path: |
+            distdir-${{ needs.prepare.outputs.datecode }}/*
+          if-no-files-found: error
+
+
   merge-artifacts:
     name: Combine artifacts
     runs-on: ubuntu-latest
@@ -292,6 +350,7 @@ jobs:
       - build-rootfs
       - build-platformfs
       - build-sbc-img
+      - build-wsl
 
     container:
       image: 'ghcr.io/void-linux/void-mklive:20250116R1'
