@@ -555,11 +555,24 @@ menu_keymap() {
 set_keymap() {
     local KEYMAP=$(get_option KEYMAP)
 
+    # Console keymap
     if [ -f /etc/vconsole.conf ]; then
-        sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/vconsole.conf
+        sed -i -e "s|KEYMAP=.*|KEYMAP=$KEYMAP|g" "$TARGETDIR/etc/vconsole.conf"
     else
-        sed -i -e "s|#\?KEYMAP=.*|KEYMAP=$KEYMAP|g" $TARGETDIR/etc/rc.conf
+        sed -i -e "s|#\?KEYMAP=.*|KEYMAP=$KEYMAP|g" "$TARGETDIR/etc/rc.conf"
     fi
+
+    # X11 keymap
+    mkdir -p "$TARGETDIR/etc/X11/xorg.conf.d"
+
+    cat > "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
+Section "InputClass"
+    Identifier "system-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "$KEYMAP"
+    Option "XkbModel" "pc105"
+EndSection
+EOF
 }
 
 menu_locale() {
