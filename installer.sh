@@ -552,6 +552,131 @@ menu_keymap() {
     done
 }
 
+# Mapping derived from systemd's kbd-model-map
+
+map_keymap_to_xkb() {
+    case "$1" in
+        sg|sg-latin1)
+            XKB_LAYOUT="ch"; XKB_MODEL="pc105"; XKB_VARIANT="de_nodeadkeys" ;;
+        nl)
+            XKB_LAYOUT="nl"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        mk-utf)
+            XKB_LAYOUT="mk"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        trq)
+            XKB_LAYOUT="tr"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        uk)
+            XKB_LAYOUT="gb"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        is-latin1)
+            XKB_LAYOUT="is"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        de|de-latin1)
+            XKB_LAYOUT="de"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        la-latin1)
+            XKB_LAYOUT="latam"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        us)
+            XKB_LAYOUT="us"; XKB_MODEL="pc105+inet"; XKB_VARIANT="" ;;
+        ko)
+            XKB_LAYOUT="kr"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        ro)
+            XKB_LAYOUT="ro"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        ro-std)
+            XKB_LAYOUT="ro"; XKB_MODEL="pc105"; XKB_VARIANT="std" ;;
+        slovene)
+            XKB_LAYOUT="si"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        hu)
+            XKB_LAYOUT="hu"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        jp106)
+            XKB_LAYOUT="jp"; XKB_MODEL="jp106"; XKB_VARIANT="" ;;
+        croat)
+            XKB_LAYOUT="hr"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        it|it2|it-ibm)
+            XKB_LAYOUT="it"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        hu101)
+            XKB_LAYOUT="hu"; XKB_MODEL="pc105"; XKB_VARIANT="qwerty" ;;
+        sr-latin)
+            XKB_LAYOUT="rs"; XKB_MODEL="pc105"; XKB_VARIANT="latin" ;;
+        fi)
+            XKB_LAYOUT="fi"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        fr|fr-latin1|fr-pc)
+            XKB_LAYOUT="fr"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        fr_CH|fr_CH-latin1)
+            XKB_LAYOUT="ch"; XKB_MODEL="pc105"; XKB_VARIANT="fr" ;;
+        dk|dk-latin1)
+            XKB_LAYOUT="dk"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        be-latin1)
+            XKB_LAYOUT="be"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        bg_pho-utf8)
+            XKB_LAYOUT="bg"; XKB_MODEL="pc105"; XKB_VARIANT="phonetic" ;;
+        cz-us-qwertz)
+            XKB_LAYOUT="cz"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        cz-qwerty)
+            XKB_LAYOUT="cz"; XKB_MODEL="pc105"; XKB_VARIANT="qwerty" ;;
+        br-abnt2)
+            XKB_LAYOUT="br"; XKB_MODEL="abnt2"; XKB_VARIANT="" ;;
+        us-acentos)
+            XKB_LAYOUT="us"; XKB_MODEL="pc105"; XKB_VARIANT="intl" ;;
+        pt-latin1)
+            XKB_LAYOUT="pt"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        ro-std-cedilla)
+            XKB_LAYOUT="ro"; XKB_MODEL="pc105"; XKB_VARIANT="std_cedilla" ;;
+        tj_alt-UTF8)
+            XKB_LAYOUT="tj"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        de-latin1-nodeadkeys)
+            XKB_LAYOUT="de"; XKB_MODEL="pc105"; XKB_VARIANT="nodeadkeys" ;;
+        no)
+            XKB_LAYOUT="no"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        dvorak)
+            XKB_LAYOUT="us"; XKB_MODEL="pc105"; XKB_VARIANT="dvorak" ;;
+        ru)
+            XKB_LAYOUT="ru"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        cz-lat2)
+            XKB_LAYOUT="cz"; XKB_MODEL="pc105"; XKB_VARIANT="qwerty" ;;
+        pl2)
+            XKB_LAYOUT="pl"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        es)
+            XKB_LAYOUT="es"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        es-dvorak)
+            XKB_LAYOUT="es"; XKB_MODEL="microsoftpro"; XKB_VARIANT="dvorak" ;;
+        ro-cedilla)
+            XKB_LAYOUT="ro"; XKB_MODEL="pc105"; XKB_VARIANT="cedilla" ;;
+        ie)
+            XKB_LAYOUT="ie"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        et)
+            XKB_LAYOUT="ee"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        sk-qwerty)
+            XKB_LAYOUT="sk"; XKB_MODEL="pc105"; XKB_VARIANT="qwerty" ;;
+        sk-qwertz)
+            XKB_LAYOUT="sk"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        fr-latin9)
+            XKB_LAYOUT="fr"; XKB_MODEL="pc105"; XKB_VARIANT="latin9" ;;
+        cf)
+            XKB_LAYOUT="ca"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        sv-latin1)
+            XKB_LAYOUT="se"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        sr-cy)
+            XKB_LAYOUT="rs"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        gr)
+            XKB_LAYOUT="gr"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        by)
+            XKB_LAYOUT="by"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        il)
+            XKB_LAYOUT="il"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        kazakh)
+            XKB_LAYOUT="kz"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        lt|lt.l4|lt.baltic)
+            XKB_LAYOUT="lt"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        khmer)
+            XKB_LAYOUT="kh"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        lv)
+            XKB_LAYOUT="lv"; XKB_MODEL="pc105"; XKB_VARIANT="apostrophe" ;;
+        lv-tilde)
+            XKB_LAYOUT="lv"; XKB_MODEL="pc105"; XKB_VARIANT="tilde" ;;
+        ge)
+            XKB_LAYOUT="ge"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
+        *)
+            return 1 ;;
+    esac
+}
+
 set_keymap() {
     local KEYMAP=$(get_option KEYMAP)
 
@@ -563,14 +688,27 @@ set_keymap() {
     fi
 
     # X11 keymap
+    local XKB_LAYOUT XKB_MODEL XKB_VARIANT
+
+    if ! map_keymap_to_xkb "$KEYMAP"; then
+        XKB_LAYOUT="$KEYMAP"
+        XKB_MODEL="pc105"
+        XKB_VARIANT=""
+    fi
+
     mkdir -p "$TARGETDIR/etc/X11/xorg.conf.d"
 
     cat > "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
 Section "InputClass"
     Identifier "system-keyboard"
     MatchIsKeyboard "on"
-    Option "XkbLayout" "$KEYMAP"
-    Option "XkbModel" "pc105"
+    Option "XkbLayout" "$XKB_LAYOUT"
+    Option "XkbModel" "$XKB_MODEL"
+EOF
+    [ -n "$XKB_VARIANT" ] && echo "    Option \"XkbVariant\" \"$XKB_VARIANT\"" >> \
+        "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf"
+
+    cat >> "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
 EndSection
 EOF
 }
