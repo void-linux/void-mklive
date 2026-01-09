@@ -673,7 +673,7 @@ map_keymap_to_xkb() {
         ge)
             XKB_LAYOUT="ge"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
         *)
-            return 1 ;;
+            XKB_LAYOUT="$1"; XKB_MODEL="pc105"; XKB_VARIANT="" ;;
     esac
 }
 
@@ -688,29 +688,26 @@ set_keymap() {
     fi
 
     # X11 keymap
-    local XKB_LAYOUT XKB_MODEL XKB_VARIANT
+    if [ -x "$TARGETDIR/usr/bin/Xorg" ] || [ -x "$TARGETDIR/bin/Xorg" ]; then
+        map_keymap_to_xkb "$KEYMAP"
 
-    if ! map_keymap_to_xkb "$KEYMAP"; then
-        XKB_LAYOUT="$KEYMAP"
-        XKB_MODEL="pc105"
-        XKB_VARIANT=""
-    fi
+        mkdir -p "$TARGETDIR/etc/X11/xorg.conf.d"
 
-    mkdir -p "$TARGETDIR/etc/X11/xorg.conf.d"
-
-    cat > "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
+        cat > "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
 Section "InputClass"
     Identifier "system-keyboard"
     MatchIsKeyboard "on"
     Option "XkbLayout" "$XKB_LAYOUT"
     Option "XkbModel" "$XKB_MODEL"
 EOF
-    [ -n "$XKB_VARIANT" ] && echo "    Option \"XkbVariant\" \"$XKB_VARIANT\"" >> \
-        "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf"
+        [ -n "$XKB_VARIANT" ] && \
+            echo "    Option \"XkbVariant\" \"$XKB_VARIANT\"" >> \
+            "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf"
 
-    cat >> "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
+        cat >> "$TARGETDIR/etc/X11/xorg.conf.d/00-keyboard.conf" <<EOF
 EndSection
 EOF
+    fi
 }
 
 menu_locale() {
