@@ -192,7 +192,7 @@ iso639_language() {
     oc)  echo "Occitan" ;;
     om)  echo "Oromo" ;;
     pl)  echo "Polish" ;;
-    pt)  echo "Portugese" ;;
+    pt)  echo "Portuguese" ;;
     ro)  echo "Romanian" ;;
     ru)  echo "Russian" ;;
     sk)  echo "Slovak" ;;
