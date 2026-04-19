@@ -37,6 +37,7 @@ USERPASSWORD_DONE=
 USERNAME_DONE=
 USERGROUPS_DONE=
 USERACCOUNT_DONE=
+SUPERUSER_DONE=
 BOOTLOADER_DONE=
 PARTITIONS_DONE=
 NETWORK_DONE=
@@ -788,6 +789,69 @@ set_useraccount() {
         chroot $TARGETDIR chpasswd -c SHA512
 }
 
+menu_superuser() {
+    local _preset
+    while true; do
+        DIALOG --title "Select a superuser access tool (Optional). If ${RED}sudo${RESET} or ${RED}opendoas${RESET} are selected, the configured non-root user will be given access via the ${RED}wheel${RESET} group." \
+            --menu "$MENULABEL" ${MENUSIZE} \
+            su "basic user switching tool (default, requires root password)" \
+            sudo "common and complex superuser tool" \
+            opendoas "superuser tool from OpenBSD"
+        if [ $? -eq 0 ]; then
+            set_option SUPERUSER "$(cat $ANSWER)"
+            SUPERUSER_DONE=1
+            break
+        else
+            return
+        fi
+    done
+}
+
+validate_superuser() {
+    local ROOTPASSWORD="$(get_option ROOTPASSWORD)"
+    local SUPERUSER="$(get_option SUPERUSER)"
+    local USERLOGIN="$(get_option USERLOGIN)"
+
+    if [ "$SUPERUSER" = su ] && [ -z "$ROOTPASSWORD" ]; then
+        return 1
+    fi
+    if [ "$SUPERUSER" != su ] && [ -z "$USERLOGIN" ]; then
+        return 2
+    fi
+    return 0
+}
+
+set_superuser() {
+    local SUPERUSER="$(get_option SUPERUSER)"
+    local USERLOGIN="$(get_option USERLOGIN)"
+
+    case "$SUPERUSER" in
+        su)
+            # nothing, this is part of util-linux and is installed by default
+            ;;
+        sudo)
+            if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
+                # enable sudo for primary user USERLOGIN who is not member of wheel
+                echo "# Enable sudo for login '$USERLOGIN'" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
+                echo "$USERLOGIN ALL=(ALL:ALL) ALL" >> "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
+            else
+                # enable sudo for members of group wheel
+                echo "%wheel ALL=(ALL:ALL) ALL" > "$TARGETDIR/etc/sudoers.d/wheel"
+            fi
+            ;;
+        opendoas)
+            if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
+                # enable doas for primary user USERLOGIN who is not member of wheel
+                echo "# Enable doas for login '$USERLOGIN'" > "$TARGETDIR/etc/doas.conf"
+                echo "permit $USERLOGIN" >> "$TARGETDIR/etc/doas.conf"
+            else
+                # enable doas for members of group wheel
+                echo "permit :wheel" > "$TARGETDIR/etc/doas.conf"
+            fi
+            ;;
+    esac
+}
+
 menu_bootloader() {
     while true; do
         DIALOG --title " Select the disk to install the bootloader" \
@@ -1246,6 +1310,11 @@ install_packages() {
         fi
     fi
 
+    local _superuser="$(get_option SUPERUSER)"
+    if [ "$_superuser" = su ]; then
+        _superuser=""
+    fi
+
     _syspkg="base-system"
 
     mkdir -p $TARGETDIR/var/db/xbps/keys $TARGETDIR/usr/share
@@ -1260,7 +1329,7 @@ install_packages() {
     _arch=$(xbps-uhelper arch)
 
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
+        xbps-install -r $TARGETDIR -SyU ${_syspkg} ${_grub} ${_superuser} 2>&1 | \
         DIALOG --title "Installing base system packages..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
@@ -1348,6 +1417,23 @@ with the root user in your new system.${RESET}\n\n
 ${BOLD}Do you want to continue?${RESET}" 10 60 || return
     fi
 
+    # validate superuser configuration
+    SUPERUSER_DONE="$(validate_superuser)"
+
+    case "$SUPERUSER_DONE" in
+        1)
+            DIALOG --yesno "${BOLD}Superuser access is not set up properly.${RESET}\n\n
+${BOLD}${RED}WARNING: The root password is not set and superuser access is configured to su. Superuser access will not be possible.${RESET}\n\n
+${BOLD}Do you want to continue?${RESET}" 10 60 || return
+            ;;
+        2)
+            DIALOG --yesno "${BOLD}Superuser access is not set up properly.${RESET}\n\n
+${BOLD}${RED}WARNING: A non-root user account is not configured and superuser access is configured to sudo or opendoas. Superuser access will not be possible.${RESET}\n\n
+${BOLD}Do you want to continue?${RESET}" 10 60 || return
+            ;;
+        *) ;;
+    esac
+
     DIALOG --yesno "${BOLD}The following operations will be executed:${RESET}\n\n
 ${BOLD}${TARGETFS}${RESET}\n
 ${BOLD}${RED}WARNING: data on partitions will be COMPLETELY DESTROYED for new \
@@ -1397,6 +1483,9 @@ Root partition not empty! Aborting..." ${MSGBOXSIZE}
         fi
         if [ "$(get_option BOOTLOADER)" = none ]; then
             TO_REMOVE+=" grub-x86_64-efi grub-i386-efi grub"
+        fi
+        if [ "$(get_option SUPERUSER)" != sudo ]; then
+            TO_REMOVE+=" sudo"
         fi
         # uninstall separately to minimise errors
         for pkg in $TO_REMOVE; do
@@ -1457,18 +1546,7 @@ Root partition not empty! Aborting..." ${MSGBOXSIZE}
         fi
     fi
 
-    if [ -d $TARGETDIR/etc/sudoers.d ]; then
-        USERLOGIN="$(get_option USERLOGIN)"
-        if [ -z "$(echo $(get_option USERGROUPS) | grep -w wheel)" -a -n "$USERLOGIN" ]; then
-            # enable sudo for primary user USERLOGIN who is not member of wheel
-            echo "# Enable sudo for login '$USERLOGIN'" > "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
-            echo "$USERLOGIN ALL=(ALL:ALL) ALL" >> "$TARGETDIR/etc/sudoers.d/$USERLOGIN"
-        else
-            # enable the sudoers entry for members of group wheel
-            echo "%wheel ALL=(ALL:ALL) ALL" > "$TARGETDIR/etc/sudoers.d/wheel"
-        fi
-        unset USERLOGIN
-    fi
+    set_superuser
 
     # clean up polkit rule - it's only useful in live systems
     rm -f $TARGETDIR/etc/polkit-1/rules.d/void-live.rules
@@ -1546,6 +1624,7 @@ menu() {
             "Timezone" "Set system time zone" \
             "RootPassword" "Set system root password" \
             "UserAccount" "Set primary user name and password" \
+            "SuperUser" "Set up superuser access" \
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
@@ -1566,6 +1645,7 @@ menu() {
             "Timezone" "Set system time zone" \
             "RootPassword" "Set system root password" \
             "UserAccount" "Set primary user name and password" \
+            "SuperUser" "Set up superuser access" \
             "BootLoader" "Set disk to install bootloader" \
             "Partition" "Partition disk(s)" \
             "Filesystems" "Configure filesystems and mount points" \
@@ -1593,7 +1673,8 @@ menu() {
         "Timezone") menu_timezone && [ -n "$TIMEZONE_DONE" ] && DEFITEM="RootPassword";;
         "RootPassword") menu_rootpassword && [ -n "$ROOTPASSWORD_DONE" ] && DEFITEM="UserAccount";;
         "UserAccount") menu_useraccount && [ -n "$USERLOGIN_DONE" ] && [ -n "$USERPASSWORD_DONE" ] \
-               && DEFITEM="BootLoader";;
+               && DEFITEM="SuperUser";;
+        "SuperUser") menu_superuser && [ -n "$SUPERUSER_DONE" ] && DEFITEM="BootLoader";;
         "BootLoader") menu_bootloader && [ -n "$BOOTLOADER_DONE" ] && DEFITEM="Partition";;
         "Partition") menu_partitions && [ -n "$PARTITIONS_DONE" ] && DEFITEM="Filesystems";;
         "Filesystems") menu_filesystems && [ -n "$FILESYSTEMS_DONE" ] && DEFITEM="Install";;
