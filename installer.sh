@@ -192,7 +192,7 @@ iso639_language() {
     oc)  echo "Occitan" ;;
     om)  echo "Oromo" ;;
     pl)  echo "Polish" ;;
-    pt)  echo "Portugese" ;;
+    pt)  echo "Portuguese" ;;
     ro)  echo "Romanian" ;;
     ru)  echo "Russian" ;;
     sk)  echo "Slovak" ;;
@@ -1224,6 +1224,9 @@ as FAT32, mountpoint /boot/efi and at least with 100MB of size." ${MSGBOXSIZE}
 create_filesystems() {
     local mnts dev mntpt fstype fspassno mkfs size rv uuid
 
+    # truncate to avoid doubling up
+    : >"$TARGET_FSTAB"
+
     mnts=$(grep -E '^MOUNTPOINT .*' $CONF_FILE | sort -k 5)
     set -- ${mnts}
     while [ $# -ne 0 ]; do
@@ -1502,6 +1505,12 @@ ${BOLD}Do you want to continue?${RESET}" 20 80 || return
 
     # Create and mount filesystems
     create_filesystems
+
+    if find "$TARGETDIR" -xdev -mindepth 1 -maxdepth 1 -not -name 'lost+found' | read; then
+        DIALOG --msgbox "${BOLD}${RED}ERROR:${RESET} \
+Root partition not empty! Aborting..." ${MSGBOXSIZE}
+        DIE 1
+    fi
 
     SOURCE_DONE="$(get_option SOURCE)"
     # If source not set use defaults.

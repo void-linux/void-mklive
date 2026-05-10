@@ -50,7 +50,7 @@ print_step() {
 mount_pseudofs() {
     for f in sys dev proc; do
         mkdir -p "$ROOTFS"/$f
-        mount --rbind /$f "$ROOTFS"/$f
+        mount --rbind /$f "$ROOTFS"/$f --make-rslave
     done
 }
 
@@ -219,7 +219,8 @@ generate_initramfs() {
 
     copy_dracut_files "$ROOTFS"
     copy_autoinstaller_files "$ROOTFS"
-    chroot "$ROOTFS" env -i /usr/bin/dracut -N --"${INITRAMFS_COMPRESSION}" \
+    chroot "$ROOTFS" env -i PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin" \
+        /usr/bin/dracut -N --"${INITRAMFS_COMPRESSION}" \
         --add-drivers "ahci" --force-add "vmklive autoinstaller" --omit systemd "/boot/initrd" $KERNELVERSION
     [ $? -ne 0 ] && die "Failed to generate the initramfs"
 
@@ -728,5 +729,6 @@ generate_squashfs
 print_step "Generating ISO image..."
 generate_iso_image
 
-hsize=$(du -sh "$OUTPUT_FILE"|awk '{print $1}')
+sync
+hsize=$(stat -c '%s' "$OUTPUT_FILE" | numfmt --to=iec)
 info_msg "Created $(readlink -f "$OUTPUT_FILE") ($hsize) successfully."

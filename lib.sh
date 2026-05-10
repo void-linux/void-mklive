@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# ensure consistent styling, sorting, etc
+export LANG=C.UTF-8
+export LC_ALL=C
+
 # This contains the COMPLETE list of binaries that this script needs
 # to function.  The only exception is the QEMU binary since it is not
 # known in advance which one wil be required.
