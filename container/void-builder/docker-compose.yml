@@ -1,0 +1,20 @@
+services:
+  voidlinux:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: voidlinux
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+
+    volumes:
+      - ./:/work
+      # - /tmp:/tmp
+
+    working_dir: /work
+
+    command: /bin/bash
