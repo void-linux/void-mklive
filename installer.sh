@@ -141,7 +141,7 @@ iso639_language() {
     an)  echo "Aragonese" ;;
     ar)  echo "Arabic" ;;
     ast) echo "Asturian" ;;
-    be)  echo "Belgian" ;;
+    be)  echo "Belarusian" ;;
     bg)  echo "Bulgarian" ;;
     bhb) echo "Bhili" ;;
     br)  echo "Breton" ;;
