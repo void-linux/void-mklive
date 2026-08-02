@@ -59,10 +59,10 @@ EOF
 VAI_format_disk() {
     # Make Filesystems
     if [ -d /sys/firmware/efi ] ; then
-        mkfs.vfat -F32 "${disk}1"
-        mkfs.ext4 -F "${disk}2"
+        mkfs.vfat -F32 "${disk}${partsep}1"
+        mkfs.ext4 -F "${disk}${partsep}2"
     else
-        mkfs.ext4 -F "${disk}1"
+        mkfs.ext4 -F "${disk}${partsep}1"
     fi
 }
 
@@ -71,11 +71,11 @@ VAI_mount_target() {
     mkdir -p "${target}"
 
     if [ -d /sys/firmware/efi ] ; then
-        mount "${disk}2" "${target}"
+        mount "${disk}${partsep}2" "${target}"
         mkdir -p "${target}/boot/efi"
-        mount "${disk}1" "${target}/boot/efi"
+        mount "${disk}${partsep}1" "${target}/boot/efi"
     else
-        mount "${disk}1" "${target}"
+        mount "${disk}${partsep}1" "${target}"
     fi
 }
 
@@ -164,9 +164,9 @@ VAI_configure_grub() {
 
 VAI_configure_fstab() {
     # Grab UUIDs
-    uuid1="$(blkid -s UUID -o value "${disk}1")"
+    uuid1="$(blkid -s UUID -o value "${disk}${partsep}1")"
     if [ -d /sys/firmware/efi ] ; then
-        uuid2="$(blkid -s UUID -o value "${disk}2")"
+        uuid2="$(blkid -s UUID -o value "${disk}${partsep}2")"
         echo "UUID=$uuid1 /boot/efi vfat defaults 0 0" >> "${target}/etc/fstab"
         echo "UUID=$uuid2 / ext4 defaults,errors=remount-ro 0 1" >> "${target}/etc/fstab"
 
@@ -261,6 +261,14 @@ VAI_configure_autoinstall() {
     if [ -z "$disk" ] ; then
         die "No valid disk!"
     fi
+
+    # Set the partition seperator if the disk type uses one
+    partsep=""
+    case $disk in
+        *mmc*|*nvme*)
+            partsep="p"
+            ;;
+    esac
 }
 
 VAI_main() {

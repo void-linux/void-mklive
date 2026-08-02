@@ -185,7 +185,7 @@ KERNELVERSION=$(ls "$ROOTFS/usr/lib/modules/")
 # initrd with the exception that the autoinstaller and netmenu are
 # force added since no module depends on them.
 info_msg "Building initrd for kernel version $KERNELVERSION"
-run_cmd_chroot "$ROOTFS" "env -i /usr/bin/dracut \
+run_cmd_chroot "$ROOTFS" "env -i PATH=/usr/bin /usr/bin/dracut \
                -N \
                --${INITRAMFS_COMPRESSION-xz} \
                --add-drivers ahci \
