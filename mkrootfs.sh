@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #-
 # Copyright (c) 2013-2015 Juan Romero Pardines.
 # Copyright (c) 2017 Google
@@ -66,6 +66,7 @@ usage() {
 	 -r <repo>        Use this XBPS repository. May be specified multiple times
 	 -o <file>        Filename to write the ROOTFS to (default: automatic)
 	 -x <num>         Number of threads to use for image compression (default: dynamic)
+	 -z <format>      Compression format to use [xz, none] (default: xz)
 	 -h               Show this help and exit
 	 -V               Show version and exit
 	EOH
@@ -75,18 +76,21 @@ usage() {
 #      SCRIPT EXECUTION STARTS HERE
 # ########################################
 
-# Set the default system package.
+# Set defaults
 SYSPKG="base-container-full"
+COMPRESSOR="xz"
+FILENAME_SUFFIX="tar.xz"
 
 # Boilerplate option parsing.  This script supports the bare minimum
 # needed to build an image.
-while getopts "b:C:c:hr:x:o:V" opt; do
+while getopts "b:C:c:hr:x:z:o:V" opt; do
     case $opt in
         b) SYSPKG="$OPTARG";;
         C) XBPS_CONFFILE="-C $OPTARG";;
         c) XBPS_CACHEDIR="--cachedir=$OPTARG";;
         r) XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=$OPTARG";;
         x) COMPRESSOR_THREADS="$OPTARG" ;;
+        z) COMPRESSOR="$OPTARG" ;;
         o) FILENAME="$OPTARG" ;;
         V) version; exit 0;;
         h) usage; exit 0;;
@@ -121,6 +125,22 @@ if [ -z "$XBPS_TARGET_ARCH" ]; then
     echo "$PROGNAME: arch was not set!"
     usage >&2; exit 1
 fi
+
+# set the compression command
+case "$COMPRESSOR" in
+    xz)
+        COMPRESSOR="xz -T${COMPRESSOR_THREADS:-0} -9"
+        FILENAME_SUFFIX="tar.xz"
+        ;;
+    none)
+        COMPRESSOR="cat"
+        FILENAME_SUFFIX="tar"
+        ;;
+    *)
+        echo "$PROGNAME: unknown compressor '$COMPRESSOR'"
+        usage >&2; exit 1
+        ;;
+esac
 
 # We need to operate on a tempdir, if this fails to create, it is
 # absolutely crucial to bail out so that we don't hose the system that
@@ -218,8 +238,8 @@ rm -rf "$ROOTFS/var/cache/*" 2>/dev/null
 
 # Finally we can compress the tarball, the name will include the
 # architecture and the date on which the tarball was built.
-: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date -u '+%Y%m%d').tar.xz}"
-run_cmd "tar cp --posix --xattrs --xattrs-include='*' -C $ROOTFS . | xz -T${COMPRESSOR_THREADS:-0} -9 > $FILENAME "
+: "${FILENAME:=void-${XBPS_TARGET_ARCH}-ROOTFS-$(date -u '+%Y%m%d').$FILENAME_SUFFIX}"
+run_cmd "tar cp --posix --xattrs --xattrs-include='*' -C $ROOTFS . | $COMPRESSOR > $FILENAME"
 
 # Now that we have the tarball we don't need the rootfs anymore, so we
 # can get rid of it.
