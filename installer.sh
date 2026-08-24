@@ -1506,8 +1506,8 @@ menu_source() {
     local src=
 
     DIALOG --title " Select installation source " \
-        --menu "$MENULABEL" 8 70 0 \
-        "Local" "Packages from ISO image" \
+        --menu "$MENULABEL" 8 80 0 \
+        "Local" "Packages from ISO image, ${BOLD}${RED}use if installing from XFCE live disk" \
         "Network" "Base system only, downloaded from official repository"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
