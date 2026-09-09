@@ -534,7 +534,7 @@ shift $((OPTIND - 1))
 XBPS_REPOSITORY="$XBPS_REPOSITORY --repository=https://repo-default.voidlinux.org/current --repository=https://repo-default.voidlinux.org/current/musl --repository=https://repo-default.voidlinux.org/current/aarch64"
 
 # Configure dracut to use overlayfs for the writable overlay.
-BOOT_CMDLINE="$BOOT_CMDLINE rd.live.overlay.overlayfs=1 "
+BOOT_CMDLINE="$BOOT_CMDLINE rd.overlayfs=1 "
 
 HOST_ARCH=$(xbps-uhelper arch)
 
