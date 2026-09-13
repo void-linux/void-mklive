@@ -31,7 +31,7 @@ umask 022
 REQUIRED_PKGS=(base-files libgcc dash coreutils sed tar gawk squashfs-tools xorriso)
 TARGET_PKGS=(base-files)
 INITRAMFS_PKGS=(binutils xz device-mapper dhclient dracut-network openresolv)
-PACKAGE_LIST=(jq)
+PACKAGE_LIST=(jq sudo)
 IGNORE_PKGS=()
 PLATFORMS=()
 readonly PROGNAME="$(basename "$0")"
