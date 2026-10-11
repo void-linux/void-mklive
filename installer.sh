@@ -27,6 +27,7 @@
 
 # Make sure we don't inherit these from env.
 SOURCE_DONE=
+ENVIRONMENT_DONE=
 HOSTNAME_DONE=
 KEYBOARD_DONE=
 LOCALE_DONE=
@@ -1231,6 +1232,106 @@ copy_rootfs() {
     unset copy_total copy_count copy_percent
 }
 
+setup_pipewire() {
+    mkdir -p "$TARGETDIR"/etc/xdg/autostart
+    ln -sf /usr/share/applications/pipewire.desktop "$TARGETDIR"/etc/xdg/autostart/
+    mkdir -p "$TARGETDIR"/etc/pipewire/pipewire.conf.d
+    ln -sf /usr/share/examples/wireplumber/10-wireplumber.conf "$TARGETDIR"/etc/pipewire/pipewire.conf.d/
+    ln -sf /usr/share/examples/pipewire/20-pipewire-pulse.conf "$TARGETDIR"/etc/pipewire/pipewire.conf.d/
+    mkdir -p "$TARGETDIR"/etc/alsa/conf.d
+    ln -sf /usr/share/alsa/alsa.conf.d/50-pipewire.conf "$TARGETDIR"/etc/alsa/conf.d
+    ln -sf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf "$TARGETDIR"/etc/alsa/conf.d
+}
+
+get_variant_config() {
+    local variant="$1"
+    local arch="$(xbps-uhelper arch)"
+    local gfx_pkgs="xorg-video-drivers"
+    local gfx_wl_pkgs="mesa-dri"
+    case "$arch" in
+        x86_64*|i686*)
+            gfx_pkgs="xorg-video-drivers xf86-video-intel"
+            ;;
+    esac
+    local fonts="font-misc-misc terminus-font dejavu-fonts-ttf"
+    local wayland_pkgs="$gfx_wl_pkgs $fonts orca"
+    local xorg_pkgs="$gfx_pkgs $fonts xorg-minimal xorg-input-drivers setxkbmap xauth orca"
+
+    VARIANT_PKGS=""
+    VARIANT_SERVICES=""
+    VARIANT_LIGHTDM_SESSION=""
+
+    case "$variant" in
+        base|"")
+            ;;
+        enlightenment)
+            VARIANT_PKGS="$xorg_pkgs lightdm lightdm-gtk-greeter enlightenment terminology udisks2 firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="acpid dbus polkitd lightdm"
+            VARIANT_LIGHTDM_SESSION="enlightenment"
+            ;;
+        xfce)
+            VARIANT_PKGS="$xorg_pkgs lightdm lightdm-gtk-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus lightdm NetworkManager polkitd"
+            VARIANT_LIGHTDM_SESSION="xfce"
+            ;;
+        xfce-wayland)
+            VARIANT_PKGS="$xorg_pkgs lightdm lightdm-gtk-greeter xfce4 gnome-themes-standard gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox xfce4-pulseaudio-plugin $wayland_pkgs labwc pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus lightdm NetworkManager polkitd"
+            VARIANT_LIGHTDM_SESSION="xfce-wayland"
+            ;;
+        mate)
+            VARIANT_PKGS="$xorg_pkgs lightdm lightdm-gtk-greeter mate mate-extra gnome-keyring network-manager-applet gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus lightdm NetworkManager polkitd"
+            VARIANT_LIGHTDM_SESSION="mate"
+            ;;
+        cinnamon)
+            VARIANT_PKGS="$xorg_pkgs lightdm lightdm-gtk-greeter cinnamon gnome-keyring colord gnome-terminal gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus lightdm NetworkManager polkitd"
+            VARIANT_LIGHTDM_SESSION="cinnamon"
+            ;;
+        gnome)
+            VARIANT_PKGS="$xorg_pkgs gnome firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus gdm NetworkManager polkitd"
+            ;;
+        kde)
+            VARIANT_PKGS="$xorg_pkgs kde5 konsole firefox dolphin NetworkManager pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus NetworkManager sddm polkitd"
+            ;;
+        lxde)
+            VARIANT_PKGS="$xorg_pkgs lxde lightdm lightdm-gtk-greeter gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="acpid dbus polkitd lightdm"
+            VARIANT_LIGHTDM_SESSION="LXDE"
+            ;;
+        lxqt)
+            VARIANT_PKGS="$xorg_pkgs lxqt sddm gvfs-afc gvfs-mtp gvfs-smb udisks2 firefox pipewire alsa-pipewire"
+            VARIANT_SERVICES="dbus sddm polkitd"
+            ;;
+    esac
+}
+
+setup_desktop_environment() {
+    local variant="$(get_option ENVIRONMENT)"
+    [ -z "$variant" ] && variant="base"
+    [ "$variant" = "base" ] && return 0
+
+    get_variant_config "$variant"
+
+    setup_pipewire
+
+    if [ -n "$VARIANT_LIGHTDM_SESSION" ]; then
+        mkdir -p "$TARGETDIR"/etc/lightdm
+        echo "$VARIANT_LIGHTDM_SESSION" > "$TARGETDIR"/etc/lightdm/.session
+        cat <<- EOF > "$TARGETDIR"/etc/lightdm/lightdm-gtk-greeter.conf
+[greeter]
+indicators = ~host;~spacer;~clock;~spacer;~layout;~session;~a11y;~power
+EOF
+    fi
+
+    for svc in $VARIANT_SERVICES; do
+        enable_service "$svc"
+    done
+}
+
 install_packages() {
     local _grub= _syspkg=
 
@@ -1259,19 +1360,27 @@ install_packages() {
 
     _arch=$(xbps-uhelper arch)
 
+    local _variant="$(get_option ENVIRONMENT)"
+    [ -z "$_variant" ] && _variant="base"
+    get_variant_config "$_variant"
+
+    local _extra_pkgs="$VARIANT_PKGS"
+
     stdbuf -oL env XBPS_ARCH=${_arch} \
-        xbps-install  -r $TARGETDIR -SyU ${_syspkg} ${_grub} 2>&1 | \
-        DIALOG --title "Installing base system packages..." \
+        xbps-install -r $TARGETDIR -SyU ${_syspkg} ${_grub} ${_extra_pkgs} 2>&1 | \
+        DIALOG --title "Installing packages (${_variant})..." \
         --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
     xbps-reconfigure -r $TARGETDIR -f base-files >/dev/null 2>&1
     stdbuf -oL chroot $TARGETDIR xbps-reconfigure -a 2>&1 | \
-        DIALOG --title "Configuring base system packages..." --programbox 24 80
+        DIALOG --title "Configuring packages..." --programbox 24 80
     if [ $? -ne 0 ]; then
         DIE 1
     fi
+
+    setup_desktop_environment
 }
 
 menu_services() {
@@ -1440,11 +1549,16 @@ Root partition not empty! Aborting..." ${MSGBOXSIZE}
             # network type empty??!!!
             :
         elif [ "$_type" = "dhcp" ]; then
-            if $(echo $_dev|egrep -q "^wl.*" 2>/dev/null); then
-                cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
-                enable_service wpa_supplicant
+            local _variant="$(get_option ENVIRONMENT)"
+            [ -z "$_variant" ] && _variant="base"
+            get_variant_config "$_variant"
+            if ! echo "$VARIANT_SERVICES" | grep -qw "NetworkManager"; then
+                if $(echo $_dev|egrep -q "^wl.*" 2>/dev/null); then
+                    cp /etc/wpa_supplicant/wpa_supplicant.conf $TARGETDIR/etc/wpa_supplicant
+                    enable_service wpa_supplicant
+                fi
+                enable_service dhcpcd
             fi
-            enable_service dhcpcd
         elif [ -n "$_dev" -a "$_type" = "static" ]; then
             # static IP through dhcpcd.
             mv $TARGETDIR/etc/dhcpcd.conf $TARGETDIR/etc/dhcpcd.conf.orig
@@ -1502,13 +1616,58 @@ Do you want to reboot the system?" ${YESNOSIZE}
     fi
 }
 
+menu_environment() {
+    local preset="$(get_option ENVIRONMENT)"
+    [ -z "$preset" ] && preset="base"
+
+    DIALOG --title " Select base system or desktop environment " \
+        --default-item "$preset" \
+        --menu "$MENULABEL" 16 75 0 \
+        "base" "Base system (minimal CLI netinstall)" \
+        "cinnamon" "Cinnamon desktop environment" \
+        "enlightenment" "Enlightenment desktop environment" \
+        "gnome" "GNOME desktop environment" \
+        "kde" "KDE Plasma desktop environment" \
+        "lxde" "LXDE desktop environment" \
+        "lxqt" "LXQt desktop environment" \
+        "mate" "MATE desktop environment" \
+        "xfce" "XFCE desktop environment" \
+        "xfce-wayland" "XFCE (Wayland with labwc) desktop environment"
+    if [ $? -eq 0 ]; then
+        local choice="$(cat $ANSWER)"
+        set_option ENVIRONMENT "$choice"
+        ENVIRONMENT_DONE=1
+        return 0
+    fi
+    return 1
+}
+
+menu_environment_entry() {
+    local src="$(get_option SOURCE)"
+    if [ "$src" = "local" ]; then
+        DIALOG --yesno "Desktop environment selection is only applicable to Network installations.\n\nLocal source installs the live ISO image directly.\n\nWould you like to switch the installation source to Network?" 10 70
+        if [ $? -eq 0 ]; then
+            set_option SOURCE "net"
+            SOURCE_DONE=1
+            if [ -z "$NETWORK_DONE" ]; then
+                if test_network; then
+                    menu_network
+                fi
+            fi
+            menu_environment
+        fi
+    else
+        menu_environment
+    fi
+}
+
 menu_source() {
     local src=
 
     DIALOG --title " Select installation source " \
         --menu "$MENULABEL" 8 70 0 \
         "Local" "Packages from ISO image" \
-        "Network" "Base system only, downloaded from official repository"
+        "Network" "Download packages from official repository"
     case "$(cat $ANSWER)" in
         "Local") src="local";;
         "Network") src="net";
@@ -1516,7 +1675,8 @@ menu_source() {
                 if test_network; then
                     menu_network
                 fi
-            fi;;
+            fi
+            menu_environment;;
         *) return 1;;
     esac
     SOURCE_DONE=1
@@ -1542,6 +1702,7 @@ menu() {
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
+            "Environment" "Select base image or desktop environment" \
             "Mirror" "Select XBPS mirror" \
             "Hostname" "Set system hostname" \
             "Timezone" "Set system time zone" \
@@ -1561,6 +1722,7 @@ menu() {
             "Keyboard" "Set system keyboard" \
             "Network" "Set up the network" \
             "Source" "Set source installation" \
+            "Environment" "Select base image or desktop environment" \
             "Mirror" "Select XBPS mirror" \
             "Hostname" "Set system hostname" \
             "Locale" "Set system locale" \
@@ -1587,7 +1749,8 @@ menu() {
     case $(cat $ANSWER) in
         "Keyboard") menu_keymap && [ -n "$KEYBOARD_DONE" ] && DEFITEM="Network";;
         "Network") menu_network && [ -n "$NETWORK_DONE" ] && DEFITEM="Source";;
-        "Source") menu_source && [ -n "$SOURCE_DONE" ] && DEFITEM="Mirror";;
+        "Source") menu_source && [ -n "$SOURCE_DONE" ] && { [ -n "$ENVIRONMENT_DONE" -o "$(get_option SOURCE)" = "local" ] && DEFITEM="Mirror" || DEFITEM="Environment"; };;
+        "Environment") menu_environment_entry && [ -n "$ENVIRONMENT_DONE" ] && DEFITEM="Mirror";;
         "Mirror") menu_mirror && [ -n "$MIRROR_DONE" ] && DEFITEM="Hostname";;
         "Hostname") menu_hostname && [ -n "$HOSTNAME_DONE" ] && DEFITEM="$AFTER_HOSTNAME";;
         "Locale") menu_locale && [ -n "$LOCALE_DONE" ] && DEFITEM="Timezone";;
