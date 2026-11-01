@@ -24,6 +24,7 @@ install() {
     inst /usr/bin/lsblk
     inst /usr/bin/mkdir
     inst /usr/bin/mkfs.ext4
+    inst /usr/bin/mkfs.vfat
     inst /usr/bin/mkswap
     inst /usr/bin/mount
     inst /usr/bin/resolvconf
